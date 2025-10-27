@@ -1,0 +1,502 @@
+<!-- 故障管理页面 -->
+<div class="fault-manage-page" id="faultManagePage">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">故障管理</h1>
+            <p class="page-desc">集中管理和处理系统故障，提供快速响应和解决方案</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" id="exportBtn">
+                <i class="icon-download"></i>
+                <span>导出报告</span>
+            </button>
+            <button class="btn btn-primary" id="createFaultBtn">
+                <i class="icon-plus"></i>
+                <span>手动创建故障</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 故障统计概览 -->
+    <div class="fault-overview">
+        <div class="overview-cards">
+            <div class="overview-card critical">
+                <div class="card-icon">
+                    <i class="icon-alert-circle"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">5</div>
+                    <div class="card-label">严重故障</div>
+                    <div class="card-trend up">
+                        <i class="icon-arrow-up"></i>
+                        <span>+2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card high">
+                <div class="card-icon">
+                    <i class="icon-warning"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">12</div>
+                    <div class="card-label">高级故障</div>
+                    <div class="card-trend down">
+                        <i class="icon-arrow-down"></i>
+                        <span>-3</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card medium">
+                <div class="card-icon">
+                    <i class="icon-info"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">28</div>
+                    <div class="card-label">中级故障</div>
+                    <div class="card-trend">
+                        <span>无变化</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card resolved">
+                <div class="card-icon">
+                    <i class="icon-check-circle"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">156</div>
+                    <div class="card-label">已解决故障</div>
+                    <div class="card-trend up">
+                        <i class="icon-arrow-up"></i>
+                        <span>+15</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 故障筛选和搜索 -->
+    <div class="fault-filters">
+        <div class="filter-section">
+            <div class="filter-group">
+                <label class="filter-label">故障级别</label>
+                <select class="form-control" id="severityFilter">
+                    <option value="">全部级别</option>
+                    <option value="critical">严重</option>
+                    <option value="high">高级</option>
+                    <option value="medium">中级</option>
+                    <option value="low">低级</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">故障状态</label>
+                <select class="form-control" id="statusFilter">
+                    <option value="">全部状态</option>
+                    <option value="open">待处理</option>
+                    <option value="in_progress">处理中</option>
+                    <option value="resolved">已解决</option>
+                    <option value="closed">已关闭</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">故障类型</label>
+                <select class="form-control" id="typeFilter">
+                    <option value="">全部类型</option>
+                    <option value="hardware">硬件故障</option>
+                    <option value="software">软件故障</option>
+                    <option value="network">网络故障</option>
+                    <option value="performance">性能问题</option>
+                    <option value="security">安全问题</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">时间范围</label>
+                <select class="form-control" id="timeFilter">
+                    <option value="today">今天</option>
+                    <option value="week">本周</option>
+                    <option value="month" selected>本月</option>
+                    <option value="quarter">本季度</option>
+                    <option value="year">本年</option>
+                </select>
+            </div>
+
+            <div class="filter-group search-group">
+                <label class="filter-label">搜索</label>
+                <div class="search-input">
+                    <input type="text" class="form-control" placeholder="搜索故障ID、标题或描述..." id="faultSearch">
+                    <i class="icon-search"></i>
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button class="btn btn-secondary" id="resetFilters">
+                    <i class="icon-refresh"></i>
+                    <span>重置</span>
+                </button>
+                <button class="btn btn-primary" id="applyFilters">
+                    <i class="icon-filter"></i>
+                    <span>应用筛选</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 故障列表 -->
+    <div class="fault-list-container">
+        <div class="list-header">
+            <div class="list-title">
+                <h2>故障列表</h2>
+                <span class="fault-count">共 45 个故障</span>
+            </div>
+            <div class="list-controls">
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="list">
+                        <i class="icon-list"></i>
+                    </button>
+                    <button class="view-btn" data-view="card">
+                        <i class="icon-grid"></i>
+                    </button>
+                </div>
+                <div class="sort-group">
+                    <select class="form-control" id="sortBy">
+                        <option value="created_desc">创建时间 ↓</option>
+                        <option value="created_asc">创建时间 ↑</option>
+                        <option value="severity_desc">严重程度 ↓</option>
+                        <option value="severity_asc">严重程度 ↑</option>
+                        <option value="updated_desc">更新时间 ↓</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 故障表格视图 -->
+        <div class="fault-table-view" id="faultTableView">
+            <table class="fault-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="id">
+                            <span>故障ID</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th class="sortable" data-sort="title">
+                            <span>故障标题</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th class="sortable" data-sort="severity">
+                            <span>严重程度</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th class="sortable" data-sort="type">
+                            <span>故障类型</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th class="sortable" data-sort="status">
+                            <span>状态</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th class="sortable" data-sort="assignee">
+                            <span>负责人</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th class="sortable" data-sort="created">
+                            <span>创建时间</span>
+                            <i class="icon-sort"></i>
+                        </th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="fault-row critical" data-fault-id="FLT-2024-001">
+                        <td class="fault-id">
+                            <span class="id-text">FLT-2024-001</span>
+                        </td>
+                        <td class="fault-title">
+                            <div class="title-content">
+                                <span class="title-text">数据库连接池耗尽导致服务不可用</span>
+                                <div class="title-meta">
+                                    <span class="affected-systems">影响系统: 用户服务, 订单服务</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="fault-severity">
+                            <span class="severity-badge critical">严重</span>
+                        </td>
+                        <td class="fault-type">
+                            <span class="type-badge software">软件故障</span>
+                        </td>
+                        <td class="fault-status">
+                            <span class="status-badge in-progress">处理中</span>
+                        </td>
+                        <td class="fault-assignee">
+                            <div class="assignee-info">
+                                <div class="avatar">张</div>
+                                <span class="name">张工程师</span>
+                            </div>
+                        </td>
+                        <td class="fault-created">
+                            <div class="time-info">
+                                <span class="date">2024-01-15</span>
+                                <span class="time">14:30</span>
+                            </div>
+                        </td>
+                        <td class="fault-actions">
+                            <button class="action-btn" title="查看详情" onclick="viewFaultDetail('FLT-2024-001')">
+                                <i class="icon-eye"></i>
+                            </button>
+                            <button class="action-btn" title="编辑故障" onclick="editFault('FLT-2024-001')">
+                                <i class="icon-edit"></i>
+                            </button>
+                            <button class="action-btn" title="更多操作" onclick="showFaultMenu('FLT-2024-001')">
+                                <i class="icon-more"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr class="fault-row high" data-fault-id="FLT-2024-002">
+                        <td class="fault-id">
+                            <span class="id-text">FLT-2024-002</span>
+                        </td>
+                        <td class="fault-title">
+                            <div class="title-content">
+                                <span class="title-text">Web服务器CPU使用率持续超过90%</span>
+                                <div class="title-meta">
+                                    <span class="affected-systems">影响系统: Web前端</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="fault-severity">
+                            <span class="severity-badge high">高级</span>
+                        </td>
+                        <td class="fault-type">
+                            <span class="type-badge performance">性能问题</span>
+                        </td>
+                        <td class="fault-status">
+                            <span class="status-badge open">待处理</span>
+                        </td>
+                        <td class="fault-assignee">
+                            <div class="assignee-info">
+                                <div class="avatar">李</div>
+                                <span class="name">李运维</span>
+                            </div>
+                        </td>
+                        <td class="fault-created">
+                            <div class="time-info">
+                                <span class="date">2024-01-15</span>
+                                <span class="time">16:45</span>
+                            </div>
+                        </td>
+                        <td class="fault-actions">
+                            <button class="action-btn" title="查看详情" onclick="viewFaultDetail('FLT-2024-002')">
+                                <i class="icon-eye"></i>
+                            </button>
+                            <button class="action-btn" title="编辑故障" onclick="editFault('FLT-2024-002')">
+                                <i class="icon-edit"></i>
+                            </button>
+                            <button class="action-btn" title="更多操作" onclick="showFaultMenu('FLT-2024-002')">
+                                <i class="icon-more"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr class="fault-row resolved" data-fault-id="FLT-2024-003">
+                        <td class="fault-id">
+                            <span class="id-text">FLT-2024-003</span>
+                        </td>
+                        <td class="fault-title">
+                            <div class="title-content">
+                                <span class="title-text">网络交换机端口故障导致部分节点离线</span>
+                                <div class="title-meta">
+                                    <span class="affected-systems">影响系统: 集群节点3-5</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="fault-severity">
+                            <span class="severity-badge medium">中级</span>
+                        </td>
+                        <td class="fault-type">
+                            <span class="type-badge network">网络故障</span>
+                        </td>
+                        <td class="fault-status">
+                            <span class="status-badge resolved">已解决</span>
+                        </td>
+                        <td class="fault-assignee">
+                            <div class="assignee-info">
+                                <div class="avatar">王</div>
+                                <span class="name">王网管</span>
+                            </div>
+                        </td>
+                        <td class="fault-created">
+                            <div class="time-info">
+                                <span class="date">2024-01-14</span>
+                                <span class="time">09:20</span>
+                            </div>
+                        </td>
+                        <td class="fault-actions">
+                            <button class="action-btn" title="查看详情" onclick="viewFaultDetail('FLT-2024-003')">
+                                <i class="icon-eye"></i>
+                            </button>
+                            <button class="action-btn" title="查看报告" onclick="viewFaultReport('FLT-2024-003')">
+                                <i class="icon-file"></i>
+                            </button>
+                            <button class="action-btn" title="更多操作" onclick="showFaultMenu('FLT-2024-003')">
+                                <i class="icon-more"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页控件 -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                <span>显示 1-10 条，共 45 条记录</span>
+            </div>
+            <div class="pagination-controls">
+                <button class="page-btn" disabled>
+                    <i class="icon-chevron-left"></i>
+                </button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <span class="page-dots">...</span>
+                <button class="page-btn">5</button>
+                <button class="page-btn">
+                    <i class="icon-chevron-right"></i>
+                </button>
+            </div>
+            <div class="page-size-selector">
+                <select class="form-control">
+                    <option value="10">10条/页</option>
+                    <option value="20">20条/页</option>
+                    <option value="50">50条/页</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 故障详情侧边栏 -->
+    <div class="fault-detail-sidebar" id="faultDetailSidebar">
+        <div class="sidebar-header">
+            <h3 class="sidebar-title">故障详情</h3>
+            <button class="close-btn" id="closeSidebar">
+                <i class="icon-x"></i>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <div class="fault-detail-loading">
+                <div class="loading-spinner"></div>
+                <p>加载故障详情中...</p>
+            </div>
+            <!-- 故障详情内容将通过JavaScript动态加载 -->
+        </div>
+    </div>
+
+    <!-- 遮罩层 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+</div>
+
+<!-- 故障管理页面图标样式 -->
+<style>
+/* 故障管理页面图标 */
+.icon-alert-circle::before {
+    content: "🚨";
+    font-size: 20px;
+}
+
+.icon-warning::before {
+    content: "⚠️";
+    font-size: 20px;
+}
+
+.icon-info::before {
+    content: "ℹ️";
+    font-size: 20px;
+}
+
+.icon-check-circle::before {
+    content: "✅";
+    font-size: 20px;
+}
+
+.icon-download::before {
+    content: "⬇️";
+    font-size: 14px;
+}
+
+.icon-plus::before {
+    content: "➕";
+    font-size: 14px;
+}
+
+.icon-filter::before {
+    content: "🔽";
+    font-size: 14px;
+}
+
+.icon-list::before {
+    content: "☰";
+    font-size: 14px;
+}
+
+.icon-grid::before {
+    content: "⊞";
+    font-size: 14px;
+}
+
+.icon-sort::before {
+    content: "↕️";
+    font-size: 12px;
+}
+
+.icon-eye::before {
+    content: "👁️";
+    font-size: 14px;
+}
+
+.icon-edit::before {
+    content: "✏️";
+    font-size: 14px;
+}
+
+.icon-file::before {
+    content: "📄";
+    font-size: 14px;
+}
+
+.icon-more::before {
+    content: "⋯";
+    font-size: 14px;
+}
+
+.icon-chevron-left::before {
+    content: "◀";
+    font-size: 12px;
+}
+
+.icon-chevron-right::before {
+    content: "▶";
+    font-size: 12px;
+}
+
+.icon-x::before {
+    content: "✕";
+    font-size: 16px;
+}
+
+.icon-arrow-up::before {
+    content: "↗️";
+    font-size: 12px;
+}
+
+.icon-arrow-down::before {
+    content: "↘️";
+    font-size: 12px;
+}
+</style>

@@ -1,0 +1,275 @@
+<!-- 侧边栏导航组件 -->
+<div class="app-sidebar" id="appSidebar">
+    <!-- 侧边栏头部 -->
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="#409EFF"/>
+                <path d="M8 12H24V14H8V12Z" fill="white"/>
+                <path d="M8 16H20V18H8V16Z" fill="white"/>
+                <path d="M8 20H16V22H8V20Z" fill="white"/>
+                <circle cx="22" cy="10" r="3" fill="#F56C6C"/>
+            </svg>
+            <span class="sidebar-title">错误检测</span>
+        </div>
+        <button class="sidebar-collapse" id="sidebarCollapse" title="收起侧边栏">
+            <i class="icon-chevron-left"></i>
+        </button>
+    </div>
+
+    <!-- 导航菜单 -->
+    <nav class="sidebar-nav">
+        <ul class="nav-menu">
+            <!-- 概览仪表板 -->
+            <li class="nav-item">
+                <a href="#dashboard" class="nav-link active" data-view="dashboard">
+                    <i class="nav-icon icon-dashboard"></i>
+                    <span class="nav-text">概览仪表板</span>
+                    <span class="nav-badge">实时</span>
+                </a>
+            </li>
+
+            <!-- 集群监控 -->
+            <li class="nav-item">
+                <a href="#cluster-monitor" class="nav-link" data-view="cluster-monitor">
+                    <i class="nav-icon icon-cluster"></i>
+                    <span class="nav-text">集群监控</span>
+                    <span class="nav-count">12</span>
+                </a>
+                <ul class="nav-submenu">
+                    <li class="nav-subitem">
+                        <a href="#cluster-nodes" class="nav-sublink" data-view="cluster-nodes">
+                            <span class="nav-subtext">节点管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#cluster-resources" class="nav-sublink" data-view="cluster-resources">
+                            <span class="nav-subtext">资源监控</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#cluster-performance" class="nav-sublink" data-view="cluster-performance">
+                            <span class="nav-subtext">性能分析</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- 故障管理 -->
+            <li class="nav-item">
+                <a href="#fault-manage" class="nav-link" data-view="fault-manage">
+                    <i class="nav-icon icon-fault"></i>
+                    <span class="nav-text">故障管理</span>
+                    <span class="nav-alert">5</span>
+                </a>
+                <ul class="nav-submenu">
+                    <li class="nav-subitem">
+                        <a href="#fault-list" class="nav-sublink" data-view="fault-list">
+                            <span class="nav-subtext">故障列表</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#fault-analysis" class="nav-sublink" data-view="fault-analysis">
+                            <span class="nav-subtext">故障分析</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#fault-history" class="nav-sublink" data-view="fault-history">
+                            <span class="nav-subtext">历史记录</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- 日志分析 -->
+            <li class="nav-item">
+                <a href="#log-analysis" class="nav-link" data-view="log-analysis">
+                    <i class="nav-icon icon-log"></i>
+                    <span class="nav-text">日志分析</span>
+                </a>
+                <ul class="nav-submenu">
+                    <li class="nav-subitem">
+                        <a href="#log-search" class="nav-sublink" data-view="log-search">
+                            <span class="nav-subtext">日志搜索</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#log-realtime" class="nav-sublink" data-view="log-realtime">
+                            <span class="nav-subtext">实时日志</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#log-statistics" class="nav-sublink" data-view="log-statistics">
+                            <span class="nav-subtext">统计分析</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- 分割线 -->
+            <li class="nav-divider"></li>
+
+            <!-- 系统配置 -->
+            <li class="nav-item">
+                <a href="#system-config" class="nav-link" data-view="system-config">
+                    <i class="nav-icon icon-config"></i>
+                    <span class="nav-text">系统配置</span>
+                </a>
+                <ul class="nav-submenu">
+                    <li class="nav-subitem">
+                        <a href="#config-general" class="nav-sublink" data-view="config-general">
+                            <span class="nav-subtext">基础配置</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#config-alert" class="nav-sublink" data-view="config-alert">
+                            <span class="nav-subtext">告警配置</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#config-notification" class="nav-sublink" data-view="config-notification">
+                            <span class="nav-subtext">通知配置</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- 用户管理 -->
+            <li class="nav-item">
+                <a href="#user-manage" class="nav-link" data-view="user-manage">
+                    <i class="nav-icon icon-users"></i>
+                    <span class="nav-text">用户管理</span>
+                </a>
+                <ul class="nav-submenu">
+                    <li class="nav-subitem">
+                        <a href="#user-list" class="nav-sublink" data-view="user-list">
+                            <span class="nav-subtext">用户列表</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#role-manage" class="nav-sublink" data-view="role-manage">
+                            <span class="nav-subtext">角色管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-subitem">
+                        <a href="#permission-manage" class="nav-sublink" data-view="permission-manage">
+                            <span class="nav-subtext">权限管理</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- 系统监控 -->
+            <li class="nav-item">
+                <a href="#system-monitor" class="nav-link" data-view="system-monitor">
+                    <i class="nav-icon icon-monitor"></i>
+                    <span class="nav-text">系统监控</span>
+                </a>
+            </li>
+
+            <!-- 分割线 -->
+            <li class="nav-divider"></li>
+
+            <!-- 帮助中心 -->
+            <li class="nav-item">
+                <a href="#help-center" class="nav-link" data-view="help-center">
+                    <i class="nav-icon icon-help-circle"></i>
+                    <span class="nav-text">帮助中心</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- 侧边栏底部 -->
+    <div class="sidebar-footer">
+        <div class="system-info">
+            <div class="system-version">
+                <span class="version-label">版本</span>
+                <span class="version-number">v1.0.0</span>
+            </div>
+            <div class="system-status">
+                <span class="status-dot online"></span>
+                <span class="status-text">系统正常</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 侧边栏图标样式 -->
+<style>
+/* 侧边栏图标 */
+.icon-dashboard::before {
+    content: "📊";
+    font-size: 16px;
+}
+
+.icon-cluster::before {
+    content: "🖥️";
+    font-size: 16px;
+}
+
+.icon-fault::before {
+    content: "⚠️";
+    font-size: 16px;
+}
+
+.icon-log::before {
+    content: "📋";
+    font-size: 16px;
+}
+
+.icon-config::before {
+    content: "⚙️";
+    font-size: 16px;
+}
+
+.icon-users::before {
+    content: "👥";
+    font-size: 16px;
+}
+
+.icon-monitor::before {
+    content: "📈";
+    font-size: 16px;
+}
+
+.icon-help-circle::before {
+    content: "❓";
+    font-size: 16px;
+}
+
+.icon-chevron-left::before {
+    content: "◀";
+    font-size: 12px;
+}
+
+/* 收起状态下的图标调整 */
+.app-sidebar.collapsed .nav-icon {
+    margin-right: 0;
+}
+
+.app-sidebar.collapsed .nav-text,
+.app-sidebar.collapsed .nav-badge,
+.app-sidebar.collapsed .nav-count,
+.app-sidebar.collapsed .nav-alert,
+.app-sidebar.collapsed .sidebar-title {
+    display: none;
+}
+
+.app-sidebar.collapsed .nav-submenu {
+    display: none;
+}
+
+.app-sidebar.collapsed {
+    width: 60px;
+}
+
+.app-sidebar.collapsed .sidebar-header {
+    padding: 0 12px;
+}
+
+.app-sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 12px;
+}
+</style>
