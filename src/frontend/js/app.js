@@ -13,6 +13,7 @@ class ErrorDetectingApp {
         this.loadStoredSettings();
         this.bindEvents();
         this.initializeRouter();
+        this.loadPageComponents();
         this.checkAuthStatus();
     }
 
@@ -67,6 +68,26 @@ class ErrorDetectingApp {
 
         // 窗口大小变化
         window.addEventListener('resize', () => this.handleResize());
+    }
+
+    // 加载页面组件
+    async loadPageComponents() {
+        try {
+            // 加载登录页面内容
+            await this.loadPageContent('views/Login/Login.html', '.login-page-wrapper');
+            
+            // 加载布局组件
+            await this.loadPageContent('components/Layout/Header.html', '#header');
+            await this.loadPageContent('components/Layout/Sidebar.html', '#sidebar');
+            
+            // 加载其他页面内容
+            await this.loadPageContent('views/ClusterMonitor/ClusterMonitor.html', '#clusterMonitorPage');
+            await this.loadPageContent('views/FaultManage/FaultManage.html', '#faultManagePage');
+            await this.loadPageContent('views/LogAnalysis/LogAnalysis.html', '#logAnalysisPage');
+            
+        } catch (error) {
+            console.error('加载页面组件失败:', error);
+        }
     }
 
     // 初始化路由
@@ -399,8 +420,14 @@ class ErrorDetectingApp {
     }
 
     // 动态加载页面内容的辅助方法
-    async loadPageContent(url, container) {
+    async loadPageContent(url, containerSelector) {
         try {
+            const container = document.querySelector(containerSelector);
+            if (!container) {
+                console.warn(`容器不存在: ${containerSelector}`);
+                return;
+            }
+            
             const response = await fetch(url);
             if (response.ok) {
                 const html = await response.text();
@@ -411,7 +438,10 @@ class ErrorDetectingApp {
             }
         } catch (error) {
             console.error(`加载页面内容时出错: ${url}`, error);
-            container.innerHTML = '<div class="error-message">页面加载出错</div>';
+            const container = document.querySelector(containerSelector);
+            if (container) {
+                container.innerHTML = '<div class="error-message">页面加载出错</div>';
+            }
         }
     }
 }
