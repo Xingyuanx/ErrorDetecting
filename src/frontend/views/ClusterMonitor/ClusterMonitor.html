@@ -1,0 +1,490 @@
+<!-- 集群监控页面 -->
+<div class="cluster-monitor-page" id="clusterMonitorPage">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">集群监控</h1>
+            <p class="page-desc">实时监控集群节点状态和资源使用情况</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" id="refreshBtn">
+                <i class="icon-refresh"></i>
+                <span>刷新</span>
+            </button>
+            <button class="btn btn-primary" id="addNodeBtn">
+                <i class="icon-plus"></i>
+                <span>添加节点</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 集群概览统计 -->
+    <div class="cluster-overview">
+        <div class="overview-cards">
+            <div class="overview-card">
+                <div class="card-icon online">
+                    <i class="icon-server"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">12</div>
+                    <div class="card-label">在线节点</div>
+                    <div class="card-trend up">
+                        <i class="icon-arrow-up"></i>
+                        <span>+2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card">
+                <div class="card-icon warning">
+                    <i class="icon-warning-triangle"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">3</div>
+                    <div class="card-label">告警节点</div>
+                    <div class="card-trend down">
+                        <i class="icon-arrow-down"></i>
+                        <span>-1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card">
+                <div class="card-icon danger">
+                    <i class="icon-server-off"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">1</div>
+                    <div class="card-label">离线节点</div>
+                    <div class="card-trend">
+                        <span>无变化</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card">
+                <div class="card-icon info">
+                    <i class="icon-cpu"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">68%</div>
+                    <div class="card-label">平均CPU使用率</div>
+                    <div class="card-trend up">
+                        <i class="icon-arrow-up"></i>
+                        <span>+5%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="cluster-content">
+        <!-- 左侧：节点列表 -->
+        <div class="cluster-nodes">
+            <div class="section-header">
+                <h2 class="section-title">节点列表</h2>
+                <div class="section-actions">
+                    <div class="filter-group">
+                        <select class="form-control" id="statusFilter">
+                            <option value="">全部状态</option>
+                            <option value="online">在线</option>
+                            <option value="warning">告警</option>
+                            <option value="offline">离线</option>
+                        </select>
+                    </div>
+                    <div class="search-group">
+                        <input type="text" class="form-control" placeholder="搜索节点..." id="nodeSearch">
+                        <i class="icon-search"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nodes-container">
+                <!-- 节点卡片列表 -->
+                <div class="node-card online" data-node-id="node-001">
+                    <div class="node-header">
+                        <div class="node-info">
+                            <div class="node-name">Web-Server-01</div>
+                            <div class="node-ip">192.168.1.101</div>
+                        </div>
+                        <div class="node-status">
+                            <span class="status-badge online">在线</span>
+                        </div>
+                    </div>
+                    <div class="node-metrics">
+                        <div class="metric-item">
+                            <div class="metric-label">CPU</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 65%"></div>
+                                </div>
+                                <span class="metric-text">65%</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">内存</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 78%"></div>
+                                </div>
+                                <span class="metric-text">78%</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">磁盘</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 45%"></div>
+                                </div>
+                                <span class="metric-text">45%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="node-actions">
+                        <button class="btn-icon" title="查看详情">
+                            <i class="icon-eye"></i>
+                        </button>
+                        <button class="btn-icon" title="重启节点">
+                            <i class="icon-restart"></i>
+                        </button>
+                        <button class="btn-icon" title="更多操作">
+                            <i class="icon-more"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="node-card warning" data-node-id="node-002">
+                    <div class="node-header">
+                        <div class="node-info">
+                            <div class="node-name">DB-Server-01</div>
+                            <div class="node-ip">192.168.1.102</div>
+                        </div>
+                        <div class="node-status">
+                            <span class="status-badge warning">告警</span>
+                        </div>
+                    </div>
+                    <div class="node-metrics">
+                        <div class="metric-item">
+                            <div class="metric-label">CPU</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill warning" style="width: 85%"></div>
+                                </div>
+                                <span class="metric-text">85%</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">内存</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill danger" style="width: 92%"></div>
+                                </div>
+                                <span class="metric-text">92%</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">磁盘</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 67%"></div>
+                                </div>
+                                <span class="metric-text">67%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="node-actions">
+                        <button class="btn-icon" title="查看详情">
+                            <i class="icon-eye"></i>
+                        </button>
+                        <button class="btn-icon" title="重启节点">
+                            <i class="icon-restart"></i>
+                        </button>
+                        <button class="btn-icon" title="更多操作">
+                            <i class="icon-more"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="node-card offline" data-node-id="node-003">
+                    <div class="node-header">
+                        <div class="node-info">
+                            <div class="node-name">Cache-Server-01</div>
+                            <div class="node-ip">192.168.1.103</div>
+                        </div>
+                        <div class="node-status">
+                            <span class="status-badge offline">离线</span>
+                        </div>
+                    </div>
+                    <div class="node-metrics">
+                        <div class="metric-item">
+                            <div class="metric-label">CPU</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span class="metric-text">--</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">内存</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span class="metric-text">--</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">磁盘</div>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span class="metric-text">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="node-actions">
+                        <button class="btn-icon" title="查看详情">
+                            <i class="icon-eye"></i>
+                        </button>
+                        <button class="btn-icon" title="启动节点">
+                            <i class="icon-play"></i>
+                        </button>
+                        <button class="btn-icon" title="更多操作">
+                            <i class="icon-more"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：监控图表 -->
+        <div class="cluster-charts">
+            <!-- 资源使用趋势图 -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3 class="chart-title">资源使用趋势</h3>
+                    <div class="chart-controls">
+                        <select class="form-control small" id="timeRange">
+                            <option value="1h">最近1小时</option>
+                            <option value="6h">最近6小时</option>
+                            <option value="24h" selected>最近24小时</option>
+                            <option value="7d">最近7天</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div id="resourceTrendChart" class="chart-placeholder">
+                        <!-- ECharts图表将在这里渲染 -->
+                        <div class="chart-loading">
+                            <div class="loading-spinner"></div>
+                            <p>加载图表数据中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 节点性能对比 -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3 class="chart-title">节点性能对比</h3>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-color cpu"></span>
+                            <span class="legend-text">CPU使用率</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color memory"></span>
+                            <span class="legend-text">内存使用率</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color disk"></span>
+                            <span class="legend-text">磁盘使用率</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div id="nodeComparisonChart" class="chart-placeholder">
+                        <!-- ECharts图表将在这里渲染 -->
+                        <div class="chart-loading">
+                            <div class="loading-spinner"></div>
+                            <p>加载图表数据中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 网络流量监控 -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3 class="chart-title">网络流量监控</h3>
+                    <div class="traffic-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">入站流量</span>
+                            <span class="stat-value">1.2 GB/s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">出站流量</span>
+                            <span class="stat-value">0.8 GB/s</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div id="networkTrafficChart" class="chart-placeholder">
+                        <!-- ECharts图表将在这里渲染 -->
+                        <div class="chart-loading">
+                            <div class="loading-spinner"></div>
+                            <p>加载图表数据中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 实时告警面板 -->
+    <div class="alert-panel" id="alertPanel">
+        <div class="alert-header">
+            <h3 class="alert-title">
+                <i class="icon-alert"></i>
+                <span>实时告警</span>
+                <span class="alert-count">3</span>
+            </h3>
+            <button class="alert-toggle" id="alertToggle">
+                <i class="icon-chevron-up"></i>
+            </button>
+        </div>
+        <div class="alert-content">
+            <div class="alert-item high">
+                <div class="alert-icon">
+                    <i class="icon-danger"></i>
+                </div>
+                <div class="alert-info">
+                    <div class="alert-message">DB-Server-01 内存使用率超过90%</div>
+                    <div class="alert-time">2分钟前</div>
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-small btn-primary">处理</button>
+                    <button class="btn-small btn-secondary">忽略</button>
+                </div>
+            </div>
+            <div class="alert-item medium">
+                <div class="alert-icon">
+                    <i class="icon-warning"></i>
+                </div>
+                <div class="alert-info">
+                    <div class="alert-message">Web-Server-01 CPU使用率持续偏高</div>
+                    <div class="alert-time">5分钟前</div>
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-small btn-primary">处理</button>
+                    <button class="btn-small btn-secondary">忽略</button>
+                </div>
+            </div>
+            <div class="alert-item low">
+                <div class="alert-icon">
+                    <i class="icon-info"></i>
+                </div>
+                <div class="alert-info">
+                    <div class="alert-message">Cache-Server-01 连接超时</div>
+                    <div class="alert-time">10分钟前</div>
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-small btn-primary">处理</button>
+                    <button class="btn-small btn-secondary">忽略</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 集群监控页面图标样式 -->
+<style>
+/* 集群监控页面图标 */
+.icon-server::before {
+    content: "🖥️";
+    font-size: 20px;
+}
+
+.icon-server-off::before {
+    content: "💻";
+    font-size: 20px;
+}
+
+.icon-warning-triangle::before {
+    content: "⚠️";
+    font-size: 20px;
+}
+
+.icon-cpu::before {
+    content: "⚙️";
+    font-size: 20px;
+}
+
+.icon-plus::before {
+    content: "➕";
+    font-size: 14px;
+}
+
+.icon-search::before {
+    content: "🔍";
+    font-size: 14px;
+}
+
+.icon-eye::before {
+    content: "👁️";
+    font-size: 14px;
+}
+
+.icon-restart::before {
+    content: "🔄";
+    font-size: 14px;
+}
+
+.icon-play::before {
+    content: "▶️";
+    font-size: 14px;
+}
+
+.icon-more::before {
+    content: "⋯";
+    font-size: 14px;
+}
+
+.icon-arrow-up::before {
+    content: "↗️";
+    font-size: 12px;
+}
+
+.icon-arrow-down::before {
+    content: "↘️";
+    font-size: 12px;
+}
+
+.icon-alert::before {
+    content: "🚨";
+    font-size: 16px;
+}
+
+.icon-danger::before {
+    content: "🔴";
+    font-size: 14px;
+}
+
+.icon-warning::before {
+    content: "🟡";
+    font-size: 14px;
+}
+
+.icon-info::before {
+    content: "🔵";
+    font-size: 14px;
+}
+
+.icon-chevron-up::before {
+    content: "▲";
+    font-size: 12px;
+}
+</style>

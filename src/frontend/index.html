@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hadoop故障检测与自动恢复系统</title>
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/dark.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/login.css">
+    <link rel="stylesheet" href="styles/cluster-monitor.css">
+    <link rel="stylesheet" href="styles/fault-manage.css">
+    <link rel="stylesheet" href="styles/log-analysis.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <!-- 应用根容器 -->
+    <div id="app">
+        <!-- 登录页面容器 -->
+        <div id="loginContainer" class="login-container">
+            <!-- 登录页面内容 -->
+            <div id="loginPage" class="page-view">
+                <!-- 引入登录页面HTML -->
+                <div class="login-page-wrapper">
+                    <!-- 这里将通过JavaScript动态加载Login.html的内容 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 主应用布局 -->
+        <div id="appLayout" class="app-layout" style="display: none;">
+            <!-- 顶部导航栏 -->
+            <div id="header" class="header-container">
+                <!-- 这里将通过JavaScript动态加载Header.html的内容 -->
+            </div>
+
+            <!-- 侧边栏 -->
+            <div id="sidebar" class="sidebar-container">
+                <!-- 这里将通过JavaScript动态加载Sidebar.html的内容 -->
+            </div>
+
+            <!-- 主内容区域 -->
+            <div id="mainContent" class="main-content">
+                <!-- 概览仪表板页面 -->
+                <div id="dashboardPage" class="page-view" style="display: none;">
+                    <div class="dashboard-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <h1 class="page-title">概览仪表板</h1>
+                                <p class="page-desc">系统整体运行状态概览</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 系统状态卡片 -->
+                        <div class="dashboard-cards">
+                            <div class="dashboard-card">
+                                <div class="card-icon">
+                                    <i class="icon-server"></i>
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-value">12</div>
+                                    <div class="card-label">在线节点</div>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <div class="card-icon">
+                                    <i class="icon-alert"></i>
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-value">3</div>
+                                    <div class="card-label">活跃告警</div>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <div class="card-icon">
+                                    <i class="icon-cpu"></i>
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-value">68%</div>
+                                    <div class="card-label">平均CPU使用率</div>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <div class="card-icon">
+                                    <i class="icon-memory"></i>
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-value">45%</div>
+                                    <div class="card-label">平均内存使用率</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 图表区域 -->
+                        <div class="dashboard-charts">
+                            <div class="chart-container">
+                                <h3>系统性能趋势</h3>
+                                <div id="performanceChart" class="chart-placeholder">
+                                    <div class="chart-loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>加载图表数据中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 集群监控页面 -->
+                <div id="clusterMonitorPage" class="page-view" style="display: none;">
+                    <!-- 这里将通过JavaScript动态加载ClusterMonitor.html的内容 -->
+                </div>
+
+                <!-- 故障管理页面 -->
+                <div id="faultManagePage" class="page-view" style="display: none;">
+                    <!-- 这里将通过JavaScript动态加载FaultManage.html的内容 -->
+                </div>
+
+                <!-- 日志分析页面 -->
+                <div id="logAnalysisPage" class="page-view" style="display: none;">
+                    <!-- 这里将通过JavaScript动态加载LogAnalysis.html的内容 -->
+                </div>
+
+                <!-- 系统配置页面 -->
+                <div id="systemConfigPage" class="page-view" style="display: none;">
+                    <div class="config-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <h1 class="page-title">系统配置</h1>
+                                <p class="page-desc">管理系统参数和配置选项</p>
+                            </div>
+                        </div>
+                        
+                        <div class="config-content">
+                            <div class="config-section">
+                                <h3>监控配置</h3>
+                                <div class="config-form">
+                                    <div class="form-group">
+                                        <label>监控间隔 (秒)</label>
+                                        <input type="number" class="form-control" value="30">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>告警阈值</label>
+                                        <input type="number" class="form-control" value="80">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="config-section">
+                                <h3>通知配置</h3>
+                                <div class="config-form">
+                                    <div class="form-group">
+                                        <label>邮件通知</label>
+                                        <input type="email" class="form-control" placeholder="admin@example.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>短信通知</label>
+                                        <input type="tel" class="form-control" placeholder="手机号码">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户管理页面 -->
+                <div id="userManagePage" class="page-view" style="display: none;">
+                    <div class="user-manage-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <h1 class="page-title">用户管理</h1>
+                                <p class="page-desc">管理系统用户和权限</p>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-primary">
+                                    <i class="icon-plus"></i>
+                                    <span>添加用户</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="user-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>邮箱</th>
+                                        <th>角色</th>
+                                        <th>状态</th>
+                                        <th>最后登录</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>admin</td>
+                                        <td>admin@example.com</td>
+                                        <td><span class="role-badge admin">管理员</span></td>
+                                        <td><span class="status-badge active">活跃</span></td>
+                                        <td>2024-01-15 14:30:00</td>
+                                        <td>
+                                            <button class="action-btn">编辑</button>
+                                            <button class="action-btn">删除</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统监控页面 -->
+                <div id="systemMonitorPage" class="page-view" style="display: none;">
+                    <div class="system-monitor-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <h1 class="page-title">系统监控</h1>
+                                <p class="page-desc">实时监控系统资源使用情况</p>
+                            </div>
+                        </div>
+                        
+                        <div class="monitor-content">
+                            <div class="monitor-charts">
+                                <div class="chart-container">
+                                    <h3>CPU使用率</h3>
+                                    <div id="cpuChart" class="chart-placeholder">
+                                        <div class="chart-loading">
+                                            <div class="loading-spinner"></div>
+                                            <p>加载图表数据中...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="chart-container">
+                                    <h3>内存使用率</h3>
+                                    <div id="memoryChart" class="chart-placeholder">
+                                        <div class="chart-loading">
+                                            <div class="loading-spinner"></div>
+                                            <p>加载图表数据中...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 帮助中心页面 -->
+                <div id="helpPage" class="page-view" style="display: none;">
+                    <div class="help-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <h1 class="page-title">帮助中心</h1>
+                                <p class="page-desc">系统使用指南和常见问题</p>
+                            </div>
+                        </div>
+                        
+                        <div class="help-content">
+                            <div class="help-section">
+                                <h3>快速开始</h3>
+                                <ul>
+                                    <li>登录系统后，首先查看概览仪表板了解系统整体状态</li>
+                                    <li>通过集群监控页面查看各节点的详细信息</li>
+                                    <li>在故障管理页面处理系统告警和故障</li>
+                                    <li>使用日志分析功能定位问题根因</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="help-section">
+                                <h3>常见问题</h3>
+                                <div class="faq-item">
+                                    <h4>如何添加新的监控节点？</h4>
+                                    <p>在集群监控页面点击"添加节点"按钮，填写节点信息即可。</p>
+                                </div>
+                                
+                                <div class="faq-item">
+                                    <h4>告警通知如何配置？</h4>
+                                    <p>在系统配置页面的通知配置部分设置邮件和短信通知方式。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用组件容器 -->
+    <div id="modal-container">
+        <!-- 弹窗、加载动画等通用组件将在这里渲染 -->
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Element Plus JS CDN -->
+    <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+    <!-- Axios CDN -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    
+    <!-- Chart.js 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 应用脚本 -->
+    <script src="utils/request.js"></script>
+    <script src="utils/auth.js"></script>
+    <script src="utils/format.js"></script>
+    <script src="router/index.js"></script>
+    <script src="components/Layout/Header.js"></script>
+    <script src="components/Layout/Sidebar.js"></script>
+    <script src="components/Common/Loading.js"></script>
+    <script src="components/Common/ErrorTip.js"></script>
+    <script src="components/Common/Confirm.js"></script>
+    <script src="components/Chart/ResourceTrend.js"></script>
+    <script src="views/Login/Index.js"></script>
+    <script src="views/ClusterMonitor/Index.js"></script>
+    <script src="views/FaultManage/List.js"></script>
+    <script src="views/FaultManage/Detail.js"></script>
+    <script src="views/LogAnalysis/Index.js"></script>
+    <script src="api/user.js"></script>
+    <script src="api/cluster.js"></script>
+    <script src="api/fault.js"></script>
+    <script src="api/log.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/demo-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

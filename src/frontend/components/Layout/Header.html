@@ -1,0 +1,226 @@
+<!-- 顶部导航栏组件 -->
+<div class="app-header">
+    <!-- 左侧：系统标题和菜单切换 -->
+    <div class="header-left">
+        <button class="menu-toggle" id="menuToggle" title="切换菜单">
+            <i class="icon-menu"></i>
+        </button>
+        <div class="system-title">
+            <h1>错误检测系统</h1>
+            <span class="version">v1.0</span>
+        </div>
+    </div>
+
+    <!-- 中间：面包屑导航 -->
+    <div class="header-center">
+        <nav class="breadcrumb" id="breadcrumb">
+            <span class="breadcrumb-item">
+                <i class="icon-home"></i>
+                <span>首页</span>
+            </span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">集群监控</span>
+        </nav>
+    </div>
+
+    <!-- 右侧：功能按钮和用户信息 -->
+    <div class="header-right">
+        <!-- 系统状态指示器 -->
+        <div class="system-status" title="系统状态">
+            <span class="status-dot online"></span>
+            <span class="status-text">系统正常</span>
+        </div>
+
+        <!-- 通知中心 -->
+        <div class="notification-center">
+            <button class="notification-btn" id="notificationBtn" title="通知中心">
+                <i class="icon-bell"></i>
+                <span class="notification-badge">3</span>
+            </button>
+            <!-- 通知下拉菜单 -->
+            <div class="notification-dropdown" id="notificationDropdown">
+                <div class="notification-header">
+                    <h4>通知中心</h4>
+                    <button class="mark-all-read">全部已读</button>
+                </div>
+                <div class="notification-list">
+                    <div class="notification-item unread">
+                        <div class="notification-icon warning">
+                            <i class="icon-warning"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">服务器CPU使用率过高</div>
+                            <div class="notification-desc">服务器192.168.1.100 CPU使用率达到85%</div>
+                            <div class="notification-time">5分钟前</div>
+                        </div>
+                    </div>
+                    <div class="notification-item unread">
+                        <div class="notification-icon danger">
+                            <i class="icon-error"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">数据库连接异常</div>
+                            <div class="notification-desc">主数据库连接超时，请检查网络状态</div>
+                            <div class="notification-time">10分钟前</div>
+                        </div>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notification-icon success">
+                            <i class="icon-success"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">系统更新完成</div>
+                            <div class="notification-desc">系统已成功更新到v1.0.1版本</div>
+                            <div class="notification-time">1小时前</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="notification-footer">
+                    <a href="#" class="view-all">查看全部通知</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主题切换 -->
+        <div class="theme-switcher">
+            <button class="theme-toggle" id="themeToggle" title="切换主题">
+                <i class="icon-sun" id="themeIcon"></i>
+            </button>
+        </div>
+
+        <!-- 用户信息 -->
+        <div class="user-info">
+            <div class="user-avatar">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM0MDlFRkYiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik04IDhDOS42NTY4NSA4IDExIDYuNjU2ODUgMTEgNUMxMSAzLjM0MzE1IDkuNjU2ODUgMiA4IDJDNi4zNDMxNSAyIDUgMy4zNDMxNSA1IDVDNSA2LjY1Njg1IDYuMzQzMTUgOCA4IDhaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNOCAxMEMxMC4yMDkxIDEwIDEyIDExLjc5MDkgMTIgMTRIMTBDMTAgMTIuODk1NCA5LjEwNDU3IDEyIDggMTJDNi44OTU0MyAxMiA2IDEyLjg5NTQgNiAxNEg0QzQgMTEuNzkwOSA1Ljc5MDg2IDEwIDggMTBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4KPC9zdmc+" alt="用户头像">
+            </div>
+            <div class="user-dropdown">
+                <button class="user-btn" id="userBtn">
+                    <span class="user-name">管理员</span>
+                    <i class="icon-chevron-down"></i>
+                </button>
+                <!-- 用户下拉菜单 -->
+                <div class="user-menu" id="userMenu">
+                    <div class="user-menu-header">
+                        <div class="user-avatar-large">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM0MDlFRkYiLz4KPHN2ZyB4PSIxMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIj4KPHBhdGggZD0iTTEwIDEwQzEyLjIwOTEgMTAgMTQgOC4yMDkxNCAxNCA2QzE0IDMuNzkwODYgMTIuMjA5MSAyIDEwIDJDNy43OTA4NiAyIDYgMy43OTA4NiA2IDZDNiA4LjIwOTE0IDcuNzkwODYgMTAgMTAgMTBaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTAgMTJDMTMuMzEzNyAxMiAxNiAxNC42ODYzIDE2IDE4SDE0QzE0IDE1Ljc5MDkgMTIuMjA5MSAxNCAxMCAxNEM3Ljc5MDg2IDE0IDYgMTUuNzkwOSA2IDE4SDRDNCAxNC42ODYzIDYuNjg2MjkgMTIgMTAgMTJaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4KPC9zdmc+" alt="用户头像">
+                        </div>
+                        <div class="user-info-detail">
+                            <div class="user-name-large">管理员</div>
+                            <div class="user-role">系统管理员</div>
+                            <div class="user-email">admin@errordetect.com</div>
+                        </div>
+                    </div>
+                    <div class="user-menu-body">
+                        <a href="#" class="user-menu-item">
+                            <i class="icon-user"></i>
+                            <span>个人资料</span>
+                        </a>
+                        <a href="#" class="user-menu-item">
+                            <i class="icon-settings"></i>
+                            <span>系统设置</span>
+                        </a>
+                        <a href="#" class="user-menu-item">
+                            <i class="icon-help"></i>
+                            <span>帮助中心</span>
+                        </a>
+                        <div class="user-menu-divider"></div>
+                        <a href="#" class="user-menu-item logout">
+                            <i class="icon-logout"></i>
+                            <span>退出登录</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图标字体样式（使用CSS伪元素实现简单图标） -->
+<style>
+/* 图标字体基础样式 */
+[class^="icon-"], [class*=" icon-"] {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+/* 菜单图标 */
+.icon-menu::before {
+    content: "☰";
+    font-size: 16px;
+}
+
+/* 首页图标 */
+.icon-home::before {
+    content: "🏠";
+    font-size: 14px;
+}
+
+/* 铃铛图标 */
+.icon-bell::before {
+    content: "🔔";
+    font-size: 14px;
+}
+
+/* 太阳图标 */
+.icon-sun::before {
+    content: "☀️";
+    font-size: 14px;
+}
+
+/* 月亮图标 */
+.icon-moon::before {
+    content: "🌙";
+    font-size: 14px;
+}
+
+/* 下拉箭头 */
+.icon-chevron-down::before {
+    content: "▼";
+    font-size: 10px;
+}
+
+/* 用户图标 */
+.icon-user::before {
+    content: "👤";
+    font-size: 14px;
+}
+
+/* 设置图标 */
+.icon-settings::before {
+    content: "⚙️";
+    font-size: 14px;
+}
+
+/* 帮助图标 */
+.icon-help::before {
+    content: "❓";
+    font-size: 14px;
+}
+
+/* 退出图标 */
+.icon-logout::before {
+    content: "🚪";
+    font-size: 14px;
+}
+
+/* 警告图标 */
+.icon-warning::before {
+    content: "⚠️";
+    font-size: 14px;
+}
+
+/* 错误图标 */
+.icon-error::before {
+    content: "❌";
+    font-size: 14px;
+}
+
+/* 成功图标 */
+.icon-success::before {
+    content: "✅";
+    font-size: 14px;
+}
+</style>
