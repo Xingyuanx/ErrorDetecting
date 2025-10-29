@@ -1,0 +1,158 @@
+@startuml
+title 故障检测系统 - 移动端原型设计
+skinparam defaultFontName Microsoft YaHei
+skinparam backgroundColor #FFFFFF
+
+!define PRIMARY #1976D2
+!define SUCCESS #4CAF50
+!define WARNING #FF9800
+!define DANGER #F44336
+!define LIGHT #F5F5F5
+
+package "移动端主界面 (宽度: 375px)" as MobileMain {
+  
+  rectangle "顶部导航栏 (高度: 56px)" as MobileTopNav PRIMARY {
+    rectangle "☰" as HamburgerMenu
+    rectangle "故障检测" as MobileTitle
+    rectangle "🔔" as NotificationIcon
+  }
+  
+  rectangle "可滑动侧边栏 (宽度: 280px)" as MobileSidebar LIGHT {
+    rectangle "用户信息\n👤 admin\n运维工程师" as MobileUserInfo
+    rectangle "📊 仪表板" as MobileDashMenu
+    rectangle "🖥️ 集群监控" as MobileClusterMenu
+    rectangle "📝 日志管理" as MobileLogMenu
+    rectangle "⚠️ 故障处理" as MobileFaultMenu
+    rectangle "🔧 修复历史" as MobileHistoryMenu
+    rectangle "⚙️ 设置" as MobileSettingsMenu
+  }
+  
+  rectangle "主内容区域" as MobileContent {
+    rectangle "页面内容" as MobilePageContent
+  }
+  
+  rectangle "底部导航栏 (高度: 60px)" as MobileBottomNav LIGHT {
+    rectangle "📊\n仪表板" as BottomDash
+    rectangle "📝\n日志" as BottomLogs
+    rectangle "⚠️\n故障" as BottomFaults
+    rectangle "🔧\n修复" as BottomRepair
+  }
+}
+
+package "移动端仪表板" as MobileDashboard {
+  rectangle "统计卡片 (单列布局)" as MobileStatsCards {
+    rectangle "集群状态 🖥️\n12/15 节点正常\n点击查看详情 >" as MobileNodeCard SUCCESS
+    rectangle "活跃告警 ⚠️\n3 个需要关注\n点击查看详情 >" as MobileAlertCard WARNING
+    rectangle "今日故障 ❌\n1 个已修复\n点击查看详情 >" as MobileFaultCard DANGER
+  }
+  
+  rectangle "快速操作" as MobileQuickActions {
+    rectangle "🔍 快速诊断" as QuickDiagnose PRIMARY
+    rectangle "📊 查看日志" as QuickLogs
+    rectangle "⚙️ 系统状态" as QuickStatus
+  }
+  
+  rectangle "图表区域 (可横向滑动)" as MobileCharts {
+    rectangle "CPU使用率\n[小型图表]\n📈 24h" as MobileCPUChart
+    rectangle "内存使用率\n[小型图表]\n📊 24h" as MobileMemChart
+  }
+}
+
+package "移动端日志查询" as MobileLogQuery {
+  rectangle "搜索栏" as MobileSearchBar LIGHT {
+    rectangle "🔍 搜索日志..." as MobileSearchInput
+    rectangle "🔽 筛选" as MobileFilterBtn
+  }
+  
+  rectangle "筛选面板 (可展开/收起)" as MobileFilterPanel {
+    rectangle "时间: 最近1小时 ▼\n级别: ERROR ▼\n主机: 全部 ▼" as MobileFilters
+    rectangle "应用筛选" as ApplyFilters PRIMARY
+  }
+  
+  rectangle "日志列表 (卡片式)" as MobileLogList {
+    rectangle "🔴 ERROR | 10:35:22\nnode-1 | HDFS\nConnection failed to...\n[诊断] [详情]" as LogCard1 DANGER
+    rectangle "🟡 WARN | 10:34:15\nnode-2 | YARN\nMemory usage high...\n[诊断] [详情]" as LogCard2 WARNING
+  }
+  
+  rectangle "加载更多" as LoadMore {
+    rectangle "⬇️ 加载更多日志" as LoadMoreBtn
+  }
+}
+
+package "移动端故障诊断" as MobileDiagnose {
+  rectangle "诊断配置" as MobileDiagnoseConfig LIGHT {
+    rectangle "已选择: 3 条日志\n[查看选中日志]" as MobileSelectedLogs
+    rectangle "AI模型: GPT-4 ▼" as MobileModelSelect
+    rectangle "分析深度:\n● 快速 ○ 深度 ○ 全面" as MobileAnalysisDepth
+  }
+  
+  rectangle "诊断按钮" as MobileDiagnoseBtn {
+    rectangle "🚀 开始诊断" as MobileStartDiagnose SUCCESS
+  }
+  
+  rectangle "诊断进度 (全屏显示)" as MobileDiagnoseProgress {
+    rectangle "🔄 诊断进行中...\n\n进度: ████████░░ 80%\n\n当前状态:\n正在分析日志模式\n\n预计剩余: 30秒\n\n[取消诊断]" as MobileProgressInfo
+  }
+  
+  rectangle "诊断结果 (卡片式)" as MobileDiagnoseResult {
+    rectangle "🔍 故障类型\nDataNode连接异常\n\n📋 根本原因\n网络配置错误\n\n💡 修复建议\n重启网络服务\n\n⚠️ 风险: 中等\n\n[生成修复方案]" as MobileResultCard
+  }
+}
+
+package "移动端自动修复" as MobileRepair {
+  rectangle "修复方案 (可滚动)" as MobileRepairPlan LIGHT {
+    rectangle "修复脚本预览:\n```\nsudo systemctl restart network\nsudo hdfs dfsadmin -refresh\n```\n\n影响范围: node-1\n预计时间: 2分钟\n\n[查看完整脚本]" as MobileScriptPreview
+  }
+  
+  rectangle "风险确认" as MobileRiskConfirm WARNING {
+    rectangle "⚠️ 风险等级: 中等\n\n风险说明:\n重启网络服务可能短暂\n影响数据传输\n\n☑️ 我已了解风险\n☑️ 已通知相关人员" as MobileRiskInfo
+  }
+  
+  rectangle "执行按钮" as MobileExecuteBtn {
+    rectangle "🚀 执行修复" as MobileExecute SUCCESS
+    rectangle "❌ 取消" as MobileCancel
+  }
+}
+
+package "移动端弹窗设计" as MobileModals {
+  rectangle "全屏确认弹窗" as MobileConfirmModal DANGER {
+    rectangle "⚠️ 高风险操作\n\n此操作可能影响整个集群\n建议在维护窗口期执行\n\n请输入确认码:\n[CONFIRM-2024]\n\n[取消] [确认执行]" as MobileConfirmContent
+  }
+  
+  rectangle "执行监控全屏" as MobileExecutionModal {
+    rectangle "🔄 修复执行中\n\n开始时间: 10:45:30\n执行进度: ████░░░░░░ 40%\n\n实时日志:\n[10:45:31] 开始执行...\n[10:45:32] 重启网络服务...\n[10:45:35] 服务重启完成\n\n[停止执行] [最小化]" as MobileExecutionContent
+  }
+}
+
+package "响应式设计要点" as ResponsiveNotes {
+  note as MobileDesignNotes
+    移动端设计要点:
+    
+    1. 触摸友好:
+       - 按钮最小44px高度
+       - 间距充足，避免误触
+       - 支持手势操作
+    
+    2. 内容优化:
+       - 关键信息优先显示
+       - 长文本可展开/收起
+       - 图表简化但保持可读性
+    
+    3. 导航优化:
+       - 汉堡菜单 + 底部导航
+       - 面包屑导航简化
+       - 返回按钮明显
+    
+    4. 性能考虑:
+       - 懒加载长列表
+       - 图片压缩优化
+       - 离线缓存关键数据
+    
+    5. 交互优化:
+       - 下拉刷新
+       - 上拉加载更多
+       - 滑动操作支持
+  end note
+}
+
+@enduml

@@ -1,0 +1,130 @@
+@startuml
+title 故障检测与自动修复 - 类图
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Microsoft YaHei
+skinparam classAttributeIconSize 0
+
+class FlumeAgent {
+  +config : Map
+  +start()
+  +stop()
+}
+
+class LogEvent {
+  +timestamp : datetime
+  +host : string
+  +source : string
+  +level : string
+  +message : string
+  +raw : text
+}
+
+class FastAPIService {
+  +ingestLog(e: LogEvent)
+  +getClusterStatus()
+  +queryLogs(filter)
+  +diagnose(logs)
+  +executeRepair(cmd: FixCommand)
+}
+
+class DiagnosisService {
+  +callLLM(logs) : FixCommand
+  +validateCommand(cmd: FixCommand) : bool
+}
+
+class LLMClient {
+  +apiKey : string
+  +endpoint : string
+  +invoke(prompt) : string
+}
+
+class FixCommand {
+  +fault_type : string
+  +reason : string
+  +fix_script : string
+  +risk_level : RiskLevel
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+}
+
+class RepairExecutor {
+  +run(script) : ExecResult
+  +precheck() : bool
+}
+
+class ExecResult {
+  +stdout : text
+  +stderr : text
+  +exitCode : int
+}
+
+class FaultRecord {
+  +id : int
+  +fault_type : string
+  +reason : string
+  +timestamp : datetime
+  +node : string
+}
+
+class ExecLog {
+  +id : int
+  +record_id : int
+  +stdout : text
+  +stderr : text
+  +timestamp : datetime
+}
+
+class MySQLClient {
+  +saveFault(record: FaultRecord)
+  +saveExecLog(log: ExecLog)
+  +queryLogs(filter)
+}
+
+class RedisCache {
+  +set(key, value)
+  +publish(channel, msg)
+  +get(key)
+}
+
+class ClusterStatus {
+  +nodesUp : int
+  +nodesDown : int
+  +hdfsUsage : float
+  +yarnActiveApps : int
+}
+
+class FrontendWeb {
+  +viewStatus()
+  +queryLogs()
+  +requestDiagnosis()
+  +executeRepair()
+}
+
+FlumeAgent --> FastAPIService : push(LogEvent)
+FastAPIService --> DiagnosisService : diagnose(logs)
+DiagnosisService --> LLMClient : call_llm_diagnose
+DiagnosisService --> FixCommand : returns
+FastAPIService --> RepairExecutor : execute(FixCommand)
+RepairExecutor --> ExecResult : returns
+FastAPIService --> MySQLClient : save FaultRecord/ExecLog
+FastAPIService --> RedisCache : cache/publish status
+FrontendWeb --> FastAPIService : REST/WebSocket
+FastAPIService --> ClusterStatus : compose
+MySQLClient --> FaultRecord
+MySQLClient --> ExecLog
+FixCommand --> RiskLevel
+
+note right of FixCommand
+JSON 示例:
+{
+ fault_type: "DataNode故障",
+ reason: "磁盘占满",
+ fix_script: "ssh dn 'clean_temp.sh'",
+ risk_level: "medium"
+}
+end note
+@enduml
