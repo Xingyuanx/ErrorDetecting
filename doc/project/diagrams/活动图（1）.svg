@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="1400" xmlns="http://www.w3.org/2000/svg" style="background-color: white;">
+  <defs>
+    <style>
+      .title { font-family: 'Microsoft YaHei', sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+      .activity-text { font-family: 'Microsoft YaHei', sans-serif; font-size: 12px; text-anchor: middle; }
+      .decision-text { font-family: 'Microsoft YaHei', sans-serif; font-size: 11px; text-anchor: middle; }
+      .small-text { font-family: 'Microsoft YaHei', sans-serif; font-size: 10px; text-anchor: middle; }
+      .activity { fill: #E3F2FD; stroke: #1976D2; stroke-width: 2; rx: 20; }
+      .decision { fill: #FFF3E0; stroke: #FF9800; stroke-width: 2; }
+      .start-end { fill: #4CAF50; stroke: #2E7D32; stroke-width: 2; }
+      .partition { fill: #F3E5F5; stroke: #9C27B0; stroke-width: 2; stroke-dasharray: 5,5; }
+      .arrow { stroke: #333333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .yes-arrow { stroke: #4CAF50; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .no-arrow { stroke: #F44336; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333333" />
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="400" y="30" class="title">日志诊断与自动修复 - 活动图</text>
+
+  <!-- 开始节点 -->
+  <ellipse cx="400" cy="70" rx="30" ry="15" class="start-end" />
+  <text x="400" y="75" class="small-text" fill="white">开始</text>
+
+  <!-- 活动1: Flume采集日志 -->
+  <rect x="300" y="110" width="200" height="40" class="activity" />
+  <text x="400" y="135" class="activity-text">Flume采集日志</text>
+
+  <!-- 活动2: FastAPI接收并解析日志 -->
+  <rect x="280" y="170" width="240" height="40" class="activity" />
+  <text x="400" y="195" class="activity-text">FastAPI接收并解析日志</text>
+
+  <!-- 活动3: 保存FaultRecord到MySQL -->
+  <rect x="280" y="230" width="240" height="40" class="activity" />
+  <text x="400" y="255" class="activity-text">保存 FaultRecord 到 MySQL</text>
+
+  <!-- 分区: 用户/系统触发 -->
+  <rect x="50" y="290" width="700" height="400" class="partition" />
+  <text x="60" y="310" class="decision-text">用户/系统触发</text>
+
+  <!-- 决策1: 是否需要诊断? -->
+  <polygon points="400,340 480,370 400,400 320,370" class="decision" />
+  <text x="400" y="375" class="decision-text">是否需要诊断?</text>
+
+  <!-- 是路径 -->
+  <rect x="500" y="350" width="180" height="30" class="activity" />
+  <text x="590" y="370" class="activity-text">聚合相关日志</text>
+
+  <rect x="500" y="390" width="180" height="30" class="activity" />
+  <text x="590" y="410" class="activity-text">构造 Prompt</text>
+
+  <rect x="500" y="430" width="180" height="30" class="activity" />
+  <text x="590" y="450" class="activity-text">调用 LLM 诊断</text>
+
+  <rect x="500" y="470" width="180" height="30" class="activity" />
+  <text x="590" y="490" class="activity-text">生成 FixCommand(JSON)</text>
+
+  <rect x="480" y="510" width="220" height="40" class="activity" />
+  <text x="590" y="535" class="activity-text">安全校验(禁止高危命令)</text>
+
+  <!-- 否路径 -->
+  <rect x="100" y="420" width="180" height="30" class="activity" />
+  <text x="190" y="440" class="activity-text">等待新日志/用户请求</text>
+
+  <ellipse cx="190" cy="480" rx="30" ry="15" class="start-end" />
+  <text x="190" y="485" class="small-text" fill="white">结束</text>
+
+  <!-- 决策2: 风险等级 == high? -->
+  <polygon points="400,740 480,770 400,800 320,770" class="decision" />
+  <text x="400" y="775" class="decision-text">风险等级 == high?</text>
+
+  <!-- 高风险路径 -->
+  <rect x="500" y="720" width="200" height="40" class="activity" />
+  <text x="600" y="745" class="activity-text">前端弹窗请求人工确认</text>
+
+  <!-- 决策3: 用户确认执行? -->
+  <polygon points="600,810 680,840 600,870 520,840" class="decision" />
+  <text x="600" y="845" class="decision-text">用户确认执行?</text>
+
+  <!-- 用户确认是 -->
+  <rect x="520" y="890" width="160" height="30" class="activity" />
+  <text x="600" y="910" class="activity-text">继续执行修复</text>
+
+  <!-- 用户确认否 -->
+  <rect x="100" y="820" width="180" height="40" class="activity" />
+  <text x="190" y="845" class="activity-text">记录并通知未执行</text>
+
+  <ellipse cx="190" cy="890" rx="30" ry="15" class="start-end" />
+  <text x="190" y="895" class="small-text" fill="white">结束</text>
+
+  <!-- 预检查 -->
+  <rect x="280" y="950" width="240" height="40" class="activity" />
+  <text x="400" y="975" class="activity-text">修复前预检查(配置/路径/权限)</text>
+
+  <!-- 决策4: 预检查通过? -->
+  <polygon points="400,1020 480,1050 400,1080 320,1050" class="decision" />
+  <text x="400" y="1055" class="decision-text">预检查通过?</text>
+
+  <!-- 预检查通过 -->
+  <rect x="500" y="1000" width="160" height="30" class="activity" />
+  <text x="580" y="1020" class="activity-text">执行修复脚本</text>
+
+  <rect x="500" y="1040" width="160" height="30" class="activity" />
+  <text x="580" y="1060" class="activity-text">采集stdout/stderr</text>
+
+  <rect x="500" y="1080" width="160" height="30" class="activity" />
+  <text x="580" y="1100" class="activity-text">保存 ExecLog 到 MySQL</text>
+
+  <rect x="480" y="1120" width="200" height="40" class="activity" />
+  <text x="580" y="1145" class="activity-text">更新状态到 Redis 并推送 WebSocket</text>
+
+  <!-- 预检查失败 -->
+  <rect x="100" y="1030" width="160" height="40" class="activity" />
+  <text x="180" y="1055" class="activity-text">记录失败原因</text>
+
+  <!-- 返回结果 -->
+  <rect x="300" y="1200" width="200" height="40" class="activity" />
+  <text x="400" y="1225" class="activity-text">返回结果给前端</text>
+
+  <!-- 结束节点 -->
+  <ellipse cx="400" cy="1280" rx="30" ry="15" class="start-end" />
+  <text x="400" y="1285" class="small-text" fill="white">结束</text>
+
+  <!-- 连接线 -->
+  <g id="arrows">
+    <!-- 主流程 -->
+    <line x1="400" y1="85" x2="400" y2="110" class="arrow" />
+    <line x1="400" y1="150" x2="400" y2="170" class="arrow" />
+    <line x1="400" y1="210" x2="400" y2="230" class="arrow" />
+    <line x1="400" y1="270" x2="400" y2="340" class="arrow" />
+
+    <!-- 决策1分支 -->
+    <line x1="480" y1="370" x2="500" y2="365" class="yes-arrow" />
+    <text x="490" y="365" class="small-text" fill="#4CAF50">是</text>
+    <line x1="320" y1="370" x2="280" y2="435" class="no-arrow" />
+    <text x="300" y="400" class="small-text" fill="#F44336">否</text>
+
+    <!-- 诊断流程 -->
+    <line x1="590" y1="380" x2="590" y2="390" class="arrow" />
+    <line x1="590" y1="420" x2="590" y2="430" class="arrow" />
+    <line x1="590" y1="460" x2="590" y2="470" class="arrow" />
+    <line x1="590" y1="500" x2="590" y2="510" class="arrow" />
+
+    <!-- 否路径到结束 -->
+    <line x1="190" y1="450" x2="190" y2="465" class="arrow" />
+
+    <!-- 从诊断到风险判断 -->
+    <line x1="590" y1="550" x2="590" y2="700" class="arrow" />
+    <line x1="590" y1="700" x2="400" y2="740" class="arrow" />
+
+    <!-- 风险判断分支 -->
+    <line x1="480" y1="770" x2="500" y2="740" class="yes-arrow" />
+    <text x="490" y="755" class="small-text" fill="#4CAF50">是</text>
+    <line x1="400" y1="800" x2="400" y2="950" class="no-arrow" />
+    <text x="410" y="875" class="small-text" fill="#F44336">否</text>
+
+    <!-- 高风险确认 -->
+    <line x1="600" y1="760" x2="600" y2="810" class="arrow" />
+
+    <!-- 用户确认分支 -->
+    <line x1="600" y1="870" x2="600" y2="890" class="yes-arrow" />
+    <text x="610" y="880" class="small-text" fill="#4CAF50">是</text>
+    <line x1="520" y1="840" x2="280" y2="840" class="no-arrow" />
+    <text x="400" y="835" class="small-text" fill="#F44336">否</text>
+
+    <!-- 用户拒绝到结束 -->
+    <line x1="190" y1="860" x2="190" y2="875" class="arrow" />
+
+    <!-- 继续执行到预检查 -->
+    <line x1="600" y1="920" x2="600" y2="970" class="arrow" />
+    <line x1="600" y1="970" x2="520" y2="970" class="arrow" />
+    <line x1="520" y1="970" x2="400" y2="970" class="arrow" />
+
+    <!-- 预检查 -->
+    <line x1="400" y1="990" x2="400" y2="1020" class="arrow" />
+
+    <!-- 预检查分支 -->
+    <line x1="480" y1="1050" x2="500" y2="1015" class="yes-arrow" />
+    <text x="490" y="1035" class="small-text" fill="#4CAF50">是</text>
+    <line x1="320" y1="1050" x2="260" y2="1050" class="no-arrow" />
+    <text x="290" y="1045" class="small-text" fill="#F44336">否</text>
+
+    <!-- 执行流程 -->
+    <line x1="580" y1="1030" x2="580" y2="1040" class="arrow" />
+    <line x1="580" y1="1070" x2="580" y2="1080" class="arrow" />
+    <line x1="580" y1="1110" x2="580" y2="1120" class="arrow" />
+
+    <!-- 汇聚到返回结果 -->
+    <line x1="580" y1="1160" x2="580" y2="1180" class="arrow" />
+    <line x1="580" y1="1180" x2="400" y2="1200" class="arrow" />
+    <line x1="180" y1="1070" x2="180" y2="1180" class="arrow" />
+    <line x1="180" y1="1180" x2="400" y2="1200" class="arrow" />
+
+    <!-- 最终结束 -->
+    <line x1="400" y1="1240" x2="400" y2="1265" class="arrow" />
+  </g>
+</svg>
