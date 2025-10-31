@@ -1,0 +1,25 @@
+@startuml
+title 故障检测系统总体架构
+
+node "Hadoop Cluster" {
+  [NameNode]
+  [DataNode] as DN1
+  [DataNode] as DN2
+}
+
+cloud "Flume Agents" as Flume
+Flume --> DN1 : 采集HDFS/YARN日志
+Flume --> DN2 : 采集HDFS/YARN日志
+
+component "FastAPI Service" as API
+database "MySQL" as DB
+queue "Redis" as Cache
+API --> DB : 写入/查询故障记录
+API --> Cache : 状态缓存/队列
+API --> "LLM Diagnose" : 调用大模型\n返回FixCommand
+
+component "Frontend Web (Vue/React + ECharts)" as FE
+FE --> API : /api/cluster/status\n/api/logs/query\n/api/diagnosis/result\n/api/repair/execute
+API --> FE : WebSocket推送状态/诊断结果
+
+@enduml

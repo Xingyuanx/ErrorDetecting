@@ -1,0 +1,45 @@
+@startuml
+title 日志诊断与自动修复 - 活动图
+skinparam defaultFontName Microsoft YaHei
+
+start
+:Flume采集日志;
+:FastAPI接收并解析日志;
+:保存 FaultRecord 到 MySQL;
+
+partition "用户/系统触发" {
+  if (是否需要诊断?) then (是)
+    :聚合相关日志;
+    :构造 Prompt;
+    :调用 LLM 诊断;
+    :生成 FixCommand(JSON);
+    :安全校验(禁止高危命令);
+  else (否)
+    :等待新日志/用户请求;
+    stop
+  endif
+}
+
+if (风险等级 == high?) then (是)
+  :前端弹窗请求人工确认;
+  if (用户确认执行?) then (是)
+    :继续执行修复;
+  else (否)
+    :记录并通知未执行;
+    stop
+  endif
+endif
+
+:修复前预检查(配置/路径/权限);
+if (预检查通过?) then (是)
+  :执行修复脚本;
+  :采集stdout/stderr;
+  :保存 ExecLog 到 MySQL;
+  :更新状态到 Redis 并推送 WebSocket;
+else (否)
+  :记录失败原因;
+endif
+
+:返回结果给前端;
+stop
+@enduml

@@ -1,0 +1,38 @@
+@startuml
+title 故障检测系统 - 用例图
+skinparam defaultFontName Microsoft YaHei
+
+actor 运维工程师 as Ops
+actor 前端用户 as User
+actor 测试工程师 as QA
+
+rectangle "故障检测系统" {
+  usecase "查看集群状态" as UC_Status
+  usecase "查询日志" as UC_QueryLogs
+  usecase "发起故障诊断" as UC_Diagnose
+  usecase "执行自动修复" as UC_Repair
+  usecase "查看执行日志" as UC_ExecLogs
+  usecase "配置Flume收集" as UC_ConfigFlume
+  usecase "配置告警阈值" as UC_ConfigAlert
+  usecase "导出故障与诊断报告" as UC_Export
+  usecase "生成FixCommand" as UC_FixCmd
+  usecase "命令安全校验" as UC_SafeCheck
+
+  User --> UC_Status
+  User --> UC_QueryLogs
+  User --> UC_Diagnose
+  User --> UC_Repair
+  User --> UC_ExecLogs
+
+  Ops --> UC_ConfigFlume
+  Ops --> UC_ConfigAlert
+  Ops --> UC_Repair
+  Ops --> UC_Status
+
+  QA --> UC_QueryLogs
+  QA --> UC_Export
+
+  UC_Diagnose --> UC_FixCmd : <<include>>
+  UC_Repair --> UC_SafeCheck : <<include>>
+}
+@enduml
