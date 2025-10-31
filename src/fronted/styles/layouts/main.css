@@ -1,0 +1,282 @@
+/* Main Layout Styles */
+/* 主布局样式 - 使用 BEM 命名规范 */
+
+.layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-gray-50);
+}
+
+/* 主容器 */
+.layout__container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* 主内容区域 */
+.layout__main {
+    flex: 1;
+    overflow: auto;
+    background-color: var(--color-gray-50);
+}
+
+/* 内容包装器 */
+.layout__content {
+    padding: var(--spacing-6);
+    max-width: 100%;
+}
+
+/* 页面标题区域 */
+.layout__page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.layout__page-title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.layout__page-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin-top: var(--spacing-1);
+}
+
+.layout__page-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+}
+
+/* 网格系统 */
+.layout__grid {
+    display: grid;
+    gap: var(--spacing-6);
+}
+
+.layout__grid--1 {
+    grid-template-columns: 1fr;
+}
+
+.layout__grid--2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.layout__grid--3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.layout__grid--4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.layout__grid--auto {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* 卡片布局 */
+.layout__card {
+    background-color: var(--color-white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-base);
+    overflow: hidden;
+}
+
+.layout__card-header {
+    padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.layout__card-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.layout__card-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin-top: var(--spacing-1);
+}
+
+.layout__card-body {
+    padding: var(--spacing-6);
+}
+
+.layout__card-footer {
+    padding: var(--spacing-4) var(--spacing-6);
+    background-color: var(--color-gray-50);
+    border-top: 1px solid var(--color-gray-200);
+}
+
+/* 分隔符 */
+.layout__divider {
+    height: 1px;
+    background-color: var(--color-gray-200);
+    margin: var(--spacing-6) 0;
+}
+
+.layout__divider--vertical {
+    width: 1px;
+    height: auto;
+    margin: 0 var(--spacing-6);
+}
+
+/* 间距工具类 */
+.layout__section {
+    margin-bottom: var(--spacing-10);
+}
+
+.layout__section:last-child {
+    margin-bottom: 0;
+}
+
+/* 滚动容器 */
+.layout__scroll-container {
+    overflow: auto;
+    max-height: 100%;
+}
+
+.layout__scroll-container--horizontal {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.layout__scroll-container--vertical {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* 粘性定位 */
+.layout__sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--color-white);
+}
+
+.layout__sticky-bottom {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background-color: var(--color-white);
+}
+
+/* 居中容器 */
+.layout__centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+}
+
+.layout__centered-content {
+    text-align: center;
+    max-width: 400px;
+}
+
+/* 响应式断点 */
+@media (max-width: 1280px) {
+    .layout__grid--4 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .layout__content {
+        padding: var(--spacing-4);
+    }
+    
+    .layout__grid--3,
+    .layout__grid--4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .layout__page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-4);
+    }
+    
+    .layout__page-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .layout__container {
+        flex-direction: column;
+    }
+    
+    .layout__content {
+        padding: var(--spacing-3);
+    }
+    
+    .layout__grid--2,
+    .layout__grid--3,
+    .layout__grid--4 {
+        grid-template-columns: 1fr;
+    }
+    
+    .layout__grid {
+        gap: var(--spacing-4);
+    }
+    
+    .layout__card-header,
+    .layout__card-body,
+    .layout__card-footer {
+        padding: var(--spacing-4);
+    }
+    
+    .layout__page-title {
+        font-size: var(--font-size-xl);
+    }
+    
+    .layout__section {
+        margin-bottom: var(--spacing-6);
+    }
+}
+
+@media (max-width: 640px) {
+    .layout__content {
+        padding: var(--spacing-2);
+    }
+    
+    .layout__page-header {
+        margin-bottom: var(--spacing-4);
+        padding-bottom: var(--spacing-3);
+    }
+    
+    .layout__card-header,
+    .layout__card-body,
+    .layout__card-footer {
+        padding: var(--spacing-3);
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .layout {
+        background-color: white;
+    }
+    
+    .layout__card {
+        box-shadow: none;
+        border: 1px solid var(--color-gray-300);
+    }
+    
+    .layout__page-actions {
+        display: none;
+    }
+}

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 页面基础配置 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="基于Hadoop的集群管理系统 - 提供集群状态监控、日志查询、故障诊断和自动修复功能">
+    <meta name="keywords" content="Hadoop, 集群管理, 故障检测, 自动修复, 日志查询">
+    <meta name="author" content="集群管理系统开发团队">
+    
+    <!-- 页面标题 -->
+    <title>集群管理系统 - Hadoop 故障检测与自动恢复平台</title>
+    
+    <!-- 网站图标 -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
+    
+    <!-- 外部字体和图标库 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 主样式表 -->
+    <link rel="stylesheet" href="./styles/main.css">
+    
+    <!-- Tailwind CSS (临时保留，后续可移除) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ECharts 图表库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+</head>
+
+<body class="layout">
+    <!-- ==================== 顶部导航栏 ==================== -->
+    <header class="header" role="banner">
+        <!-- 左侧：Logo 和主导航菜单 -->
+        <div class="header__left">
+            <!-- 系统 Logo -->
+            <h1 class="header__logo">ClusterManager</h1>
+            
+            <!-- 主导航菜单 -->
+            <nav class="header__nav" role="navigation" aria-label="主导航">
+                <!-- 集群状态页面 - 对应用例图中的 UC_Status -->
+                <a href="#dashboard" class="header__nav-item header__nav-item--active" 
+                   data-page="dashboard" aria-current="page">
+                    集群状态
+                </a>
+                
+                <!-- 日志查询页面 - 对应用例图中的 UC_QueryLogs -->
+                <a href="#logs" class="header__nav-item" data-page="logs">
+                    日志查询
+                </a>
+                
+                <!-- 故障诊断页面 - 对应用例图中的 UC_Diagnose -->
+                <a href="#diagnosis" class="header__nav-item" data-page="diagnosis">
+                    故障诊断
+                </a>
+                
+                <!-- 自动修复页面 - 对应用例图中的 UC_Repair -->
+                <a href="#repair" class="header__nav-item" data-page="repair">
+                    自动修复
+                </a>
+                
+                <!-- 系统配置下拉菜单 -->
+                <div class="header__dropdown">
+                    <button class="header__nav-item header__dropdown-trigger" 
+                            aria-haspopup="true" aria-expanded="false">
+                        系统配置
+                        <i class="fas fa-chevron-down header__dropdown-icon" aria-hidden="true"></i>
+                    </button>
+                    <!-- 下拉菜单内容 -->
+                    <div class="header__dropdown-menu" role="menu">
+                        <!-- Flume 配置 - 对应用例图中的 UC_ConfigFlume -->
+                        <a href="#flume-config" class="header__dropdown-item" role="menuitem">
+                            Flume 配置
+                        </a>
+                        
+                        <!-- 告警配置 - 对应用例图中的 UC_ConfigAlert -->
+                        <a href="#alert-config" class="header__dropdown-item" role="menuitem">
+                            告警配置
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- 右侧：搜索框和用户菜单 -->
+        <div class="header__right">
+            <!-- 全局搜索框 -->
+            <div class="header__search">
+                <label for="global-search" class="u-sr-only">全局搜索</label>
+                <input type="search" 
+                       id="global-search"
+                       class="header__search-input" 
+                       placeholder="搜索节点、日志或配置..."
+                       aria-label="全局搜索">
+                <i class="fas fa-search header__search-icon" aria-hidden="true"></i>
+            </div>
+            
+            <!-- 用户头像和下拉菜单 -->
+            <div class="header__user-menu">
+                <button class="header__user-avatar" 
+                        aria-haspopup="true" 
+                        aria-expanded="false"
+                        aria-label="用户菜单">
+                    <i class="fas fa-user header__user-avatar-icon" aria-hidden="true"></i>
+                </button>
+                <!-- 用户菜单下拉内容 -->
+                <div class="header__user-dropdown" role="menu">
+                    <a href="#profile" class="header__user-dropdown-item" role="menuitem">
+                        个人主页
+                    </a>
+                    <a href="#account" class="header__user-dropdown-item" role="menuitem">
+                        账号管理
+                    </a>
+                    <a href="#clusters" class="header__user-dropdown-item" role="menuitem">
+                        集群管理
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== 主体内容区域 ==================== -->
+    <div class="layout__container">
+        <!-- 左侧边栏 - 角色权限控制模块 -->
+        <aside class="sidebar" role="complementary" aria-label="权限管理导航">
+            <!-- 侧边栏标题 -->
+            <div class="sidebar__header">
+                <h2 class="sidebar__title">角色权限控制</h2>
+            </div>
+            
+            <!-- 侧边栏导航菜单 -->
+            <nav class="sidebar__nav" role="navigation" aria-label="权限管理">
+                <a href="#user-management" class="sidebar__link">
+                    <i class="fas fa-users sidebar__icon" aria-hidden="true"></i>
+                    用户管理
+                </a>
+                <a href="#role-assignment" class="sidebar__link">
+                    <i class="fas fa-user-tag sidebar__icon" aria-hidden="true"></i>
+                    角色分配
+                </a>
+                <a href="#permission-policy" class="sidebar__link">
+                    <i class="fas fa-shield-alt sidebar__icon" aria-hidden="true"></i>
+                    权限策略
+                </a>
+                <a href="#audit-logs" class="sidebar__link">
+                    <i class="fas fa-clipboard-list sidebar__icon" aria-hidden="true"></i>
+                    审计日志
+                </a>
+            </nav>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="layout__main" role="main">
+            <div class="layout__content">
+                <!-- ==================== 仪表板部分 ==================== -->
+                <section id="dashboard" class="dashboard" aria-labelledby="dashboard-title">
+                    <!-- 页面标题和更新时间 -->
+                    <header class="dashboard__header">
+                        <h2 id="dashboard-title" class="dashboard__title">仪表板 - 集群概览</h2>
+                        <time class="dashboard__update-time" datetime="2023-10-15T14:30:00">
+                            更新时间: 2023年10月15日 14:30
+                        </time>
+                    </header>
+
+                    <!-- 集群状态统计卡片 -->
+                    <div class="dashboard__stats-grid" role="region" aria-label="集群状态统计">
+                        <!-- 总节点数统计卡片 -->
+                        <article class="dashboard__stat-card">
+                            <div class="dashboard__stat-card-content">
+                                <div class="dashboard__stat-card-info">
+                                    <h3 class="dashboard__stat-card-label">总节点数</h3>
+                                    <p class="dashboard__stat-card-value">24</p>
+                                </div>
+                                <div class="dashboard__stat-card-icon dashboard__stat-card-icon--primary">
+                                    <i class="fas fa-server" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </article>
+
+                        <!-- 健康节点统计卡片 -->
+                        <article class="dashboard__stat-card">
+                            <div class="dashboard__stat-card-content">
+                                <div class="dashboard__stat-card-info">
+                                    <h3 class="dashboard__stat-card-label">健康节点</h3>
+                                    <p class="dashboard__stat-card-value dashboard__stat-card-value--success">22</p>
+                                </div>
+                                <div class="dashboard__stat-card-icon dashboard__stat-card-icon--success">
+                                    <i class="fas fa-heartbeat" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </article>
+
+                        <!-- 警告节点统计卡片 -->
+                        <article class="dashboard__stat-card">
+                            <div class="dashboard__stat-card-content">
+                                <div class="dashboard__stat-card-info">
+                                    <h3 class="dashboard__stat-card-label">警告节点</h3>
+                                    <p class="dashboard__stat-card-value dashboard__stat-card-value--warning">1</p>
+                                </div>
+                                <div class="dashboard__stat-card-icon dashboard__stat-card-icon--warning">
+                                    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </article>
+
+                        <!-- 异常节点统计卡片 -->
+                        <article class="dashboard__stat-card">
+                            <div class="dashboard__stat-card-content">
+                                <div class="dashboard__stat-card-info">
+                                    <h3 class="dashboard__stat-card-label">异常节点</h3>
+                                    <p class="dashboard__stat-card-value dashboard__stat-card-value--error">1</p>
+                                </div>
+                                <div class="dashboard__stat-card-icon dashboard__stat-card-icon--error">
+                                    <i class="fas fa-times-circle" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+
+                    <!-- 监控图表区域 -->
+                    <div class="dashboard__charts-grid" role="region" aria-label="监控图表">
+                        <!-- CPU 使用率趋势图 -->
+                        <article class="dashboard__chart-card">
+                            <h3 class="dashboard__chart-title">CPU 使用率趋势</h3>
+                            <!-- ECharts 图表容器 -->
+                            <div id="cpuChart" class="dashboard__chart-container" 
+                                 role="img" aria-label="CPU使用率趋势图表"></div>
+                        </article>
+
+                        <!-- 内存使用情况图 -->
+                        <article class="dashboard__chart-card">
+                            <h3 class="dashboard__chart-title">内存使用情况</h3>
+                            <!-- ECharts 图表容器 -->
+                            <div id="memoryChart" class="dashboard__chart-container"
+                                 role="img" aria-label="内存使用情况图表"></div>
+                        </article>
+                    </div>
+
+                    <!-- 节点状态详情表格 -->
+                    <article class="dashboard__table-container" role="region" aria-labelledby="nodes-table-title">
+                        <!-- 表格标题 -->
+                        <header class="dashboard__table-header">
+                            <h3 id="nodes-table-title" class="dashboard__table-title">节点状态详情</h3>
+                        </header>
+                        
+                        <!-- 表格内容 -->
+                        <div class="u-overflow-x-auto">
+                            <table class="dashboard__table" role="table">
+                                <!-- 表格头部 -->
+                                <thead class="dashboard__table-head">
+                                    <tr>
+                                        <th class="dashboard__table-th" scope="col">节点名称</th>
+                                        <th class="dashboard__table-th" scope="col">IP 地址</th>
+                                        <th class="dashboard__table-th" scope="col">状态</th>
+                                        <th class="dashboard__table-th" scope="col">CPU 使用率</th>
+                                        <th class="dashboard__table-th" scope="col">内存使用</th>
+                                        <th class="dashboard__table-th" scope="col">最近更新</th>
+                                    </tr>
+                                </thead>
+                                
+                                <!-- 表格数据行 -->
+                                <tbody>
+                                    <!-- 节点 001 - 运行正常 -->
+                                    <tr class="dashboard__table-row">
+                                        <td class="dashboard__table-td">
+                                            <strong>node-001</strong>
+                                        </td>
+                                        <td class="dashboard__table-td">192.168.1.101</td>
+                                        <td class="dashboard__table-td">
+                                            <span class="dashboard__status-indicator">
+                                                <span class="dashboard__status-dot dashboard__status-dot--running" 
+                                                      aria-hidden="true"></span>
+                                                <span class="dashboard__status-text">运行中</span>
+                                            </span>
+                                        </td>
+                                        <td class="dashboard__table-td">45%</td>
+                                        <td class="dashboard__table-td">2.1 GB / 8 GB</td>
+                                        <td class="dashboard__table-td">
+                                            <time datetime="2023-10-15T14:28:00">2分钟前</time>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 节点 002 - 警告状态 -->
+                                    <tr class="dashboard__table-row">
+                                        <td class="dashboard__table-td">
+                                            <strong>node-002</strong>
+                                        </td>
+                                        <td class="dashboard__table-td">192.168.1.102</td>
+                                        <td class="dashboard__table-td">
+                                            <span class="dashboard__status-indicator">
+                                                <span class="dashboard__status-dot dashboard__status-dot--warning" 
+                                                      aria-hidden="true"></span>
+                                                <span class="dashboard__status-text">警告</span>
+                                            </span>
+                                        </td>
+                                        <td class="dashboard__table-td">82%</td>
+                                        <td class="dashboard__table-td">6.4 GB / 8 GB</td>
+                                        <td class="dashboard__table-td">
+                                            <time datetime="2023-10-15T14:25:00">5分钟前</time>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 节点 003 - 异常状态 -->
+                                    <tr class="dashboard__table-row">
+                                        <td class="dashboard__table-td">
+                                            <strong>node-003</strong>
+                                        </td>
+                                        <td class="dashboard__table-td">192.168.1.103</td>
+                                        <td class="dashboard__table-td">
+                                            <span class="dashboard__status-indicator">
+                                                <span class="dashboard__status-dot dashboard__status-dot--error" 
+                                                      aria-hidden="true"></span>
+                                                <span class="dashboard__status-text">异常</span>
+                                            </span>
+                                        </td>
+                                        <td class="dashboard__table-td">-</td>
+                                        <td class="dashboard__table-td">-</td>
+                                        <td class="dashboard__table-td">
+                                            <time datetime="2023-10-15T13:30:00">1小时前</time>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 日志查询部分 ==================== -->
+                <section id="logs" class="u-hidden layout__section" aria-labelledby="logs-title">
+                    <!-- 页面标题和导出按钮 -->
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="logs-title" class="layout__page-title">日志查询</h2>
+                            <p class="layout__page-subtitle">查询和分析系统日志信息</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary">
+                                <i class="fas fa-download btn__icon--left" aria-hidden="true"></i>
+                                导出日志
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- 搜索和筛选条件区域 -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">搜索条件</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <form class="layout__grid layout__grid--3" role="search">
+                                <!-- 日志级别选择 -->
+                                <div>
+                                    <label for="log-level" class="u-text-sm u-font-medium u-text-gray-700">
+                                        日志级别
+                                    </label>
+                                    <select id="log-level" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                                        <option value="">全部级别</option>
+                                        <option value="debug">DEBUG</option>
+                                        <option value="info">INFO</option>
+                                        <option value="warn">WARN</option>
+                                        <option value="error">ERROR</option>
+                                    </select>
+                                </div>
+
+                                <!-- 来源节点选择 -->
+                                <div>
+                                    <label for="source-node" class="u-text-sm u-font-medium u-text-gray-700">
+                                        来源节点
+                                    </label>
+                                    <select id="source-node" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                                        <option value="">全部节点</option>
+                                        <option value="node-001">node-001</option>
+                                        <option value="node-002">node-002</option>
+                                        <option value="node-003">node-003</option>
+                                    </select>
+                                </div>
+
+                                <!-- 时间范围选择 -->
+                                <div>
+                                    <label for="time-range" class="u-text-sm u-font-medium u-text-gray-700">
+                                        时间范围
+                                    </label>
+                                    <select id="time-range" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                                        <option value="1h">最近1小时</option>
+                                        <option value="6h">最近6小时</option>
+                                        <option value="24h">最近24小时</option>
+                                        <option value="7d">最近7天</option>
+                                        <option value="custom">自定义</option>
+                                    </select>
+                                </div>
+
+                                <!-- 搜索按钮 -->
+                                <div class="u-flex u-items-end">
+                                    <button type="submit" class="btn btn--primary u-w-full">
+                                        <i class="fas fa-search btn__icon--left" aria-hidden="true"></i>
+                                        搜索日志
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+
+                    <!-- 日志列表 -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">日志记录</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">时间</th>
+                                            <th class="dashboard__table-th" scope="col">级别</th>
+                                            <th class="dashboard__table-th" scope="col">来源</th>
+                                            <th class="dashboard__table-th" scope="col">消息</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">
+                                                <time datetime="2023-10-15T14:30:15">14:30:15</time>
+                                            </td>
+                                            <td class="dashboard__table-td">
+                                                <span class="u-text-error u-font-medium">ERROR</span>
+                                            </td>
+                                            <td class="dashboard__table-td">node-003</td>
+                                            <td class="dashboard__table-td">连接超时：无法连接到 DataNode</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">
+                                                <time datetime="2023-10-15T14:29:42">14:29:42</time>
+                                            </td>
+                                            <td class="dashboard__table-td">
+                                                <span class="u-text-warning u-font-medium">WARN</span>
+                                            </td>
+                                            <td class="dashboard__table-td">node-002</td>
+                                            <td class="dashboard__table-td">CPU 使用率过高：82%</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">
+                                                <time datetime="2023-10-15T14:28:33">14:28:33</time>
+                                            </td>
+                                            <td class="dashboard__table-td">
+                                                <span class="u-text-primary u-font-medium">INFO</span>
+                                            </td>
+                                            <td class="dashboard__table-td">node-001</td>
+                                            <td class="dashboard__table-td">心跳检测正常</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 故障诊断部分 ==================== -->
+                <section id="diagnosis" class="u-hidden layout__section" aria-labelledby="diagnosis-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="diagnosis-title" class="layout__page-title">故障诊断</h2>
+                            <p class="layout__page-subtitle">自动检测和诊断系统故障</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary">
+                                <i class="fas fa-play btn__icon--left" aria-hidden="true"></i>
+                                开始诊断
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- 诊断进度 -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">诊断进度</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="u-space-y-4">
+                                <div class="u-flex u-items-center u-gap-3">
+                                    <i class="fas fa-check-circle u-text-success" aria-hidden="true"></i>
+                                    <span>网络连接检查</span>
+                                    <span class="u-text-success u-text-sm">已完成</span>
+                                </div>
+                                <div class="u-flex u-items-center u-gap-3">
+                                    <i class="fas fa-spinner fa-spin u-text-primary" aria-hidden="true"></i>
+                                    <span>服务状态检查</span>
+                                    <span class="u-text-primary u-text-sm">进行中...</span>
+                                </div>
+                                <div class="u-flex u-items-center u-gap-3">
+                                    <i class="fas fa-clock u-text-gray-400" aria-hidden="true"></i>
+                                    <span>资源使用分析</span>
+                                    <span class="u-text-gray-500 u-text-sm">等待中</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 自动修复部分 ==================== -->
+                <section id="repair" class="u-hidden layout__section" aria-labelledby="repair-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="repair-title" class="layout__page-title">自动修复</h2>
+                            <p class="layout__page-subtitle">自动修复检测到的系统故障</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--danger">
+                                <i class="fas fa-tools btn__icon--left" aria-hidden="true"></i>
+                                执行修复
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- 修复建议 -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">修复建议</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="u-space-y-4">
+                                <div class="u-p-4 u-bg-error u-bg-opacity-10 u-border u-border-error u-rounded">
+                                    <h4 class="u-font-semibold u-text-error">严重：node-003 连接失败</h4>
+                                    <p class="u-text-sm u-text-gray-600 u-mt-1">
+                                        建议重启 DataNode 服务并检查网络配置
+                                    </p>
+                                </div>
+                                <div class="u-p-4 u-bg-warning u-bg-opacity-10 u-border u-border-warning u-rounded">
+                                    <h4 class="u-font-semibold u-text-warning">警告：node-002 CPU 使用率过高</h4>
+                                    <p class="u-text-sm u-text-gray-600 u-mt-1">
+                                        建议优化任务调度或增加计算资源
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript 脚本 -->
+    <script src="./utils/charts.js"></script>
+    <script src="./utils/navigation.js"></script>
+    <script src="./utils/responsive.js"></script>
+</body>
+</html>
