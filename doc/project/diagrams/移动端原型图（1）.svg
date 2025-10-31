@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="1600" xmlns="http://www.w3.org/2000/svg" style="background-color: white;">
+  <defs>
+    <style>
+      .title { font-family: 'Microsoft YaHei', Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+      .section-title { font-family: 'Microsoft YaHei', Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
+      .text { font-family: 'Microsoft YaHei', Arial, sans-serif; font-size: 12px; fill: #333; }
+      .small-text { font-family: 'Microsoft YaHei', Arial, sans-serif; font-size: 10px; fill: #666; }
+      .primary { fill: #1976D2; }
+      .success { fill: #4CAF50; }
+      .warning { fill: #FF9800; }
+      .danger { fill: #F44336; }
+      .light { fill: #F5F5F5; }
+      .white { fill: #FFFFFF; }
+      .border { stroke: #E0E0E0; stroke-width: 1; fill: none; }
+      .primary-border { stroke: #1976D2; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" class="title">故障检测系统 - 移动端原型设计</text>
+
+  <!-- Mobile Main Interface -->
+  <g transform="translate(50, 60)">
+    <rect x="0" y="0" width="300" height="500" class="border" fill="#FFFFFF"/>
+    <text x="150" y="20" text-anchor="middle" class="section-title">移动端主界面 (宽度: 375px)</text>
+    
+    <!-- Top Navigation -->
+    <rect x="10" y="30" width="280" height="40" class="primary" rx="4"/>
+    <text x="20" y="50" class="text" fill="white">☰</text>
+    <text x="150" y="50" text-anchor="middle" class="text" fill="white">故障检测</text>
+    <text x="270" y="50" text-anchor="end" class="text" fill="white">🔔</text>
+    
+    <!-- Sidebar (collapsed state) -->
+    <rect x="10" y="80" width="200" height="300" class="light" rx="4"/>
+    <text x="110" y="100" text-anchor="middle" class="text">可滑动侧边栏 (宽度: 280px)</text>
+    <text x="20" y="120" class="small-text">👤 admin - 运维工程师</text>
+    <text x="20" y="140" class="small-text">📊 仪表板</text>
+    <text x="20" y="160" class="small-text">🖥️ 集群监控</text>
+    <text x="20" y="180" class="small-text">📝 日志管理</text>
+    <text x="20" y="200" class="small-text">⚠️ 故障处理</text>
+    <text x="20" y="220" class="small-text">🔧 修复历史</text>
+    <text x="20" y="240" class="small-text">⚙️ 设置</text>
+    
+    <!-- Main Content Area -->
+    <rect x="220" y="80" width="70" height="300" class="border" rx="4"/>
+    <text x="255" y="100" text-anchor="middle" class="small-text">主内容区域</text>
+    <text x="255" y="120" text-anchor="middle" class="small-text">页面内容</text>
+    
+    <!-- Bottom Navigation -->
+    <rect x="10" y="390" width="280" height="50" class="light" rx="4"/>
+    <text x="45" y="410" text-anchor="middle" class="small-text">📊</text>
+    <text x="45" y="425" text-anchor="middle" class="small-text">仪表板</text>
+    <text x="115" y="410" text-anchor="middle" class="small-text">📝</text>
+    <text x="115" y="425" text-anchor="middle" class="small-text">日志</text>
+    <text x="185" y="410" text-anchor="middle" class="small-text">⚠️</text>
+    <text x="185" y="425" text-anchor="middle" class="small-text">故障</text>
+    <text x="255" y="410" text-anchor="middle" class="small-text">🔧</text>
+    <text x="255" y="425" text-anchor="middle" class="small-text">修复</text>
+  </g>
+
+  <!-- Mobile Dashboard -->
+  <g transform="translate(400, 60)">
+    <rect x="0" y="0" width="300" height="500" class="border" fill="#FFFFFF"/>
+    <text x="150" y="20" text-anchor="middle" class="section-title">移动端仪表板</text>
+    
+    <!-- Stats Cards -->
+    <rect x="10" y="40" width="280" height="60" class="success" rx="4"/>
+    <text x="20" y="55" class="text" fill="white">集群状态 🖥️</text>
+    <text x="20" y="70" class="small-text" fill="white">12/15 节点正常</text>
+    <text x="20" y="85" class="small-text" fill="white">点击查看详情 ></text>
+    
+    <rect x="10" y="110" width="280" height="60" class="warning" rx="4"/>
+    <text x="20" y="125" class="text" fill="white">活跃告警 ⚠️</text>
+    <text x="20" y="140" class="small-text" fill="white">3 个需要关注</text>
+    <text x="20" y="155" class="small-text" fill="white">点击查看详情 ></text>
+    
+    <rect x="10" y="180" width="280" height="60" class="danger" rx="4"/>
+    <text x="20" y="195" class="text" fill="white">今日故障 ❌</text>
+    <text x="20" y="210" class="small-text" fill="white">1 个已修复</text>
+    <text x="20" y="225" class="small-text" fill="white">点击查看详情 ></text>
+    
+    <!-- Quick Actions -->
+    <text x="20" y="270" class="text">快速操作</text>
+    <rect x="10" y="280" width="85" height="40" class="primary" rx="4"/>
+    <text x="52" y="295" text-anchor="middle" class="small-text" fill="white">🔍 快速</text>
+    <text x="52" y="310" text-anchor="middle" class="small-text" fill="white">诊断</text>
+    
+    <rect x="105" y="280" width="85" height="40" class="border" rx="4"/>
+    <text x="147" y="295" text-anchor="middle" class="small-text">📊 查看</text>
+    <text x="147" y="310" text-anchor="middle" class="small-text">日志</text>
+    
+    <rect x="200" y="280" width="90" height="40" class="border" rx="4"/>
+    <text x="245" y="295" text-anchor="middle" class="small-text">⚙️ 系统</text>
+    <text x="245" y="310" text-anchor="middle" class="small-text">状态</text>
+    
+    <!-- Charts Area -->
+    <text x="20" y="350" class="text">图表区域 (可横向滑动)</text>
+    <rect x="10" y="360" width="130" height="80" class="light" rx="4"/>
+    <text x="75" y="375" text-anchor="middle" class="small-text">CPU使用率</text>
+    <text x="75" y="390" text-anchor="middle" class="small-text">[小型图表]</text>
+    <text x="75" y="405" text-anchor="middle" class="small-text">📈 24h</text>
+    
+    <rect x="150" y="360" width="140" height="80" class="light" rx="4"/>
+    <text x="220" y="375" text-anchor="middle" class="small-text">内存使用率</text>
+    <text x="220" y="390" text-anchor="middle" class="small-text">[小型图表]</text>
+    <text x="220" y="405" text-anchor="middle" class="small-text">📊 24h</text>
+  </g>
+
+  <!-- Mobile Log Query -->
+  <g transform="translate(750, 60)">
+    <rect x="0" y="0" width="300" height="500" class="border" fill="#FFFFFF"/>
+    <text x="150" y="20" text-anchor="middle" class="section-title">移动端日志查询</text>
+    
+    <!-- Search Bar -->
+    <rect x="10" y="40" width="280" height="40" class="light" rx="4"/>
+    <text x="20" y="55" class="text">🔍 搜索日志...</text>
+    <text x="270" y="55" text-anchor="end" class="text">🔽 筛选</text>
+    
+    <!-- Filter Panel -->
+    <rect x="10" y="90" width="280" height="80" class="border" rx="4"/>
+    <text x="20" y="105" class="small-text">筛选面板 (可展开/收起)</text>
+    <text x="20" y="120" class="small-text">时间: 最近1小时 ▼</text>
+    <text x="20" y="135" class="small-text">级别: ERROR ▼</text>
+    <text x="20" y="150" class="small-text">主机: 全部 ▼</text>
+    <rect x="200" y="140" width="80" height="25" class="primary" rx="4"/>
+    <text x="240" y="155" text-anchor="middle" class="small-text" fill="white">应用筛选</text>
+    
+    <!-- Log List -->
+    <text x="20" y="190" class="text">日志列表 (卡片式)</text>
+    <rect x="10" y="200" width="280" height="80" class="danger" rx="4"/>
+    <text x="20" y="215" class="small-text" fill="white">🔴 ERROR | 10:35:22</text>
+    <text x="20" y="230" class="small-text" fill="white">node-1 | HDFS</text>
+    <text x="20" y="245" class="small-text" fill="white">Connection failed to...</text>
+    <text x="20" y="260" class="small-text" fill="white">[诊断] [详情]</text>
+    
+    <rect x="10" y="290" width="280" height="80" class="warning" rx="4"/>
+    <text x="20" y="305" class="small-text" fill="white">🟡 WARN | 10:34:15</text>
+    <text x="20" y="320" class="small-text" fill="white">node-2 | YARN</text>
+    <text x="20" y="335" class="small-text" fill="white">Memory usage high...</text>
+    <text x="20" y="350" class="small-text" fill="white">[诊断] [详情]</text>
+    
+    <!-- Load More -->
+    <rect x="10" y="380" width="280" height="40" class="border" rx="4"/>
+    <text x="150" y="405" text-anchor="middle" class="text">⬇️ 加载更多日志</text>
+  </g>
+
+  <!-- Mobile Diagnose -->
+  <g transform="translate(50, 600)">
+    <rect x="0" y="0" width="300" height="400" class="border" fill="#FFFFFF"/>
+    <text x="150" y="20" text-anchor="middle" class="section-title">移动端故障诊断</text>
+    
+    <!-- Diagnose Config -->
+    <rect x="10" y="40" width="280" height="100" class="light" rx="4"/>
+    <text x="20" y="55" class="text">诊断配置</text>
+    <text x="20" y="75" class="small-text">已选择: 3 条日志</text>
+    <text x="20" y="90" class="small-text">[查看选中日志]</text>
+    <text x="20" y="110" class="small-text">AI模型: GPT-4 ▼</text>
+    <text x="20" y="125" class="small-text">分析深度: ● 快速 ○ 深度 ○ 全面</text>
+    
+    <!-- Diagnose Button -->
+    <rect x="10" y="150" width="280" height="40" class="success" rx="4"/>
+    <text x="150" y="175" text-anchor="middle" class="text" fill="white">🚀 开始诊断</text>
+    
+    <!-- Progress -->
+    <rect x="10" y="200" width="280" height="120" class="border" rx="4"/>
+    <text x="150" y="220" text-anchor="middle" class="text">🔄 诊断进行中...</text>
+    <text x="150" y="240" text-anchor="middle" class="small-text">进度: ████████░░ 80%</text>
+    <text x="150" y="260" text-anchor="middle" class="small-text">当前状态: 正在分析日志模式</text>
+    <text x="150" y="280" text-anchor="middle" class="small-text">预计剩余: 30秒</text>
+    <text x="150" y="300" text-anchor="middle" class="small-text">[取消诊断]</text>
+  </g>
+
+  <!-- Mobile Repair -->
+  <g transform="translate(400, 600)">
+    <rect x="0" y="0" width="300" height="400" class="border" fill="#FFFFFF"/>
+    <text x="150" y="20" text-anchor="middle" class="section-title">移动端自动修复</text>
+    
+    <!-- Repair Plan -->
+    <rect x="10" y="40" width="280" height="120" class="light" rx="4"/>
+    <text x="20" y="55" class="text">修复方案 (可滚动)</text>
+    <text x="20" y="75" class="small-text">修复脚本预览:</text>
+    <text x="20" y="90" class="small-text">sudo systemctl restart network</text>
+    <text x="20" y="105" class="small-text">sudo hdfs dfsadmin -refresh</text>
+    <text x="20" y="125" class="small-text">影响范围: node-1</text>
+    <text x="20" y="140" class="small-text">预计时间: 2分钟</text>
+    <text x="20" y="155" class="small-text">[查看完整脚本]</text>
+    
+    <!-- Risk Confirmation -->
+    <rect x="10" y="170" width="280" height="100" class="warning" rx="4"/>
+    <text x="20" y="185" class="text" fill="white">⚠️ 风险等级: 中等</text>
+    <text x="20" y="205" class="small-text" fill="white">风险说明: 重启网络服务可能</text>
+    <text x="20" y="220" class="small-text" fill="white">短暂影响数据传输</text>
+    <text x="20" y="240" class="small-text" fill="white">☑️ 我已了解风险</text>
+    <text x="20" y="255" class="small-text" fill="white">☑️ 已通知相关人员</text>
+    
+    <!-- Execute Buttons -->
+    <rect x="10" y="280" width="130" height="40" class="success" rx="4"/>
+    <text x="75" y="305" text-anchor="middle" class="text" fill="white">🚀 执行修复</text>
+    
+    <rect x="150" y="280" width="140" height="40" class="border" rx="4"/>
+    <text x="220" y="305" text-anchor="middle" class="text">❌ 取消</text>
+  </g>
+
+  <!-- Mobile Modals -->
+  <g transform="translate(750, 600)">
+    <rect x="0" y="0" width="300" height="400" class="border" fill="#FFFFFF"/>
+    <text x="150" y="20" text-anchor="middle" class="section-title">移动端弹窗设计</text>
+    
+    <!-- Confirm Modal -->
+    <rect x="10" y="40" width="280" height="140" class="danger" rx="4"/>
+    <text x="150" y="60" text-anchor="middle" class="text" fill="white">⚠️ 高风险操作</text>
+    <text x="150" y="80" text-anchor="middle" class="small-text" fill="white">此操作可能影响整个集群</text>
+    <text x="150" y="95" text-anchor="middle" class="small-text" fill="white">建议在维护窗口期执行</text>
+    <text x="150" y="115" text-anchor="middle" class="small-text" fill="white">请输入确认码:</text>
+    <text x="150" y="130" text-anchor="middle" class="small-text" fill="white">[CONFIRM-2024]</text>
+    <text x="150" y="150" text-anchor="middle" class="small-text" fill="white">[取消] [确认执行]</text>
+    
+    <!-- Execution Modal -->
+    <rect x="10" y="190" width="280" height="140" class="border" rx="4"/>
+    <text x="150" y="210" text-anchor="middle" class="text">🔄 修复执行中</text>
+    <text x="150" y="230" text-anchor="middle" class="small-text">开始时间: 10:45:30</text>
+    <text x="150" y="245" text-anchor="middle" class="small-text">执行进度: ████░░░░░░ 40%</text>
+    <text x="150" y="265" text-anchor="middle" class="small-text">实时日志:</text>
+    <text x="150" y="280" text-anchor="middle" class="small-text">[10:45:31] 开始执行...</text>
+    <text x="150" y="295" text-anchor="middle" class="small-text">[10:45:32] 重启网络服务...</text>
+    <text x="150" y="310" text-anchor="middle" class="small-text">[停止执行] [最小化]</text>
+  </g>
+
+  <!-- Responsive Design Notes -->
+  <g transform="translate(50, 1050)">
+    <rect x="0" y="0" width="1000" height="300" class="light" rx="4"/>
+    <text x="500" y="25" text-anchor="middle" class="section-title">响应式设计要点</text>
+    
+    <text x="50" y="50" class="text">移动端设计要点:</text>
+    
+    <text x="50" y="80" class="text">1. 触摸友好:</text>
+    <text x="70" y="100" class="small-text">• 按钮最小44px高度</text>
+    <text x="70" y="115" class="small-text">• 间距充足，避免误触</text>
+    <text x="70" y="130" class="small-text">• 支持手势操作</text>
+    
+    <text x="300" y="80" class="text">2. 内容优化:</text>
+    <text x="320" y="100" class="small-text">• 关键信息优先显示</text>
+    <text x="320" y="115" class="small-text">• 长文本可展开/收起</text>
+    <text x="320" y="130" class="small-text">• 图表简化但保持可读性</text>
+    
+    <text x="550" y="80" class="text">3. 导航优化:</text>
+    <text x="570" y="100" class="small-text">• 汉堡菜单 + 底部导航</text>
+    <text x="570" y="115" class="small-text">• 面包屑导航简化</text>
+    <text x="570" y="130" class="small-text">• 返回按钮明显</text>
+    
+    <text x="50" y="170" class="text">4. 性能考虑:</text>
+    <text x="70" y="190" class="small-text">• 懒加载长列表</text>
+    <text x="70" y="205" class="small-text">• 图片压缩优化</text>
+    <text x="70" y="220" class="small-text">• 离线缓存关键数据</text>
+    
+    <text x="300" y="170" class="text">5. 交互优化:</text>
+    <text x="320" y="190" class="small-text">• 下拉刷新</text>
+    <text x="320" y="205" class="small-text">• 上拉加载更多</text>
+    <text x="320" y="220" class="small-text">• 滑动操作支持</text>
+  </g>
+</svg>
