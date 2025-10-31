@@ -1,0 +1,119 @@
+/* Main Stylesheet */
+/* 主样式表 - 导入所有模块化样式 */
+
+/* 基础样式 */
+@import './base/reset.css';
+@import './base/variables.css';
+
+/* 布局样式 */
+@import './layouts/main.css';
+@import './layouts/responsive.css';
+
+/* 组件样式 */
+@import './components/header.css';
+@import './components/sidebar.css';
+@import './components/dashboard.css';
+@import './components/buttons.css';
+
+/* 工具类 */
+@import './utils/utilities.css';
+
+/* 全局样式补充 */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family-base);
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 焦点样式 */
+*:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* 选择文本样式 */
+::selection {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: var(--color-gray-900);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--color-gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--color-gray-300);
+    border-radius: var(--border-radius-base);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-gray-400);
+}
+
+/* 打印样式 */
+@media print {
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .header,
+    .sidebar {
+        display: none !important;
+    }
+    
+    .layout__main {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+    :root {
+        --color-gray-50: #ffffff;
+        --color-gray-100: #f0f0f0;
+        --color-gray-200: #e0e0e0;
+        --color-gray-300: #c0c0c0;
+        --color-gray-400: #808080;
+        --color-gray-500: #606060;
+        --color-gray-600: #404040;
+        --color-gray-700: #202020;
+        --color-gray-800: #101010;
+        --color-gray-900: #000000;
+    }
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
