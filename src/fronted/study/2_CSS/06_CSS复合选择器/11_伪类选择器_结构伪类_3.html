@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伪类选择器_结构伪类_3</title>
+    <style>
+            /* 结构伪类
+    常用的：
+    1. :first-child 所有兄弟元素中的第一个。
+    2. :last-child 所有兄弟元素中的最后一个。
+    3. :nth-child(n) 所有兄弟元素中的第 n 个。
+    4. :first-of-type 所有同类型兄弟元素中的第一个。
+    5. :last-of-type 所有同类型兄弟元素中的最后一个。
+    6. :nth-of-type(n) 所有同类型兄弟元素中的 第n个 。
+    关于 n 的值：
+    1. 0 或 不写 ：什么都选不中 —— 几乎不用。
+    2. n ：选中所有子元素 —— 几乎不用。
+    3. 1~正无穷的整数 ：选中对应序号的子元素。
+    4. 2n 或 even ：选中序号为偶数的子元素。
+    5. 2n+1 或 odd ：选中序号为奇数的子元素。
+    6. -n+3 ：选中的是前 3 个。 */
+    
+        /* 选择只有一个子元素的span标签 */
+        /* span:only-child{
+            color: red;
+        } */
+        /* 选择只有一个span标签 */
+        span:only-of-type{
+            color: blue;
+        }
+        /* 选择根元素 */
+        :root{
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <div>  
+        <span>测试3</span>
+    </div>
+    <div>
+        <span>测试</span>
+        <p>赵六：99分</p>
+        <p>王二：88分</p>
+        <p>张三：77分</p>
+        <p>李四：66分</p>
+    </div>
+    <div>
+        <span>测试</span>
+        <span>测试1</span>
+        <p>赵六：99分</p>
+        <p>王二：88分</p>
+        <p>张三：77分</p>
+        <p>李四：66分</p>
+    </div>
+</body>
+</html>

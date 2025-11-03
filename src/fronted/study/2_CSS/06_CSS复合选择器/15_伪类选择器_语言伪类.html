@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伪类选择器_语言伪类</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #2980b9;
+            margin-top: 25px;
+        }
+
+        .intro {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .code-example {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-example::before {
+            content: "CSS";
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        /* 语言伪类样式 - 这是重点！ */
+        
+        /* 1. 基础语言选择 */
+        :lang(zh) {
+            font-family: 'Microsoft YaHei', '宋体', serif;
+        }
+
+        :lang(en) {
+            font-family: 'Times New Roman', serif;
+        }
+
+        :lang(ja) {
+            font-family: 'MS Gothic', 'Hiragino Sans', sans-serif;
+        }
+
+        /* 2. 不同语言的引号样式 */
+        :lang(zh) q {
+            quotes: '"' '"' ''' ''';
+        }
+
+        :lang(en) q {
+            quotes: '"' '"' ''' ''';
+        }
+
+        :lang(fr) q {
+            quotes: '«' '»' '"' '"';
+        }
+
+        :lang(de) q {
+            quotes: '„' '"' '‚' ''';
+        }
+
+        /* 3. 语言特定的颜色和样式 */
+        .lang-demo:lang(zh) {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .lang-demo:lang(en) {
+            background: linear-gradient(45deg, #48cae4, #023e8a);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .lang-demo:lang(fr) {
+            background: linear-gradient(45deg, #0077be, #ffffff, #ce1126);
+            color: #2c3e50;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .lang-demo:lang(ja) {
+            background: linear-gradient(45deg, #bc002d, #ffffff);
+            color: #bc002d;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #bc002d;
+        }
+
+        .lang-demo:lang(de) {
+            background: linear-gradient(45deg, #000000, #dd0000, #ffce00);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* 4. 语言方向支持 */
+        :lang(ar) {
+            direction: rtl;
+            text-align: right;
+            background: linear-gradient(45deg, #00a86b, #ffffff);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        /* 5. 语言特定的字体大小 */
+        .text-demo:lang(zh) {
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        .text-demo:lang(en) {
+            font-size: 16px;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+
+        .text-demo:lang(ja) {
+            font-size: 17px;
+            line-height: 1.7;
+        }
+
+        /* 6. 组合选择器示例 */
+        p:lang(zh).important {
+            border: 3px solid #e74c3c;
+            background: #fadbd8;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        p:lang(en).important {
+            border: 3px solid #27ae60;
+            background: #d5f4e6;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* 交互式语言切换按钮 */
+        .lang-switcher {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .lang-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+
+        .lang-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .lang-btn.active {
+            background: #e74c3c;
+            transform: scale(1.05);
+        }
+
+        /* 实际应用示例 */
+        .practical-example {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .tip {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            .lang-btn {
+                display: block;
+                margin: 10px auto;
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSS语言伪类选择器 (:lang()) 详解</h1>
+        
+        <div class="intro">
+            <strong>🌍 什么是语言伪类？</strong><br>
+            <code>:lang()</code> 伪类选择器用于根据元素的语言属性来选择元素。它主要检查元素的 <code>lang</code> 属性值，可以为不同语言的内容应用不同的样式，这对于多语言网站非常有用。
+        </div>
+
+        <h2>1. 基础语法</h2>
+        <div class="code-example">
+/* 基本语法 */
+:lang(language-code) {
+    /* 样式属性 */
+}
+
+/* 示例 */
+:lang(zh) { font-family: '微软雅黑'; }
+:lang(en) { font-family: 'Arial'; }
+:lang(fr) { font-family: 'Times New Roman'; }
+        </div>
+
+        <h2>2. 语言代码示例</h2>
+        <p>常见的语言代码：</p>
+        <ul>
+            <li><code>zh</code> - 中文</li>
+            <li><code>en</code> - 英语</li>
+            <li><code>fr</code> - 法语</li>
+            <li><code>de</code> - 德语</li>
+            <li><code>ja</code> - 日语</li>
+            <li><code>ar</code> - 阿拉伯语</li>
+        </ul>
+
+        <h2>3. 实际效果演示</h2>
+        
+        <h3>3.1 不同语言的背景和字体</h3>
+        <div class="lang-demo" lang="zh">
+            <strong>中文内容：</strong>这是中文段落，使用了专门为中文设计的样式，包括字体、颜色和背景。
+        </div>
+        
+        <div class="lang-demo" lang="en">
+            <strong>English Content:</strong> This is an English paragraph with styles specifically designed for English text, including fonts, colors, and backgrounds.
+        </div>
+        
+        <div class="lang-demo" lang="fr">
+            <strong>Contenu français:</strong> Ceci est un paragraphe français avec des styles spécialement conçus pour le texte français.
+        </div>
+        
+        <div class="lang-demo" lang="ja">
+            <strong>日本語コンテンツ：</strong>これは日本語の段落で、日本語テキスト専用に設計されたスタイルが適用されています。
+        </div>
+        
+        <div class="lang-demo" lang="de">
+            <strong>Deutscher Inhalt:</strong> Dies ist ein deutscher Absatz mit Stilen, die speziell für deutschen Text entwickelt wurden.
+        </div>
+
+        <h3>3.2 引号样式差异</h3>
+        <p lang="zh">中文引号：<q>这是中文的引用文本</q></p>
+        <p lang="en">English quotes: <q>This is English quoted text</q></p>
+        <p lang="fr">Guillemets français: <q>Ceci est un texte cité en français</q></p>
+        <p lang="de">Deutsche Anführungszeichen: <q>Dies ist ein deutscher zitierter Text</q></p>
+
+        <h3>3.3 文本样式差异</h3>
+        <div class="text-demo" lang="zh">
+            中文文本：语言伪类可以为不同语言设置不同的字体大小、行高和字间距，以获得最佳的阅读体验。
+        </div>
+        
+        <div class="text-demo" lang="en">
+            English text: Language pseudo-classes can set different font sizes, line heights, and letter spacing for different languages to achieve optimal reading experience.
+        </div>
+        
+        <div class="text-demo" lang="ja">
+            日本語テキスト：言語疑似クラスは、異なる言語に対して異なるフォントサイズ、行の高さ、文字間隔を設定できます。
+        </div>
+
+        <h2>4. 组合选择器示例</h2>
+        <p class="important" lang="zh">
+            <strong>重要的中文内容：</strong>这个段落同时使用了类选择器和语言伪类，展示了如何组合使用不同的选择器。
+        </p>
+        
+        <p class="important" lang="en">
+            <strong>Important English Content:</strong> This paragraph uses both class selector and language pseudo-class, demonstrating how to combine different selectors.
+        </p>
+
+        <h2>5. CSS代码示例</h2>
+        <div class="code-example">
+/* 1. 基础语言选择 */
+:lang(zh) {
+    font-family: 'Microsoft YaHei', '宋体', serif;
+}
+
+:lang(en) {
+    font-family: 'Times New Roman', serif;
+}
+
+/* 2. 引号样式 */
+:lang(zh) q {
+    quotes: '"' '"' ''' ''';
+}
+
+:lang(fr) q {
+    quotes: '«' '»' '"' '"';
+}
+
+/* 3. 组合选择器 */
+p:lang(zh).important {
+    border: 3px solid #e74c3c;
+    background: #fadbd8;
+}
+
+/* 4. 右到左语言支持 */
+:lang(ar) {
+    direction: rtl;
+    text-align: right;
+}
+        </div>
+
+        <h2>6. 实际应用场景</h2>
+        <div class="practical-example">
+            <h3>🌐 多语言网站</h3>
+            <ul>
+                <li><strong>字体优化：</strong>为不同语言选择最适合的字体</li>
+                <li><strong>排版调整：</strong>调整行高、字间距等排版参数</li>
+                <li><strong>文化适配：</strong>根据文化习惯调整颜色和布局</li>
+                <li><strong>阅读方向：</strong>支持从右到左的语言（如阿拉伯语）</li>
+            </ul>
+        </div>
+
+        <div class="practical-example">
+            <h3>📝 内容管理系统</h3>
+            <ul>
+                <li><strong>编辑器样式：</strong>为不同语言的内容提供合适的编辑环境</li>
+                <li><strong>预览模式：</strong>在预览时应用语言特定的样式</li>
+                <li><strong>打印样式：</strong>为不同语言优化打印效果</li>
+            </ul>
+        </div>
+
+        <h2>7. 使用技巧与注意事项</h2>
+        
+        <div class="tip">
+            <strong>💡 实用技巧：</strong><br>
+            • 可以使用 <code>:lang(zh-CN)</code> 来更精确地指定地区<br>
+            • 结合媒体查询实现响应式多语言设计<br>
+            • 使用CSS变量来管理多语言主题色彩<br>
+            • 考虑字体回退方案，确保在各种环境下都能正常显示
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ 注意事项：</strong><br>
+            • <code>:lang()</code> 会继承父元素的语言设置<br>
+            • 如果没有明确的 <code>lang</code> 属性，会使用浏览器的默认语言<br>
+            • 语言代码不区分大小写，但建议使用小写<br>
+            • 某些浏览器可能对语言代码的支持有差异
+        </div>
+
+        <h2>8. 浏览器兼容性</h2>
+        <div class="practical-example">
+            <p><strong>支持情况：</strong></p>
+            <ul>
+                <li>✅ Chrome: 完全支持</li>
+                <li>✅ Firefox: 完全支持</li>
+                <li>✅ Safari: 完全支持</li>
+                <li>✅ Edge: 完全支持</li>
+                <li>⚠️ IE9+: 基础支持</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>🎉 恭喜！你已经掌握了CSS语言伪类选择器</h3>
+            <p>现在你可以为多语言网站创建更好的用户体验了！</p>
+            <p style="color: #666; font-size: 14px;">
+                语言伪类是国际化网站开发的重要工具，合理使用可以大大提升用户体验。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 简单的语言切换演示（可选）
+        function setLanguage(lang) {
+            const demos = document.querySelectorAll('.lang-demo');
+            demos.forEach(demo => {
+                if (demo.getAttribute('lang') === lang) {
+                    demo.style.display = 'block';
+                    demo.style.animation = 'fadeIn 0.5s ease-in';
+                } else {
+                    demo.style.display = 'none';
+                }
+            });
+        }
+
+        // 添加淡入动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

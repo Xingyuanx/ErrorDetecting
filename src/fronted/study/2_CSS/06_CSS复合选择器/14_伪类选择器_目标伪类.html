@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伪类选择器_目标伪类</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+
+        .nav {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+            padding: 8px 15px;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+
+        .nav a:hover {
+            background-color: #2c3e50;
+        }
+
+        /* 目标伪类样式 - 这是重点！ */
+        .section {
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+
+        /* 当元素成为目标时的样式 */
+        .section:target {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .section:target h3 {
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* 高亮显示的目标指示器 */
+        .section:target::before {
+            content: "🎯 当前目标";
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* 代码展示样式 */
+        .code-example {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            background: #f39c12;
+            color: #2c3e50;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        /* 实际应用示例 - 标签页效果 */
+        .tab-container {
+            margin: 30px 0;
+        }
+
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-nav a {
+            padding: 12px 20px;
+            text-decoration: none;
+            color: #666;
+            border: 2px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-top: none;
+            background: white;
+        }
+
+        /* 使用:target显示对应的标签页内容 */
+        .tab-content:target {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        /* 当标签页成为目标时，对应的导航按钮也高亮 */
+        #tab1:target ~ .tab-nav a[href="#tab1"],
+        #tab2:target ~ .tab-nav a[href="#tab2"],
+        #tab3:target ~ .tab-nav a[href="#tab3"] {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tip {
+            background: #d5f4e6;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .warning {
+            background: #fdf2e9;
+            border-left: 4px solid #e67e22;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSS目标伪类选择器 (:target) 详解</h1>
+        
+        <div class="tip">
+            <strong>💡 什么是目标伪类？</strong><br>
+            :target 伪类选择器用于选择当前活动的锚点目标元素。当URL中的片段标识符（#后面的部分）与页面中某个元素的id匹配时，该元素就会被:target选中。
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="nav">
+            <a href="#basic">基础概念</a>
+            <a href="#syntax">语法说明</a>
+            <a href="#example">实际示例</a>
+            <a href="#application">实际应用</a>
+            <a href="#tips">使用技巧</a>
+        </nav>
+
+        <!-- 基础概念部分 -->
+        <section id="basic" class="section">
+            <h3>1. 基础概念</h3>
+            <p><strong>目标伪类(:target)</strong> 是CSS3中引入的伪类选择器，它可以选择当前URL片段标识符指向的元素。</p>
+            
+            <h4>工作原理：</h4>
+            <ul>
+                <li>当用户点击链接 <code>&lt;a href="#section1"&gt;</code> 时</li>
+                <li>浏览器会跳转到 <code>id="section1"</code> 的元素</li>
+                <li>此时该元素就会匹配 <code>:target</code> 伪类</li>
+                <li>可以为这个"目标"元素应用特殊样式</li>
+            </ul>
+
+            <div class="code-example">
+/* 基本语法 */
+:target {
+    background-color: yellow;
+    border: 2px solid red;
+}
+
+/* 选择特定id的目标元素 */
+#section1:target {
+    color: blue;
+}
+            </div>
+        </section>
+
+        <!-- 语法说明部分 -->
+        <section id="syntax" class="section">
+            <h3>2. 语法说明</h3>
+            
+            <h4>基本语法：</h4>
+            <div class="code-example">
+:target {
+    /* 样式属性 */
+}
+
+/* 结合其他选择器 */
+.content:target {
+    /* 样式属性 */
+}
+
+#specific-id:target {
+    /* 样式属性 */
+}
+            </div>
+
+            <h4>HTML结构：</h4>
+            <div class="code-example">
+&lt;!-- 导航链接 --&gt;
+&lt;a href="#section1"&gt;跳转到第一部分&lt;/a&gt;
+&lt;a href="#section2"&gt;跳转到第二部分&lt;/a&gt;
+
+&lt;!-- 目标元素 --&gt;
+&lt;div id="section1"&gt;第一部分内容&lt;/div&gt;
+&lt;div id="section2"&gt;第二部分内容&lt;/div&gt;
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ 注意事项：</strong><br>
+                • 只有具有id属性的元素才能成为:target的目标<br>
+                • URL中必须包含对应的片段标识符（#id）<br>
+                • 一次只能有一个元素处于:target状态
+            </div>
+        </section>
+
+        <!-- 实际示例部分 -->
+        <section id="example" class="section">
+            <h3>3. 实际示例</h3>
+            <p>点击上面导航中的不同链接，观察各个部分的样式变化！</p>
+            
+            <h4>当前示例的CSS代码：</h4>
+            <div class="code-example">
+.section:target {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.02);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+}
+
+.section:target::before {
+    content: "🎯 当前目标";
+    /* 更多样式... */
+}
+            </div>
+
+            <p>这个示例展示了：</p>
+            <ul>
+                <li>背景渐变色变化</li>
+                <li>文字颜色改变</li>
+                <li>轻微的缩放效果</li>
+                <li>添加阴影</li>
+                <li>使用::before伪元素添加指示器</li>
+            </ul>
+        </section>
+
+        <!-- 实际应用部分 -->
+        <section id="application" class="section">
+            <h3>4. 实际应用 - 纯CSS标签页</h3>
+            <p>下面是一个使用:target实现的纯CSS标签页效果：</p>
+
+            <div class="tab-container">
+                <!-- 标签页内容 -->
+                <div id="tab1" class="tab-content">
+                    <h4>标签页 1</h4>
+                    <p>这是第一个标签页的内容。使用:target伪类可以实现纯CSS的标签页切换效果，无需JavaScript！</p>
+                    <p>优点：轻量级、无依赖、SEO友好</p>
+                </div>
+                
+                <div id="tab2" class="tab-content">
+                    <h4>标签页 2</h4>
+                    <p>这是第二个标签页的内容。:target伪类让我们可以根据URL的变化来显示不同的内容。</p>
+                    <p>适用场景：FAQ页面、产品介绍、文档导航等</p>
+                </div>
+                
+                <div id="tab3" class="tab-content">
+                    <h4>标签页 3</h4>
+                    <p>这是第三个标签页的内容。结合CSS动画，可以创造出丰富的交互效果。</p>
+                    <p>扩展性：可以轻松添加更多标签页，只需要添加对应的HTML和CSS</p>
+                </div>
+
+                <!-- 标签页导航 -->
+                <div class="tab-nav">
+                    <a href="#tab1">标签页 1</a>
+                    <a href="#tab2">标签页 2</a>
+                    <a href="#tab3">标签页 3</a>
+                </div>
+            </div>
+
+            <h4>实现代码：</h4>
+            <div class="code-example">
+/* 默认隐藏所有标签页内容 */
+.tab-content {
+    display: none;
+}
+
+/* 当成为目标时显示内容 */
+.tab-content:target {
+    display: block;
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* 高亮对应的导航按钮 */
+#tab1:target ~ .tab-nav a[href="#tab1"] {
+    background: #3498db;
+    color: white;
+}
+            </div>
+        </section>
+
+        <!-- 使用技巧部分 -->
+        <section id="tips" class="section">
+            <h3>5. 使用技巧与最佳实践</h3>
+            
+            <h4>🎯 常见应用场景：</h4>
+            <ul>
+                <li><strong>单页应用导航</strong> - 实现页面内跳转和高亮</li>
+                <li><strong>FAQ折叠面板</strong> - 点击问题显示答案</li>
+                <li><strong>图片画廊</strong> - 点击缩略图显示大图</li>
+                <li><strong>模态框</strong> - 纯CSS实现弹窗效果</li>
+                <li><strong>手风琴效果</strong> - 展开/收起内容区域</li>
+            </ul>
+
+            <h4>💡 实用技巧：</h4>
+            <div class="code-example">
+/* 1. 平滑滚动到目标元素 */
+html {
+    scroll-behavior: smooth;
+}
+
+/* 2. 目标元素的进入动画 */
+:target {
+    animation: highlight 1s ease-in-out;
+}
+
+@keyframes highlight {
+    0% { background-color: transparent; }
+    50% { background-color: #ffeb3b; }
+    100% { background-color: transparent; }
+}
+
+/* 3. 结合媒体查询实现响应式 */
+@media (max-width: 768px) {
+    :target {
+        font-size: 1.2em;
+        padding: 20px;
+    }
+}
+            </div>
+
+            <h4>⚠️ 注意事项：</h4>
+            <ul>
+                <li>:target只在有片段标识符的URL中生效</li>
+                <li>页面刷新后:target状态会保持</li>
+                <li>可以使用JavaScript配合实现更复杂的交互</li>
+                <li>考虑无障碍访问，为键盘用户提供合适的焦点样式</li>
+            </ul>
+
+            <div class="tip">
+                <strong>🚀 进阶提示：</strong><br>
+                可以结合 <code>:not(:target)</code> 来为非目标元素设置样式，或者使用 <code>:target + 元素</code> 来影响目标元素的兄弟元素。
+            </div>
+        </section>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #ecf0f1; border-radius: 5px;">
+            <h3>🎉 恭喜！你已经掌握了CSS目标伪类选择器</h3>
+            <p>现在你可以使用:target创建各种有趣的纯CSS交互效果了！</p>
+            <p><a href="#basic" style="color: #3498db;">回到顶部重新学习</a></p>
+        </div>
+    </div>
+</body>
+</html>

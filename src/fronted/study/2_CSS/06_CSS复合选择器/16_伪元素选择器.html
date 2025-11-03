@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伪元素选择器详解</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #2980b9;
+            margin-top: 25px;
+        }
+
+        .intro {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .code-example {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-example::before {
+            content: "CSS";
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        /* 伪元素选择器实例演示 */
+
+        /* 1. ::first-letter - 首字母样式 */
+        .first-letter-demo::first-letter {
+            font-size: 3em;
+            font-weight: bold;
+            color: #e74c3c;
+            float: left;
+            line-height: 1;
+            margin-right: 8px;
+            margin-top: 4px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* 2. ::first-line - 首行样式 */
+        .first-line-demo::first-line {
+            font-weight: bold;
+            color: #2980b9;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 3. ::selection - 选中文本样式 */
+        .selection-demo::selection {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .selection-demo::-moz-selection {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* 4. ::placeholder - 占位符样式 */
+        .placeholder-demo::placeholder {
+            color: #95a5a6;
+            font-style: italic;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .placeholder-demo::-webkit-input-placeholder {
+            color: #95a5a6;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        .placeholder-demo::-moz-placeholder {
+            color: #95a5a6;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        /* 5. ::before - 前置内容 */
+        .before-demo::before {
+            content: "🌟 ";
+            color: #f39c12;
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
+
+        .quote-before::before {
+            content: "\201C";
+            font-size: 4em;
+            color: #3498db;
+            position: absolute;
+            left: -20px;
+            top: -10px;
+            font-family: Georgia, serif;
+        }
+
+        /* 6. ::after - 后置内容 */
+        .after-demo::after {
+            content: " ✨";
+            color: #9b59b6;
+            font-size: 1.2em;
+            margin-left: 5px;
+        }
+
+        .quote-after::after {
+            content: "\201D";
+            font-size: 4em;
+            color: #3498db;
+            position: absolute;
+            right: -20px;
+            bottom: -30px;
+            font-family: Georgia, serif;
+        }
+
+        /* 复杂的before/after应用 */
+        .card {
+            position: relative;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            border-radius: 12px;
+            z-index: -1;
+            animation: gradient-shift 3s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* 按钮特效 */
+        .fancy-button {
+            position: relative;
+            display: inline-block;
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .fancy-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .fancy-button:hover::before {
+            left: 100%;
+        }
+
+        .fancy-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        /* 输入框样式 */
+        .input-demo {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            margin: 10px 0;
+        }
+
+        .input-demo:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        /* 演示区域样式 */
+        .demo-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .demo-text {
+            font-size: 16px;
+            line-height: 1.8;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .quote-container {
+            position: relative;
+            padding: 30px 40px;
+            margin: 20px 0;
+            background: #ecf0f1;
+            border-radius: 8px;
+            font-style: italic;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        /* 提示框样式 */
+        .tip {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        /* 交互式演示 */
+        .interactive-demo {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .highlight-text {
+            font-size: 18px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: pointer;
+            user-select: text;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            .quote-container {
+                padding: 20px 25px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSS伪元素选择器详解</h1>
+        
+        <div class="intro">
+            <strong>✨ 什么是伪元素选择器？</strong><br>
+            伪元素选择器用于选中元素中的特殊位置或创建虚拟元素。它们以双冒号 <code>::</code> 开头，可以让我们对元素的特定部分应用样式，或者在元素前后插入内容。
+        </div>
+
+        <h2>1. 基础语法</h2>
+        <div class="code-example">
+/* 伪元素基本语法 */
+selector::pseudo-element {
+    /* 样式属性 */
+}
+
+/* 常用伪元素 */
+::first-letter  /* 首字母 */
+::first-line    /* 首行 */
+::selection     /* 选中的文本 */
+::placeholder   /* 占位符文本 */
+::before        /* 元素前插入内容 */
+::after         /* 元素后插入内容 */
+        </div>
+
+        <h2>2. ::first-letter - 首字母样式</h2>
+        <div class="demo-section">
+            <h3>效果演示：</h3>
+            <div class="demo-text first-letter-demo">
+                这是一个演示首字母样式的段落。注意看第一个字母"这"的样式，它比其他文字更大、更醒目，这就是::first-letter伪元素的效果。这种效果常用于杂志、报纸等出版物的段落开头。
+            </div>
+            
+            <div class="code-example">
+.first-letter-demo::first-letter {
+    font-size: 3em;
+    font-weight: bold;
+    color: #e74c3c;
+    float: left;
+    line-height: 1;
+    margin-right: 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+            </div>
+        </div>
+
+        <h2>3. ::first-line - 首行样式</h2>
+        <div class="demo-section">
+            <h3>效果演示：</h3>
+            <div class="demo-text first-line-demo">
+                这是演示首行样式的段落，第一行文字会有特殊的样式效果。
+                从第二行开始，文字就恢复正常样式了。::first-line伪元素只影响元素的第一行文本，
+                无论窗口大小如何变化，始终只对第一行生效。
+            </div>
+            
+            <div class="code-example">
+.first-line-demo::first-line {
+    font-weight: bold;
+    color: #2980b9;
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+            </div>
+        </div>
+
+        <h2>4. ::selection - 选中文本样式</h2>
+        <div class="demo-section">
+            <h3>效果演示：</h3>
+            <div class="interactive-demo">
+                <p><strong>请用鼠标选中下面的文字，看看效果：</strong></p>
+                <div class="highlight-text selection-demo">
+                    选中这段文字试试看！你会发现选中的文字有特殊的背景色和文字颜色，这就是::selection伪元素的魅力。它可以让网站的文本选择体验更加个性化和美观。
+                </div>
+            </div>
+            
+            <div class="code-example">
+.selection-demo::selection {
+    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Firefox兼容性 */
+.selection-demo::-moz-selection {
+    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    color: white;
+}
+            </div>
+        </div>
+
+        <h2>5. ::placeholder - 占位符样式</h2>
+        <div class="demo-section">
+            <h3>效果演示：</h3>
+            <input type="text" class="input-demo placeholder-demo" placeholder="这是一个自定义样式的占位符文本...">
+            <input type="email" class="input-demo placeholder-demo" placeholder="请输入您的邮箱地址">
+            <textarea class="input-demo placeholder-demo" placeholder="请在这里输入您的留言内容..." rows="3"></textarea>
+            
+            <div class="code-example">
+.placeholder-demo::placeholder {
+    color: #95a5a6;
+    font-style: italic;
+    opacity: 0.8;
+    font-size: 14px;
+}
+
+/* 浏览器兼容性 */
+.placeholder-demo::-webkit-input-placeholder {
+    color: #95a5a6;
+    font-style: italic;
+}
+            </div>
+        </div>
+
+        <h2>6. ::before - 前置内容</h2>
+        <div class="demo-section">
+            <h3>效果演示：</h3>
+            <p class="before-demo">这段文字前面会自动添加一个星星图标</p>
+            <p class="before-demo">每个使用了before伪元素的段落都会有这个效果</p>
+            
+            <div class="quote-container quote-before">
+                这是一个带有装饰性引号的引用文本，左上角的引号是通过::before伪元素添加的。
+            </div>
+            
+            <div class="code-example">
+.before-demo::before {
+    content: "🌟 ";
+    color: #f39c12;
+    font-size: 1.2em;
+    margin-right: 5px;
+}
+
+.quote-before::before {
+    content: """;
+    font-size: 4em;
+    color: #3498db;
+    position: absolute;
+    left: -20px;
+    top: -10px;
+    font-family: Georgia, serif;
+}
+            </div>
+        </div>
+
+        <h2>7. ::after - 后置内容</h2>
+        <div class="demo-section">
+            <h3>效果演示：</h3>
+            <p class="after-demo">这段文字后面会自动添加一个闪光图标</p>
+            <p class="after-demo">::after伪元素在文字末尾添加装饰</p>
+            
+            <div class="quote-container quote-after">
+                这是一个带有装饰性引号的引用文本，右下角的引号是通过::after伪元素添加的。
+            </div>
+            
+            <div class="code-example">
+.after-demo::after {
+    content: " ✨";
+    color: #9b59b6;
+    font-size: 1.2em;
+    margin-left: 5px;
+}
+
+.quote-after::after {
+    content: """;
+    font-size: 4em;
+    color: #3498db;
+    position: absolute;
+    right: -20px;
+    bottom: -30px;
+    font-family: Georgia, serif;
+}
+            </div>
+        </div>
+
+        <h2>8. 复杂应用示例</h2>
+        <div class="demo-section">
+            <h3>8.1 渐变边框卡片</h3>
+            <div class="card">
+                <h4>炫酷的渐变边框</h4>
+                <p>这个卡片使用::before伪元素创建了一个动态渐变边框效果。边框会持续变化颜色，营造出科技感十足的视觉效果。</p>
+            </div>
+            
+            <h3>8.2 按钮光效</h3>
+            <a href="#" class="fancy-button">悬停看光效</a>
+            <a href="#" class="fancy-button">炫酷按钮</a>
+            
+            <div class="code-example">
+.fancy-button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.fancy-button:hover::before {
+    left: 100%;
+}
+            </div>
+        </div>
+
+        <h2>9. 使用技巧与注意事项</h2>
+        
+        <div class="tip">
+            <strong>💡 实用技巧：</strong><br>
+            • <code>::before</code> 和 <code>::after</code> 必须设置 <code>content</code> 属性才能显示<br>
+            • 伪元素默认是行内元素，需要时可以设置 <code>display</code> 属性<br>
+            • 可以结合 <code>position</code> 属性创建复杂的装饰效果<br>
+            • 使用 <code>attr()</code> 函数可以获取元素的属性值作为内容
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ 注意事项：</strong><br>
+            • 伪元素不会出现在DOM中，无法通过JavaScript直接操作<br>
+            • <code>::first-letter</code> 和 <code>::first-line</code> 只能用于块级元素<br>
+            • <code>::selection</code> 只能设置少数几个CSS属性（颜色、背景等）<br>
+            • 不同浏览器对伪元素的支持可能有差异，需要添加前缀
+        </div>
+
+        <h2>10. 浏览器兼容性</h2>
+        <div class="demo-section">
+            <p><strong>支持情况：</strong></p>
+            <ul>
+                <li>✅ <code>::before</code> / <code>::after</code>: 所有现代浏览器</li>
+                <li>✅ <code>::first-letter</code> / <code>::first-line</code>: 所有现代浏览器</li>
+                <li>✅ <code>::selection</code>: Chrome, Firefox, Safari (需要-moz-前缀)</li>
+                <li>✅ <code>::placeholder</code>: 现代浏览器 (需要厂商前缀)</li>
+                <li>⚠️ IE9+: 使用单冒号语法 <code>:before</code>, <code>:after</code></li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>🎉 恭喜！你已经掌握了CSS伪元素选择器</h3>
+            <p>现在你可以创建更丰富、更有创意的网页效果了！</p>
+            <p style="color: #666; font-size: 14px;">
+                伪元素是CSS中最强大的功能之一，合理使用可以大大提升网页的视觉效果和用户体验。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

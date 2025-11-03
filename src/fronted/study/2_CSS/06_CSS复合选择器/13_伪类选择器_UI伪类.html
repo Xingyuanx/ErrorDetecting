@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伪类选择器_UI伪类</title>
+    <style>
+        /* 选择被选中的复选框 */
+        input:checked{
+            width: 20px;
+            height: 20px;
+        }
+        /* 选择被选中的文本框 */
+        input:enabled{
+            background-color: red;
+        }
+        /* 选择被禁用的文本框 */
+        input:disabled{
+            background-color: blue;
+        }
+    </style>
+</head>
+<body>
+    <input type="checkbox" id="check">
+    <label for="check">选择我</label>
+
+    <input type="radio" id="radio" name="radio">
+    <label for="radio">选择我1</label>
+    <input type="radio" id="radio1" name="radio">
+    <label for="radio1">选择我2</label>
+
+    <input type="text">
+    <input type="text" disabled>
+</body>
+</html>
