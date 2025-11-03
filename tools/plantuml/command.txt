@@ -1,0 +1,1 @@
+java -jar tools/plantuml/plantuml.jar -tpng Get-ChildItem "doc\project\diagrams\*.puml" | Select-Object Name
