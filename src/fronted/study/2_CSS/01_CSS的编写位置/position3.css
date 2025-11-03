@@ -1,0 +1,15 @@
+h1{
+    color: rgb(100, 207, 145);
+    font-size: 40px;
+}
+h2{
+    color: rgb(207, 145, 100);
+    font-size: 60px;
+}
+p{
+    color: rgb(145, 100, 207);
+    font-size: 20px;
+}
+img{
+    width: 200px;
+}
