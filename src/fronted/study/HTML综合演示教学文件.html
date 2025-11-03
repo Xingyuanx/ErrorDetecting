@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="HTML, 教学, 演示, 学习, 参考">
+    <meta name="description" content="HTML综合演示教学文件 - 整合所有HTML基础知识点">
+    <meta name="author" content="HTML学习者">
+    <title>HTML综合演示教学文件</title>
+</head>
+<body>
+    <!-- 页面标题 -->
+    <h1>HTML综合演示教学文件</h1>
+    <p><strong>说明：</strong>本文件整合了HTML学习过程中的所有重要知识点，仅使用HTML标签实现，适合自学参考。</p>
+    
+    <hr>
+    
+    <!-- 目录导航 -->
+    <h2>目录</h2>
+    <ol>
+        <li><a href="#basic-structure">HTML基本结构</a></li>
+        <li><a href="#text-tags">文本标签</a></li>
+        <li><a href="#layout-tags">排版标签</a></li>
+        <li><a href="#semantic-tags">语义化标签</a></li>
+        <li><a href="#media-tags">媒体标签</a></li>
+        <li><a href="#link-tags">链接标签</a></li>
+        <li><a href="#list-tags">列表标签</a></li>
+        <li><a href="#table-tags">表格标签</a></li>
+        <li><a href="#form-tags">表单标签</a></li>
+        <li><a href="#other-tags">其他重要标签</a></li>
+        <li><a href="#global-attributes">全局属性</a></li>
+        <li><a href="#character-entities">字符实体</a></li>
+    </ol>
+    
+    <hr>
+    
+    <!-- 1. HTML基本结构 -->
+    <h2 id="basic-structure">1. HTML基本结构</h2>
+    <h3>1.1 文档声明与基本结构</h3>
+    <p>HTML文档必须以DOCTYPE声明开始，然后是html、head、body的标准结构：</p>
+    <pre>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-CN"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;title&gt;页面标题&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    页面内容
+&lt;/body&gt;
+&lt;/html&gt;
+    </pre>
+    
+    <h3>1.2 HTML注释</h3>
+    <p>HTML注释用于在代码中添加说明，不会在页面中显示：</p>
+    <!-- 这是一个HTML注释示例 -->
+    <p>注释语法：&lt;!-- 注释内容 --&gt;</p>
+    
+    <hr>
+    
+    <!-- 2. 文本标签 -->
+    <h2 id="text-tags">2. 文本标签</h2>
+    <h3>2.1 常用文本标签</h3>
+    <ul>
+        <li><strong>strong标签</strong>：表示重要内容，通常显示为粗体</li>
+        <li><em>em标签</em>：表示强调内容，通常显示为斜体</li>
+        <li><span>span标签</span>：行内元素，用于包裹文本</li>
+    </ul>
+    
+    <h3>2.2 不常用文本标签</h3>
+    <ul>
+        <li><b>b标签</b>：粗体显示（不推荐使用，建议用strong）</li>
+        <li><i>i标签</i>：斜体显示（不推荐使用，建议用em）</li>
+        <li><u>u标签</u>：下划线</li>
+        <li><s>s标签</s>：删除线</li>
+        <li>上标：E=mc<sup>2</sup></li>
+        <li>下标：H<sub>2</sub>O</li>
+        <li><small>small标签：小号文字</small></li>
+        <li><big>big标签：大号文字</big></li>
+    </ul>
+    
+    <hr>
+    
+    <!-- 3. 排版标签 -->
+    <h2 id="layout-tags">3. 排版标签</h2>
+    <h3>3.1 标题标签</h3>
+    <h1>一级标题 h1</h1>
+    <h2>二级标题 h2</h2>
+    <h3>三级标题 h3</h3>
+    <h4>四级标题 h4</h4>
+    <h5>五级标题 h5</h5>
+    <h6>六级标题 h6</h6>
+    
+    <h3>3.2 段落和分组标签</h3>
+    <p>这是一个段落标签p，用于包含一段文字内容。段落之间会有默认的间距。</p>
+    <div>
+        <p>div标签是块级元素，用于分组和布局。</p>
+        <p>div内可以包含多个段落或其他元素。</p>
+    </div>
+    
+    <h3>3.3 换行和分隔</h3>
+    <p>这是第一行<br>这是第二行（使用br标签换行）</p>
+    <hr>
+    <p>上面是一条水平分隔线（hr标签）</p>
+    
+    <hr>
+    
+    <!-- 4. 语义化标签 -->
+    <h2 id="semantic-tags">4. 语义化标签</h2>
+    <p>语义化标签让HTML结构更清晰，有利于SEO和可访问性：</p>
+    <article>
+        <header>
+            <h3>文章标题（header标签）</h3>
+        </header>
+        <section>
+            <h4>章节标题（section标签）</h4>
+            <p>这是文章的主要内容部分（article标签）。</p>
+        </section>
+        <aside>
+            <p>这是侧边栏内容（aside标签）</p>
+        </aside>
+        <footer>
+            <p>这是页脚内容（footer标签）</p>
+        </footer>
+    </article>
+    
+    <hr>
+    
+    <!-- 5. 媒体标签 -->
+    <h2 id="media-tags">5. 媒体标签</h2>
+    <h3>5.1 图片标签</h3>
+    <p>img标签用于插入图片（行内元素）：</p>
+    <p>语法：&lt;img src="图片路径" alt="替代文本" width="宽度" height="高度"&gt;</p>
+    <img src="./设计图标.png" alt="设计图标" width="100" height="100">
+    <!-- <p><em>注意：</em>本演示文件中不包含实际图片，仅展示语法结构。</p> -->
+    
+    <hr>
+    
+    <!-- 6. 链接标签 -->
+    <h2 id="link-tags">6. 链接标签</h2>
+    <h3>6.1 超链接的各种用法</h3>
+    <ul>
+        <li><a href="https://www.baidu.com" target="_blank">跳转到外部网站（新窗口打开）</a></li>
+        <li><a href="#basic-structure">跳转到页面内锚点</a></li>
+        <li><a href="mailto:example@email.com">发送邮件</a></li>
+        <li><a href="tel:13800138000">拨打电话</a></li>
+    </ul>
+    
+    <hr>
+    
+    <!-- 7. 列表标签 -->
+    <h2 id="list-tags">7. 列表标签</h2>
+    <h3>7.1 有序列表（ol）</h3>
+    <ol>
+        <li>第一项</li>
+        <li>第二项</li>
+        <li>第三项</li>
+    </ol>
+    
+    <h3>7.2 无序列表（ul）</h3>
+    <ul>
+        <li>项目一</li>
+        <li>项目二</li>
+        <li>项目三</li>
+    </ul>
+    
+    <h3>7.3 自定义列表（dl）</h3>
+    <dl>
+        <dt>HTML</dt>
+        <dd>超文本标记语言</dd>
+        <dt>CSS</dt>
+        <dd>层叠样式表</dd>
+        <dt>JavaScript</dt>
+        <dd>网页脚本语言</dd>
+    </dl>
+    
+    <h3>7.4 列表嵌套</h3>
+    <ol>
+        <li>前端技术
+            <ul>
+                <li>HTML</li>
+                <li>CSS</li>
+                <li>JavaScript</li>
+            </ul>
+        </li>
+        <li>后端技术
+            <ul>
+                <li>Python</li>
+                <li>Java</li>
+                <li>Node.js</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <hr>
+    
+    <!-- 8. 表格标签 -->
+    <h2 id="table-tags">8. 表格标签</h2>
+    <h3>8.1 基本表格结构</h3>
+    <table border="1">
+        <caption>学生信息表</caption>
+        <thead>
+            <tr>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>性别</th>
+                <th>专业</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>张三</td>
+                <td>20</td>
+                <td>男</td>
+                <td>计算机科学</td>
+            </tr>
+            <tr>
+                <td>李四</td>
+                <td>19</td>
+                <td>女</td>
+                <td>软件工程</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" align="right">共2名学生</td>
+            </tr>
+        </tfoot>
+    </table>
+    
+    <h3>8.2 跨行跨列表格</h3>
+    <table border="1">
+        <tr>
+            <th rowspan="2">科目</th>
+            <th colspan="2">成绩</th>
+        </tr>
+        <tr>
+            <th>期中</th>
+            <th>期末</th>
+        </tr>
+        <tr>
+            <td>数学</td>
+            <td>85</td>
+            <td>90</td>
+        </tr>
+        <tr>
+            <td>英语</td>
+            <td>78</td>
+            <td>82</td>
+        </tr>
+    </table>
+    
+    <hr>
+    
+    <!-- 9. 表单标签 -->
+    <h2 id="form-tags">9. 表单标签</h2>
+    <h3>9.1 基本表单结构</h3>
+    <form>
+        <fieldset>
+            <legend>用户注册</legend>
+            
+            <label for="username">用户名：</label>
+            <input type="text" id="username" name="username" placeholder="请输入用户名">
+            <br><br>
+            
+            <label for="password">密码：</label>
+            <input type="password" id="password" name="password" placeholder="请输入密码">
+            <br><br>
+            
+            <label for="email">邮箱：</label>
+            <input type="email" id="email" name="email" placeholder="请输入邮箱">
+            <br><br>
+            
+            <label>性别：</label>
+            <input type="radio" id="male" name="gender" value="male">
+            <label for="male">男</label>
+            <input type="radio" id="female" name="gender" value="female">
+            <label for="female">女</label>
+            <br><br>
+            
+            <label>爱好：</label>
+            <input type="checkbox" id="reading" name="hobby" value="reading">
+            <label for="reading">阅读</label>
+            <input type="checkbox" id="music" name="hobby" value="music">
+            <label for="music">音乐</label>
+            <input type="checkbox" id="sports" name="hobby" value="sports">
+            <label for="sports">运动</label>
+            <br><br>
+            
+            <label for="city">城市：</label>
+            <select id="city" name="city">
+                <option value="">请选择城市</option>
+                <option value="beijing">北京</option>
+                <option value="shanghai">上海</option>
+                <option value="guangzhou">广州</option>
+                <option value="shenzhen">深圳</option>
+            </select>
+            <br><br>
+            
+            <label for="intro">自我介绍：</label><br>
+            <textarea id="intro" name="intro" rows="4" cols="50" placeholder="请输入自我介绍"></textarea>
+            <br><br>
+            
+            <input type="submit" value="提交">
+            <input type="reset" value="重置">
+            <button type="button">普通按钮</button>
+        </fieldset>
+    </form>
+    
+    <h3>9.2 禁用控件示例</h3>
+    <form>
+        <input type="text" value="禁用的文本框" disabled>
+        <br><br>
+        <input type="submit" value="禁用的提交按钮" disabled>
+    </form>
+    
+    <hr>
+    
+    <!-- 10. 其他重要标签 -->
+    <h2 id="other-tags">10. 其他重要标签</h2>
+    <h3>10.1 预格式化文本</h3>
+    <pre>
+这是预格式化文本（pre标签）
+    保持原有的空格和换行
+        包括缩进
+    </pre>
+    
+    <h3>10.2 代码标签</h3>
+    <p>行内代码：<code>console.log("Hello World")</code></p>
+    <pre><code>
+// 代码块示例
+function sayHello() {
+    console.log("Hello World");
+}
+    </code></pre>
+    
+    <h3>10.3 引用标签</h3>
+    <blockquote>
+        <p>这是一个块级引用（blockquote标签）。通常用于引用大段文字。</p>
+    </blockquote>
+    <p>这是<q>行内引用</q>的示例。</p>
+    
+    <h3>10.4 地址标签</h3>
+    <address>
+        联系地址：北京市海淀区中关村大街1号<br>
+        邮编：100000<br>
+        电话：010-12345678
+    </address>
+    
+    <hr>
+    
+    <!-- 11. 全局属性 -->
+    <h2 id="global-attributes">11. 全局属性</h2>
+    <p>HTML全局属性可以用于任何HTML元素：</p>
+    <ul>
+        <li><strong>id</strong>：元素的唯一标识符</li>
+        <li><strong>class</strong>：元素的类名（可多个）</li>
+        <li><strong>title</strong>：元素的提示信息</li>
+        <li><strong>lang</strong>：元素内容的语言</li>
+        <li><strong>dir</strong>：文本方向（ltr/rtl）</li>
+        <li><strong>style</strong>：内联样式（本文件不使用）</li>
+        <li><strong>tabindex</strong>：Tab键访问顺序</li>
+        <li><strong>accesskey</strong>：快捷键</li>
+        <li><strong>hidden</strong>：隐藏元素</li>
+        <li><strong>draggable</strong>：是否可拖拽</li>
+    </ul>
+    
+    <p title="这是一个提示信息" id="demo-element" class="example-class">
+        鼠标悬停在这段文字上可以看到title属性的提示信息。
+    </p>
+    
+    <hr>
+    
+    <!-- 12. 字符实体 -->
+    <h2 id="character-entities">12. 字符实体</h2>
+    <p>HTML中的特殊字符需要使用字符实体来表示：</p>
+    <table border="1">
+        <tr>
+            <th>字符</th>
+            <th>实体名称</th>
+            <th>实体编号</th>
+            <th>说明</th>
+        </tr>
+        <tr>
+            <td>&lt;</td>
+            <td>&amp;lt;</td>
+            <td>&amp;#60;</td>
+            <td>小于号</td>
+        </tr>
+        <tr>
+            <td>&gt;</td>
+            <td>&amp;gt;</td>
+            <td>&amp;#62;</td>
+            <td>大于号</td>
+        </tr>
+        <tr>
+            <td>&amp;</td>
+            <td>&amp;amp;</td>
+            <td>&amp;#38;</td>
+            <td>和号</td>
+        </tr>
+        <tr>
+            <td>&quot;</td>
+            <td>&amp;quot;</td>
+            <td>&amp;#34;</td>
+            <td>双引号</td>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>&amp;nbsp;</td>
+            <td>&amp;#160;</td>
+            <td>不间断空格</td>
+        </tr>
+        <tr>
+            <td>&copy;</td>
+            <td>&amp;copy;</td>
+            <td>&amp;#169;</td>
+            <td>版权符号</td>
+        </tr>
+        <tr>
+            <td>&reg;</td>
+            <td>&amp;reg;</td>
+            <td>&amp;#174;</td>
+            <td>注册商标</td>
+        </tr>
+    </table>
+    
+    <hr>
+    
+    <!-- 页脚 -->
+    <footer>
+        <h2>总结</h2>
+        <p>本HTML综合演示文件涵盖了以下主要知识点：</p>
+        <ol>
+            <li><strong>HTML基础结构</strong>：DOCTYPE声明、html/head/body结构、meta信息</li>
+            <li><strong>文本处理</strong>：各种文本标签的使用和语义</li>
+            <li><strong>页面布局</strong>：标题、段落、分组、语义化标签</li>
+            <li><strong>媒体内容</strong>：图片标签的属性和用法</li>
+            <li><strong>链接导航</strong>：超链接的多种用途</li>
+            <li><strong>列表结构</strong>：有序、无序、自定义列表及嵌套</li>
+            <li><strong>表格数据</strong>：表格结构、跨行跨列</li>
+            <li><strong>表单交互</strong>：各种表单控件和属性</li>
+            <li><strong>特殊标签</strong>：预格式化、代码、引用等</li>
+            <li><strong>全局属性</strong>：适用于所有HTML元素的属性</li>
+            <li><strong>字符实体</strong>：特殊字符的正确表示方法</li>
+        </ol>
+        
+        <p><strong>学习建议：</strong></p>
+        <ul>
+            <li>理解每个标签的语义和用途</li>
+            <li>掌握块级元素和行内元素的区别</li>
+            <li>熟练使用表单和表格</li>
+            <li>重视HTML的语义化</li>
+            <li>了解全局属性的作用</li>
+            <li>掌握字符实体的使用</li>
+        </ul>
+        
+        <hr>
+        <p><small>&copy; 2024 HTML学习演示文件 | 仅供学习参考使用</small></p>
+    </footer>
+</body>
+</html>

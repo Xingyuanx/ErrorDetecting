@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>块级元素与行内元素学习</title>
+</head>
+<body>
+    <!-- 块级元素，特点：
+    <div>块级元素，特点：
+    <ul>
+        <li>独占一行</li>
+        <li>可以设置宽度、高度、内边距、外边距</li>
+    </ul>
+    </div>
+    <marquee loop="10" bgcolor="green" id="m1">
+        阿米诺斯
+        <input type="password" placeholder="请输入">
+    </marquee>
+    <h1>
+        这是一个h1标题
+    </h1>
+    <p>
+        这是一个段落
+    </p>
+    <div>
+        这是一个div
+    </div> -->
+    <!-- 行内元素，特点：
+    <div>行内元素，特点：
+    <ul>
+        <li>不独占一行</li>
+        <li>不能设置宽度、高度、内边距、外边距</li>
+    </ul>
+    </div>
+    <input type="text" placeholder="请输入">
+    <input type="text" placeholder="提交"> -->
+    <!-- 规则1：块级元素中能写：行内元素、块级元素（几乎什么都能写）-->
+    <div>
+        <span>这是一个span</span>
+        <input type="text" placeholder="请输入">
+        <div>
+            这是一个div
+        </div>
+    </div>
+     <!-- 规则2：行内元素中能写：行内元素,但不能写块级元素 -->
+    <div>
+        <span>这是一个span</span>
+        <input type="text" placeholder="请输入">
+    </div>
+    <!-- 特殊规则：h1-h6不能互相嵌套 -->
+    <!-- 特殊规则：p不能嵌套块级元素 -->
+    <!-- 总结： -->
+    <ul>
+        <li>块级元素：独占一行，能设置宽度、高度、内边距、外边距</li>
+        <li>行内元素：不独占一行，不能设置宽度、高度、内边距、外边距</li>
+    </ul>
+</body>
+</html>

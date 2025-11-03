@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HTML语义化标签学习</title>
+    </head>
+    <body>
+        <!-- 标签默认效果不重要，语义最重要 -->
+        <!-- 代码的可读性强清晰 -->
+        <!-- 有利于SEO（搜索引擎优化） -->
+        <!-- 方便设备解析（如屏幕阅读器、盲人阅读器等） -->
+        
+        <!-- 新闻报道示例：展示HTML语义化标签的正确使用 -->
+        <div class="news-container">
+            <!-- h1标签：表示页面或区块的主标题，具有最高的语义重要性 -->
+            <h1>人工智能技术在教育领域取得重大突破</h1>
+            
+            <!-- div标签：作为内容区块容器，用于组织和分组相关内容 -->
+            <div class="news-meta">
+                <p>发布时间：2024年1月15日 | 来源：科技日报 | 记者：张明</p>
+            </div>
+            
+            <!-- div标签：新闻正文内容区块 -->
+            <div class="news-content">
+                <!-- p标签：表示段落，用于组织文本内容，具有明确的语义含义 -->
+                <p>近日，国内多所知名高校联合发布了一项关于人工智能在教育领域应用的重要研究成果。该研究表明，AI技术在个性化学习、智能辅导和教学评估等方面展现出巨大潜力。</p>
+                
+                <p>据研究团队负责人介绍，新开发的AI教学系统能够根据学生的学习习惯和能力水平，自动调整教学内容和进度。系统通过分析学生的学习数据，为每位学生制定个性化的学习方案，有效提高了学习效率。</p>
+                
+                <p>在为期一年的试点应用中，参与测试的学生在各科目成绩上平均提升了25%。特别是在数学和科学类科目中，AI辅导系统帮助学生更好地理解复杂概念，解决学习难点。</p>
+            </div>
+            
+            <!-- div标签：相关链接区块 -->
+            <div class="related-links">
+                <h2>相关报道</h2>
+                <p>• 教育部发布AI教育应用指导意见</p>
+                <p>• 智能教育平台用户突破千万大关</p>
+                <p>• 专家解读：AI如何改变传统教学模式</p>
+            </div>
+        </div>
+        
+        <!-- 语义化标签使用说明 -->
+        <div class="semantic-explanation">
+            <h2>HTML语义化标签的作用层级关系</h2>
+            
+            <div class="explanation-section">
+                <h3>1. h1标签 - 主标题</h3>
+                <p><strong>语义作用：</strong>表示页面或内容区块的主要标题，具有最高的语义重要性</p>
+                <p><strong>SEO价值：</strong>搜索引擎会重点关注h1标签的内容，影响页面排名</p>
+                <p><strong>无障碍访问：</strong>屏幕阅读器会优先读取h1内容，帮助视障用户快速了解页面主题</p>
+            </div>
+            
+            <div class="explanation-section">
+                <h3>2. p标签 - 段落</h3>
+                <p><strong>语义作用：</strong>表示一个段落，用于组织文本内容，具有明确的语义含义</p>
+                <p><strong>结构清晰：</strong>将内容分割成逻辑段落，提高可读性</p>
+                <p><strong>样式控制：</strong>便于通过CSS控制段落间距、缩进等样式</p>
+            </div>
+            
+            <div class="explanation-section">
+                <h3>3. div标签 - 容器</h3>
+                <p><strong>语义作用：</strong>作为通用容器，用于分组和组织相关内容</p>
+                <p><strong>布局结构：</strong>帮助构建页面的逻辑结构和视觉布局</p>
+                <p><strong>样式应用：</strong>便于对整个内容区块应用统一的样式和行为</p>
+            </div>
+            
+            <div class="hierarchy-demo">
+                <h3>层级关系示例</h3>
+                <p>在上面的新闻示例中：</p>
+                <p>📰 <strong>div.news-container</strong> → 整个新闻的容器</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;📝 <strong>h1</strong> → 新闻主标题（最重要）</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;📦 <strong>div.news-meta</strong> → 新闻元信息区块</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📄 <strong>p</strong> → 发布信息段落</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;📦 <strong>div.news-content</strong> → 新闻正文区块</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📄 <strong>p</strong> → 正文段落1</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📄 <strong>p</strong> → 正文段落2</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📄 <strong>p</strong> → 正文段落3</p>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;📦 <strong>div.related-links</strong> → 相关链接区块</p>
+            </div>
+        </div>
+    </body>
+</html>

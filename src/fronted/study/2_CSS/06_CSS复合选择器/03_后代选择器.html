@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后代选择器</title>
+    <style>
+        ul li{
+            color: red;
+        }
+        ul li a{
+            color: green;
+        }
+        ol li{
+            color: blue;
+        }
+        ol.subject li{
+            color: pink;
+        }
+    </style>
+</head>
+<body>
+    <ul>
+        <li>抽烟</li>
+        <li>喝酒</li>
+        <li>
+            <a href="https://www.baidu.com" target="_blank">烫头</a>
+        </li>
+        <div>
+            <li>学习</li>
+        </div>
+    </ul>
+    <hr>
+    <ol>
+        <li>张三</li>
+        <li>李四</li>
+        <li>王五</li>
+    </ol>
+    <ol class="subject">
+        <li>
+            语文
+        </li>
+        <li>
+            数学
+        </li>
+        <li>
+            英语
+        </li>
+    </ol>
+</body>
+</html>
