@@ -1,0 +1,135 @@
+@startuml
+title 故障检测系统 ER 图
+
+skinparam shadowing false
+skinparam class {
+  BackgroundColor #FFFDF7
+  BorderColor #888888
+}
+hide methods
+
+' 核心业务表
+class fault_records << (T,#AEE) table >> {
+  + id : BIGINT {PK}
+  + fault_id : VARCHAR(32) {UK}
+  fault_type : VARCHAR(50)
+  fault_level : ENUM
+  title : VARCHAR(200)
+  status : ENUM
+  assignee : VARCHAR(50)
+  reporter : VARCHAR(50)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+class exec_logs << (T,#AEE) table >> {
+  + id : BIGINT {PK}
+  + exec_id : VARCHAR(32) {UK}
+  fault_id : VARCHAR(32) {FK}
+  command_type : VARCHAR(50)
+  execution_status : ENUM
+  start_time : TIMESTAMP
+  end_time : TIMESTAMP
+  operator : VARCHAR(50)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+class cluster_status << (T,#AEE) table >> {
+  + id : BIGINT {PK}
+  + node_id : VARCHAR(50) {UK}
+  node_role : ENUM
+  node_status : ENUM
+  cpu_usage : DECIMAL(5,2)
+  memory_usage : DECIMAL(5,2)
+  disk_usage : DECIMAL(5,2)
+  last_heartbeat : TIMESTAMP
+  health_score : INT
+  alerts_count : INT
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+class system_logs << (T,#AEE) table >> {
+  + id : BIGINT {PK}
+  + log_id : VARCHAR(32) {UK}
+  timestamp : TIMESTAMP
+  host : VARCHAR(100)
+  ip_address : VARCHAR(15)
+  service : VARCHAR(50)
+  log_level : ENUM
+  processed : BOOLEAN
+  created_at : TIMESTAMP
+}
+
+' 配置管理表
+class system_configs << (T,#CEA) table >> {
+  + id : BIGINT {PK}
+  + config_key : VARCHAR(100) {UK}
+  config_type : VARCHAR(20)
+  category : VARCHAR(50)
+  is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+class alert_rules << (T,#CEA) table >> {
+  + id : BIGINT {PK}
+  rule_name : VARCHAR(100)
+  rule_type : VARCHAR(50)
+  metric_name : VARCHAR(100)
+  severity : ENUM
+  is_enabled : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+' 用户管理表
+class users << (T,#EAC) table >> {
+  + id : BIGINT {PK}
+  username : VARCHAR(50) {UK}
+  email : VARCHAR(100) {UK}
+  role : ENUM
+  is_active : BOOLEAN
+  last_login : TIMESTAMP
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+class audit_logs << (T,#EAC) table >> {
+  + id : BIGINT {PK}
+  user_id : BIGINT {FK}
+  username : VARCHAR(50)
+  action : VARCHAR(100)
+  resource_type : VARCHAR(50)
+  resource_id : VARCHAR(100)
+  ip_address : VARCHAR(15)
+  created_at : TIMESTAMP
+}
+
+' 扩展表
+class repair_templates << (T,#DFE) table >> {
+  + id : BIGINT {PK}
+  template_name : VARCHAR(100)
+  fault_type : VARCHAR(50)
+  risk_level : ENUM
+  is_active : BOOLEAN
+  created_by : VARCHAR(50)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+class notification_configs << (T,#DFE) table >> {
+  + id : BIGINT {PK}
+  config_name : VARCHAR(100)
+  notification_type : ENUM
+  is_enabled : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+' 关系（基于外键约束与业务关联）
+fault_records "1" -- "*" exec_logs : fault_id -> fault_records.fault_id
+users "1" -- "*" audit_logs : id -> audit_logs.user_id
+
+@enduml
