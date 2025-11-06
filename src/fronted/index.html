@@ -537,6 +537,476 @@
                         </div>
                     </article>
                 </section>
+
+                <!-- ==================== Flume 配置（原型） ==================== -->
+                <section id="flume-config" class="u-hidden layout__section" aria-labelledby="flume-config-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="flume-config-title" class="layout__page-title">Flume 配置（原型）</h2>
+                            <p class="layout__page-subtitle">配置 Flume Agent 的 Source、Channel 与 Sink</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">保存配置</button>
+                            <button class="btn u-ml-2" disabled title="功能待实现">测试连接</button>
+                        </div>
+                    </header>
+
+                    <!-- 配置表单（占位） -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">Agent 基本配置</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <form class="layout__grid layout__grid--3" aria-label="Flume 基本配置">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Agent 名称</label>
+                                    <input type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="例如：agent1" disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Source 类型</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" disabled>
+                                        <option>spooldir</option>
+                                        <option>netcat</option>
+                                        <option>exec</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Source 路径/主机</label>
+                                    <input type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="/var/log/flume" disabled>
+                                </div>
+
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Channel 类型</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" disabled>
+                                        <option>memory</option>
+                                        <option>file</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Sink 类型</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" disabled>
+                                        <option>hdfs</option>
+                                        <option>kafka</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Sink 目标</label>
+                                    <input type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="hdfs://namenode:8020/logs/" disabled>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+
+                    <!-- 示例配置（占位） -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">示例配置（占位）</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <pre class="u-p-3 u-border u-rounded" aria-label="Flume 示例配置">
+agent1.sources = r1
+agent1.channels = c1
+agent1.sinks    = k1
+
+agent1.sources.r1.type = spooldir
+agent1.sources.r1.spoolDir = /var/log/flume
+
+agent1.channels.c1.type = memory
+
+agent1.sinks.k1.type = hdfs
+agent1.sinks.k1.hdfs.path = hdfs://namenode:8020/logs/
+                            </pre>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 告警配置（原型） ==================== -->
+                <section id="alert-config" class="u-hidden layout__section" aria-labelledby="alert-config-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="alert-config-title" class="layout__page-title">告警配置（原型）</h2>
+                            <p class="layout__page-subtitle">设置告警规则、通知渠道与阈值</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">保存配置</button>
+                        </div>
+                    </header>
+
+                    <!-- 通知与阈值（占位） -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">通知与阈值</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="layout__grid layout__grid--3">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">告警严重级别</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" disabled>
+                                        <option>INFO</option>
+                                        <option>WARN</option>
+                                        <option>ERROR</option>
+                                        <option>CRITICAL</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">邮件接收人</label>
+                                    <input type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="ops@example.com" disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Webhook 地址</label>
+                                    <input type="url" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="https://hooks.example.com/alert" disabled>
+                                </div>
+                            </div>
+
+                            <div class="u-mt-4 layout__grid layout__grid--3">
+                                <div class="u-flex u-items-center u-gap-2">
+                                    <input type="checkbox" disabled>
+                                    <span>启用邮件通知</span>
+                                </div>
+                                <div class="u-flex u-items-center u-gap-2">
+                                    <input type="checkbox" disabled>
+                                    <span>启用短信通知</span>
+                                </div>
+                                <div class="u-flex u-items-center u-gap-2">
+                                    <input type="checkbox" disabled>
+                                    <span>启用 Webhook</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 告警规则列表示例（占位） -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">规则列表（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">规则名称</th>
+                                            <th class="dashboard__table-th" scope="col">条件</th>
+                                            <th class="dashboard__table-th" scope="col">级别</th>
+                                            <th class="dashboard__table-th" scope="col">通知渠道</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">cpu-high-usage</td>
+                                            <td class="dashboard__table-td">CPU > 85% 持续 5 分钟</td>
+                                            <td class="dashboard__table-td"><span class="u-text-warning">WARN</span></td>
+                                            <td class="dashboard__table-td">邮件</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">node-disconnected</td>
+                                            <td class="dashboard__table-td">心跳丢失 3 次</td>
+                                            <td class="dashboard__table-td"><span class="u-text-error">ERROR</span></td>
+                                            <td class="dashboard__table-td">邮件 + Webhook</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 个人主页（原型） ==================== -->
+                <section id="profile" class="u-hidden layout__section" aria-labelledby="profile-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="profile-title" class="layout__page-title">个人主页（原型）</h2>
+                            <p class="layout__page-subtitle">查看与管理个人基础信息</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn" disabled title="功能待实现">编辑资料</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">个人信息</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="layout__grid layout__grid--3">
+                                <div>
+                                    <span class="u-text-sm u-text-gray-700">用户名</span>
+                                    <div class="u-font-medium u-mt-1">alice</div>
+                                </div>
+                                <div>
+                                    <span class="u-text-sm u-text-gray-700">邮箱</span>
+                                    <div class="u-font-medium u-mt-1">alice@example.com</div>
+                                </div>
+                                <div>
+                                    <span class="u-text-sm u-text-gray-700">角色</span>
+                                    <div class="u-font-medium u-mt-1">管理员</div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 账号管理（原型） ==================== -->
+                <section id="account" class="u-hidden layout__section" aria-labelledby="account-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="account-title" class="layout__page-title">账号管理（原型）</h2>
+                            <p class="layout__page-subtitle">修改密码、设置双因素认证等</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">保存设置</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">安全设置</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <form class="layout__grid layout__grid--3" aria-label="账号安全设置">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">当前密码</label>
+                                    <input type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="••••••••" disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">新密码</label>
+                                    <input type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="至少8位" disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">确认新密码</label>
+                                    <input type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="再次输入" disabled>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 集群管理（原型） ==================== -->
+                <section id="clusters" class="u-hidden layout__section" aria-labelledby="clusters-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="clusters-title" class="layout__page-title">集群管理（原型）</h2>
+                            <p class="layout__page-subtitle">管理与查看各个计算集群</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn" disabled title="功能待实现">新增集群</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">集群列表（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">集群名称</th>
+                                            <th class="dashboard__table-th" scope="col">节点数量</th>
+                                            <th class="dashboard__table-th" scope="col">状态</th>
+                                            <th class="dashboard__table-th" scope="col">说明</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">cluster-a</td>
+                                            <td class="dashboard__table-td">12</td>
+                                            <td class="dashboard__table-td"><span class="u-text-success">运行中</span></td>
+                                            <td class="dashboard__table-td">主业务集群</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">cluster-b</td>
+                                            <td class="dashboard__table-td">8</td>
+                                            <td class="dashboard__table-td"><span class="u-text-warning">维护中</span></td>
+                                            <td class="dashboard__table-td">测试与验收</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 用户管理（原型） ==================== -->
+                <section id="user-management" class="u-hidden layout__section" aria-labelledby="user-mgmt-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="user-mgmt-title" class="layout__page-title">用户管理（原型）</h2>
+                            <p class="layout__page-subtitle">管理系统用户、基础信息与状态</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">新增用户</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">用户列表（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">用户名</th>
+                                            <th class="dashboard__table-th" scope="col">邮箱</th>
+                                            <th class="dashboard__table-th" scope="col">角色</th>
+                                            <th class="dashboard__table-th" scope="col">状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">alice</td>
+                                            <td class="dashboard__table-td">alice@example.com</td>
+                                            <td class="dashboard__table-td">管理员</td>
+                                            <td class="dashboard__table-td"><span class="u-text-success">启用</span></td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">bob</td>
+                                            <td class="dashboard__table-td">bob@example.com</td>
+                                            <td class="dashboard__table-td">观察员</td>
+                                            <td class="dashboard__table-td"><span class="u-text-warning">待审核</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 角色分配（原型） ==================== -->
+                <section id="role-assignment" class="u-hidden layout__section" aria-labelledby="role-assign-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="role-assign-title" class="layout__page-title">角色分配（原型）</h2>
+                            <p class="layout__page-subtitle">为用户分配系统角色与权限范围</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">保存分配</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">用户角色（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="layout__grid layout__grid--2">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">选择用户</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" >
+                                        <option>alice</option>
+                                        <option>bob</option>
+                                        <option>charlie</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">选择角色</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" >
+                                        <option>管理员</option>
+                                        <option>操作员</option>
+                                        <option>观察员</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 权限策略（原型） ==================== -->
+                <section id="permission-policy" class="u-hidden layout__section" aria-labelledby="perm-policy-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="perm-policy-title" class="layout__page-title">权限策略（原型）</h2>
+                            <p class="layout__page-subtitle">配置资源访问策略与规则</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">保存策略</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">策略列表（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">策略名称</th>
+                                            <th class="dashboard__table-th" scope="col">资源</th>
+                                            <th class="dashboard__table-th" scope="col">操作</th>
+                                            <th class="dashboard__table-th" scope="col">效果</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">allow-read-logs</td>
+                                            <td class="dashboard__table-td">logs/*</td>
+                                            <td class="dashboard__table-td">read</td>
+                                            <td class="dashboard__table-td"><span class="u-text-success">allow</span></td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">deny-delete-nodes</td>
+                                            <td class="dashboard__table-td">nodes/*</td>
+                                            <td class="dashboard__table-td">delete</td>
+                                            <td class="dashboard__table-td"><span class="u-text-error">deny</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 审计日志（原型） ==================== -->
+                <section id="audit-logs" class="u-hidden layout__section" aria-labelledby="audit-logs-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="audit-logs-title" class="layout__page-title">审计日志（原型）</h2>
+                            <p class="layout__page-subtitle">记录用户操作与系统事件</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">导出审计日志</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">近期审计事件（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">时间</th>
+                                            <th class="dashboard__table-th" scope="col">用户</th>
+                                            <th class="dashboard__table-th" scope="col">动作</th>
+                                            <th class="dashboard__table-th" scope="col">详情</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td"><time datetime="2023-10-15T14:31:00">14:31:00</time></td>
+                                            <td class="dashboard__table-td">alice</td>
+                                            <td class="dashboard__table-td">登录</td>
+                                            <td class="dashboard__table-td">成功登录系统</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td"><time datetime="2023-10-15T14:29:00">14:29:00</time></td>
+                                            <td class="dashboard__table-td">bob</td>
+                                            <td class="dashboard__table-td">修改配置</td>
+                                            <td class="dashboard__table-td">更新日志级别为 WARN</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
             </div>
         </main>
     </div>

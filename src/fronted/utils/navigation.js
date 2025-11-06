@@ -16,9 +16,13 @@ class NavigationManager {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.bindEvents();
+                this.applyInitialRoute();
+                this.bindHashChange();
             });
         } else {
             this.bindEvents();
+            this.applyInitialRoute();
+            this.bindHashChange();
         }
     }
 
@@ -27,10 +31,37 @@ class NavigationManager {
      */
     bindEvents() {
         this.bindNavigationEvents();
+        this.bindSidebarEvents();
         this.bindDropdownEvents();
         this.bindUserMenuEvents();
         this.bindGlobalClickEvents();
         this.bindSearchEvents();
+    }
+
+    /**
+     * 根据 URL 哈希初始化页面
+     */
+    applyInitialRoute() {
+        const hash = window.location.hash?.replace('#', '') || '';
+        const validSection = document.getElementById(hash);
+        if (hash && validSection) {
+            this.switchPage(hash);
+        } else {
+            // 默认显示仪表板
+            this.switchPage('dashboard');
+        }
+    }
+
+    /**
+     * 监听哈希变化以支持浏览器前进/后退
+     */
+    bindHashChange() {
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash?.replace('#', '') || '';
+            if (hash) {
+                this.switchPage(hash);
+            }
+        });
     }
 
     /**
@@ -45,6 +76,23 @@ class NavigationManager {
                 e.preventDefault();
                 const targetPage = item.getAttribute('data-page');
                 this.switchPage(targetPage);
+            });
+        });
+    }
+
+    /**
+     * 绑定侧边栏导航事件
+     */
+    bindSidebarEvents() {
+        const sidebarLinks = document.querySelectorAll('.sidebar__link[href^="#"]');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = link.getAttribute('href') || '';
+                const targetPage = href.replace('#', '');
+                if (targetPage) {
+                    this.switchPage(targetPage);
+                }
             });
         });
     }
@@ -68,12 +116,18 @@ class NavigationManager {
 
         // 更新导航项激活状态
         this.updateActiveNavItem(pageName);
+        this.updateActiveSidebarItem(pageName);
         
         // 更新当前页面
         this.currentPage = pageName;
 
         // 触发页面切换事件
         this.onPageSwitch(pageName);
+
+        // 如果存在响应式管理器，切换页面后关闭侧边栏（在移动端体验更好）
+        if (window.responsiveManager && typeof window.responsiveManager.closeSidebar === 'function') {
+            window.responsiveManager.closeSidebar();
+        }
     }
 
     /**
@@ -81,18 +135,37 @@ class NavigationManager {
      * @param {string} activePage - 激活的页面名称
      */
     updateActiveNavItem(activePage) {
-        // 移除所有激活状态
-        const navItems = document.querySelectorAll('.header__nav-item');
-        navItems.forEach(item => {
-            item.classList.remove('header__nav-item--active');
-            item.removeAttribute('aria-current');
-        });
-
-        // 添加新的激活状态
+        // 仅当目标页面存在于顶部导航时才更新激活状态
         const activeItem = document.querySelector(`[data-page="${activePage}"]`);
         if (activeItem) {
+            // 移除所有激活状态
+            const navItems = document.querySelectorAll('.header__nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('header__nav-item--active');
+                item.removeAttribute('aria-current');
+            });
+
+            // 添加新的激活状态
             activeItem.classList.add('header__nav-item--active');
             activeItem.setAttribute('aria-current', 'page');
+        }
+    }
+
+    /**
+     * 更新侧边栏激活状态
+     * @param {string} activePage - 激活的页面名称
+     */
+    updateActiveSidebarItem(activePage) {
+        const links = document.querySelectorAll('.sidebar__link');
+        links.forEach(link => {
+            link.classList.remove('sidebar__link--active');
+            link.removeAttribute('aria-current');
+        });
+
+        const activeLink = document.querySelector(`.sidebar__link[href="#${activePage}"]`);
+        if (activeLink) {
+            activeLink.classList.add('sidebar__link--active');
+            activeLink.setAttribute('aria-current', 'page');
         }
     }
 
@@ -121,6 +194,12 @@ class NavigationManager {
                 // 可以在这里加载修复建议
                 console.log('切换到自动修复页面');
                 break;
+            case 'flume-config':
+                console.log('切换到 Flume 配置页面');
+                break;
+            case 'alert-config':
+                console.log('切换到 告警配置页面');
+                break;
         }
     }
 
@@ -139,6 +218,21 @@ class NavigationManager {
                     e.preventDefault();
                     e.stopPropagation();
                     this.toggleDropdown(configDropdown, trigger, menu);
+                });
+
+                // 菜单项点击：切换页面并收起菜单
+                const menuLinks = menu.querySelectorAll('a[href^="#"]');
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const targetPage = (link.getAttribute('href') || '').replace('#', '');
+                        if (targetPage) {
+                            this.switchPage(targetPage);
+                            // 收起下拉菜单
+                            this.closeAllDropdowns();
+                        }
+                    });
                 });
             }
         }
@@ -201,6 +295,22 @@ class NavigationManager {
                     e.preventDefault();
                     e.stopPropagation();
                     this.toggleUserMenu(avatar, dropdown);
+                });
+
+                // 用户菜单项点击：切换页面并收起菜单
+                const menuLinks = dropdown.querySelectorAll('a[href^="#"]');
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const targetPage = (link.getAttribute('href') || '').replace('#', '');
+                        if (targetPage) {
+                            this.switchPage(targetPage);
+                            // 收起用户菜单
+                            avatar.setAttribute('aria-expanded', 'false');
+                            dropdown.classList.remove('header__user-dropdown--show');
+                        }
+                    });
                 });
             }
         }
