@@ -62,6 +62,16 @@
                     自动修复
                 </a>
                 
+                <!-- 故障中心页面 - 对应用例图中的 UC_FaultCenter -->
+                <a href="#fault-center" class="header__nav-item" data-page="fault-center">
+                    故障中心
+                </a>
+
+                <!-- 执行日志页面 - 对应用例图中的 UC_ExecLogs -->
+                <a href="#exec-logs" class="header__nav-item" data-page="exec-logs">
+                    执行日志
+                </a>
+                
                 <!-- 系统配置下拉菜单 -->
                 <div class="header__dropdown">
                     <button class="header__nav-item header__dropdown-trigger" 
@@ -79,6 +89,11 @@
                         <!-- 告警配置 - 对应用例图中的 UC_ConfigAlert -->
                         <a href="#alert-config" class="header__dropdown-item" role="menuitem">
                             告警配置
+                        </a>
+
+                        <!-- LLM 配置 - 对应用例图中的 UC_ConfigLLM -->
+                        <a href="#llm-config" class="header__dropdown-item" role="menuitem">
+                            LLM 配置
                         </a>
                     </div>
                 </div>
@@ -161,8 +176,12 @@
                     <header class="dashboard__header">
                         <h2 id="dashboard-title" class="dashboard__title">仪表板 - 集群概览</h2>
                         <time class="dashboard__update-time" datetime="2023-10-15T14:30:00">
-                            更新时间: 2023年10月15日 14:30
+                            更新时间: 2025年11月7日
                         </time>
+                        <div class="dashboard__ws-status u-mt-2" role="status" aria-live="polite">
+                            <span class="u-text-gray-700 u-font-medium">WebSocket</span>：
+                            <span id="ws-status" class="u-text-error">未连接</span>
+                        </div>
                     </header>
 
                     <!-- 集群状态统计卡片 -->
@@ -497,6 +516,140 @@
                             </div>
                         </div>
                     </article>
+
+                    <!-- 诊断结果（占位） -->
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">诊断结果（占位）</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="u-space-y-3">
+                                <div>
+                                    <span class="u-text-sm u-text-gray-700">结论</span>
+                                    <p class="u-mt-1">DataNode 节点连接失败，疑似网络配置异常或服务未启动。</p>
+                                </div>
+                                <div>
+                                    <span class="u-text-sm u-text-gray-700">建议</span>
+                                    <p class="u-mt-1">重启 DataNode 服务，检查网络与端口配置，必要时更新防火墙规则。</p>
+                                </div>
+                                <div>
+                                    <a href="#repair" class="btn btn--primary">
+                                        <i class="fas fa-wrench btn__icon--left" aria-hidden="true"></i>
+                                        查看修复建议并执行
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 故障中心（原型） ==================== -->
+                <section id="fault-center" class="u-hidden layout__section" aria-labelledby="fault-center-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="fault-center-title" class="layout__page-title">故障中心（原型）</h2>
+                            <p class="layout__page-subtitle">浏览故障事件、状态与详情</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn" disabled title="功能待实现">导出故障</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">故障列表（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">故障ID</th>
+                                            <th class="dashboard__table-th" scope="col">类型</th>
+                                            <th class="dashboard__table-th" scope="col">级别</th>
+                                            <th class="dashboard__table-th" scope="col">状态</th>
+                                            <th class="dashboard__table-th" scope="col">标题</th>
+                                            <th class="dashboard__table-th" scope="col">创建时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">FLT-20251107-0001</td>
+                                            <td class="dashboard__table-td">DataNode 离线</td>
+                                            <td class="dashboard__table-td"><span class="u-text-error">high</span></td>
+                                            <td class="dashboard__table-td">analyzing</td>
+                                            <td class="dashboard__table-td">DataNode 心跳丢失</td>
+                                            <td class="dashboard__table-td">2025-11-07 10:15:00</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">FLT-20251106-0023</td>
+                                            <td class="dashboard__table-td">磁盘空间不足</td>
+                                            <td class="dashboard__table-td"><span class="u-text-warning">medium</span></td>
+                                            <td class="dashboard__table-td">detected</td>
+                                            <td class="dashboard__table-td">节点磁盘使用率过高</td>
+                                            <td class="dashboard__table-td">2025-11-06 18:42:17</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 执行日志（原型） ==================== -->
+                <section id="exec-logs" class="u-hidden layout__section" aria-labelledby="exec-logs-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="exec-logs-title" class="layout__page-title">执行日志（原型）</h2>
+                            <p class="layout__page-subtitle">查看自动修复脚本的执行记录</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn" disabled title="功能待实现">刷新</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">执行记录（占位数据）</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">执行ID</th>
+                                            <th class="dashboard__table-th" scope="col">故障ID</th>
+                                            <th class="dashboard__table-th" scope="col">命令类型</th>
+                                            <th class="dashboard__table-th" scope="col">状态</th>
+                                            <th class="dashboard__table-th" scope="col">开始时间</th>
+                                            <th class="dashboard__table-th" scope="col">结束时间</th>
+                                            <th class="dashboard__table-th" scope="col">退出码</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">EXE-20251107-1001</td>
+                                            <td class="dashboard__table-td">FLT-20251107-0001</td>
+                                            <td class="dashboard__table-td">shell</td>
+                                            <td class="dashboard__table-td"><span class="u-text-primary">running</span></td>
+                                            <td class="dashboard__table-td">2025-11-07 10:20:03</td>
+                                            <td class="dashboard__table-td">-</td>
+                                            <td class="dashboard__table-td">-</td>
+                                        </tr>
+                                        <tr class="dashboard__table-row">
+                                            <td class="dashboard__table-td">EXE-20251106-0922</td>
+                                            <td class="dashboard__table-td">FLT-20251106-0023</td>
+                                            <td class="dashboard__table-td">hdfs</td>
+                                            <td class="dashboard__table-td"><span class="u-text-success">success</span></td>
+                                            <td class="dashboard__table-td">2025-11-06 09:22:10</td>
+                                            <td class="dashboard__table-td">2025-11-06 09:22:35</td>
+                                            <td class="dashboard__table-td">0</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
                 </section>
 
                 <!-- ==================== 自动修复部分 ==================== -->
@@ -707,6 +860,68 @@ agent1.sinks.k1.hdfs.path = hdfs://namenode:8020/logs/
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== LLM 配置（原型） ==================== -->
+                <section id="llm-config" class="u-hidden layout__section" aria-labelledby="llm-config-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="llm-config-title" class="layout__page-title">LLM 配置（原型）</h2>
+                            <p class="layout__page-subtitle">配置诊断模型与访问凭据</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" disabled title="功能待实现">保存配置</button>
+                            <button class="btn u-ml-2" disabled title="功能待实现">测试连接</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">模型与凭据</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <form class="layout__grid layout__grid--3" aria-label="LLM 基本配置">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Provider</label>
+                                    <select class="u-w-full u-p-2 u-border u-rounded u-mt-1" disabled>
+                                        <option>OpenAI</option>
+                                        <option>Azure OpenAI</option>
+                                        <option>自建服务</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">API Key</label>
+                                    <input type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="sk-..." disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">Model Name</label>
+                                    <input type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="gpt-4o-mini" disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">接口地址</label>
+                                    <input type="url" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="https://api.example.com/v1/" disabled>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">超时时间(秒)</label>
+                                    <input type="number" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="30" disabled>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">提示模板（占位）</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <pre class="u-p-3 u-border u-rounded" aria-label="诊断提示模板">
+故障类型：${fault_type}
+节点列表：${nodes}
+关键日志：${logs}
+期望输出：FixCommand(JSON)
+                            </pre>
                         </div>
                     </article>
                 </section>

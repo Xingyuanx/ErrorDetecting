@@ -86,17 +86,21 @@
     .sidebar {
         position: fixed;
         top: 0;
-        left: -16rem;
+        left: -16rem; /* 默认收起在屏幕外 */
         height: 100vh;
         z-index: 50;
         transition: left var(--transition-base);
     }
     
-    .sidebar--open {
+    /* 兼容 responsive.js 使用的类名 */
+    .sidebar--open,
+    .sidebar--mobile-open {
         left: 0;
     }
     
-    .sidebar__overlay {
+    /* 与脚本统一的遮罩层类名（DOM: .sidebar-overlay） */
+    .sidebar__overlay,
+    .sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;
@@ -109,7 +113,8 @@
         transition: all var(--transition-base);
     }
     
-    .sidebar__overlay--visible {
+    .sidebar__overlay--visible,
+    .sidebar-overlay--show {
         opacity: 1;
         visibility: visible;
     }

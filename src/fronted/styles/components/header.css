@@ -8,6 +8,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative; /* 供移动端展开的导航定位 */
 }
 
 /* 头部左侧区域 */
@@ -15,6 +16,24 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-10);
+}
+
+/* 移动端菜单按钮（默认隐藏，移动端显示） */
+.header__mobile-menu-btn {
+    display: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-gray-200);
+    color: var(--color-gray-600);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.header__mobile-menu-btn:hover {
+    background-color: var(--color-gray-300);
 }
 
 /* Logo 样式 */
@@ -90,6 +109,17 @@
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+}
+
+/* 下拉菜单显隐状态（脚本控制） */
+.header__dropdown-menu--show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.header__dropdown--active .header__dropdown-icon {
+    transform: rotate(180deg);
 }
 
 .header__dropdown-item {
@@ -193,6 +223,13 @@
     transform: translateY(0);
 }
 
+/* 用户菜单显隐状态（脚本控制） */
+.header__user-dropdown--show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
 .header__user-dropdown-item {
     display: block;
     padding: var(--spacing-2) var(--spacing-4);
@@ -215,8 +252,29 @@
         gap: var(--spacing-6);
     }
     
+    /* 移动端显示菜单按钮 */
+    .header__mobile-menu-btn {
+        display: inline-flex;
+    }
+    
+    /* 移动端导航默认隐藏，展开时作为下拉面板显示 */
     .header__nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
         display: none;
+        flex-direction: column;
+        gap: var(--spacing-2);
+        background-color: var(--color-white);
+        padding: var(--spacing-2) var(--spacing-4);
+        box-shadow: var(--shadow-lg);
+        z-index: 30;
+        border-radius: var(--border-radius-md);
+    }
+
+    .header__nav--mobile-open {
+        display: flex;
     }
     
     .header__search {

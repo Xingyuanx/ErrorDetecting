@@ -47,7 +47,8 @@ class NavigationManager {
         if (hash && validSection) {
             this.switchPage(hash);
         } else {
-            // 默认显示仪表板
+            // 默认显示仪表板，并同步哈希
+            window.location.hash = '#dashboard';
             this.switchPage('dashboard');
         }
     }
@@ -75,7 +76,11 @@ class NavigationManager {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetPage = item.getAttribute('data-page');
-                this.switchPage(targetPage);
+                if (targetPage) {
+                    // 同步哈希，支持刷新与分享链接
+                    window.location.hash = `#${targetPage}`;
+                    this.switchPage(targetPage);
+                }
             });
         });
     }
@@ -91,6 +96,7 @@ class NavigationManager {
                 const href = link.getAttribute('href') || '';
                 const targetPage = href.replace('#', '');
                 if (targetPage) {
+                    window.location.hash = `#${targetPage}`;
                     this.switchPage(targetPage);
                 }
             });
@@ -200,6 +206,15 @@ class NavigationManager {
             case 'alert-config':
                 console.log('切换到 告警配置页面');
                 break;
+            case 'fault-center':
+                console.log('切换到 故障中心页面');
+                break;
+            case 'exec-logs':
+                console.log('切换到 执行日志页面');
+                break;
+            case 'llm-config':
+                console.log('切换到 LLM 配置页面');
+                break;
         }
     }
 
@@ -228,6 +243,7 @@ class NavigationManager {
                         e.stopPropagation();
                         const targetPage = (link.getAttribute('href') || '').replace('#', '');
                         if (targetPage) {
+                            window.location.hash = `#${targetPage}`;
                             this.switchPage(targetPage);
                             // 收起下拉菜单
                             this.closeAllDropdowns();
@@ -305,6 +321,7 @@ class NavigationManager {
                         e.stopPropagation();
                         const targetPage = (link.getAttribute('href') || '').replace('#', '');
                         if (targetPage) {
+                            window.location.hash = `#${targetPage}`;
                             this.switchPage(targetPage);
                             // 收起用户菜单
                             avatar.setAttribute('aria-expanded', 'false');
