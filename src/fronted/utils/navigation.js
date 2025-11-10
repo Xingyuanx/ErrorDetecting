@@ -44,12 +44,29 @@ class NavigationManager {
     applyInitialRoute() {
         const hash = window.location.hash?.replace('#', '') || '';
         const validSection = document.getElementById(hash);
+        const auth = window.authManager;
+        // 未登录时仅允许进入登录或注册页
+        if (auth && !auth.isAuthenticated()) {
+            const target = (hash === 'register') ? 'register' : 'login';
+            window.location.hash = `#${target}`;
+            this.switchPage(target);
+            auth.toggleAuthUI();
+            return;
+        }
+
+        // 已登录则检查路由权限
         if (hash && validSection) {
-            this.switchPage(hash);
+            if (auth && !auth.allowRoute(hash)) {
+                const fallback = auth.getDefaultPage();
+                window.location.hash = `#${fallback}`;
+                this.switchPage(fallback);
+            } else {
+                this.switchPage(hash);
+            }
         } else {
-            // 默认显示仪表板，并同步哈希
-            window.location.hash = '#dashboard';
-            this.switchPage('dashboard');
+            const fallback = auth ? auth.getDefaultPage() : 'dashboard';
+            window.location.hash = `#${fallback}`;
+            this.switchPage(fallback);
         }
     }
 
@@ -59,9 +76,22 @@ class NavigationManager {
     bindHashChange() {
         window.addEventListener('hashchange', () => {
             const hash = window.location.hash?.replace('#', '') || '';
-            if (hash) {
-                this.switchPage(hash);
+            if (!hash) return;
+            const auth = window.authManager;
+            if (auth && !auth.isAuthenticated()) {
+                const target = (hash === 'register') ? 'register' : 'login';
+                window.location.hash = `#${target}`;
+                this.switchPage(target);
+                auth.toggleAuthUI();
+                return;
             }
+            if (auth && !auth.allowRoute(hash)) {
+                const fallback = auth.getDefaultPage();
+                window.location.hash = `#${fallback}`;
+                this.switchPage(fallback);
+                return;
+            }
+            this.switchPage(hash);
         });
     }
 
@@ -77,6 +107,19 @@ class NavigationManager {
                 e.preventDefault();
                 const targetPage = item.getAttribute('data-page');
                 if (targetPage) {
+                    const auth = window.authManager;
+                    if (auth && !auth.isAuthenticated()) {
+                        window.location.hash = '#login';
+                        this.switchPage('login');
+                        auth.toggleAuthUI();
+                        return;
+                    }
+                    if (auth && !auth.allowRoute(targetPage)) {
+                        const fallback = auth.getDefaultPage();
+                        window.location.hash = `#${fallback}`;
+                        this.switchPage(fallback);
+                        return;
+                    }
                     // 同步哈希，支持刷新与分享链接
                     window.location.hash = `#${targetPage}`;
                     this.switchPage(targetPage);
@@ -96,6 +139,19 @@ class NavigationManager {
                 const href = link.getAttribute('href') || '';
                 const targetPage = href.replace('#', '');
                 if (targetPage) {
+                    const auth = window.authManager;
+                    if (auth && !auth.isAuthenticated()) {
+                        window.location.hash = '#login';
+                        this.switchPage('login');
+                        auth.toggleAuthUI();
+                        return;
+                    }
+                    if (auth && !auth.allowRoute(targetPage)) {
+                        const fallback = auth.getDefaultPage();
+                        window.location.hash = `#${fallback}`;
+                        this.switchPage(fallback);
+                        return;
+                    }
                     window.location.hash = `#${targetPage}`;
                     this.switchPage(targetPage);
                 }
@@ -108,6 +164,13 @@ class NavigationManager {
      * @param {string} pageName - 目标页面名称
      */
     switchPage(pageName) {
+        const auth = window.authManager;
+        if (auth && !auth.isAuthenticated()) {
+            pageName = (pageName === 'register') ? 'register' : 'login';
+        }
+        if (auth && !auth.allowRoute(pageName)) {
+            pageName = auth.getDefaultPage();
+        }
         // 隐藏所有页面
         const allSections = document.querySelectorAll('.layout__section, #dashboard');
         allSections.forEach(section => {
@@ -133,6 +196,12 @@ class NavigationManager {
         // 如果存在响应式管理器，切换页面后关闭侧边栏（在移动端体验更好）
         if (window.responsiveManager && typeof window.responsiveManager.closeSidebar === 'function') {
             window.responsiveManager.closeSidebar();
+        }
+
+        // 切换后根据角色刷新可见性
+        if (auth && typeof auth.applyRolePermissions === 'function') {
+            auth.applyRolePermissions();
+            auth.toggleAuthUI();
         }
     }
 
@@ -243,6 +312,19 @@ class NavigationManager {
                         e.stopPropagation();
                         const targetPage = (link.getAttribute('href') || '').replace('#', '');
                         if (targetPage) {
+                            const auth = window.authManager;
+                            if (auth && !auth.isAuthenticated()) {
+                                window.location.hash = '#login';
+                                this.switchPage('login');
+                                auth.toggleAuthUI();
+                                return;
+                            }
+                            if (auth && !auth.allowRoute(targetPage)) {
+                                const fallback = auth.getDefaultPage();
+                                window.location.hash = `#${fallback}`;
+                                this.switchPage(fallback);
+                                return;
+                            }
                             window.location.hash = `#${targetPage}`;
                             this.switchPage(targetPage);
                             // 收起下拉菜单
@@ -321,6 +403,33 @@ class NavigationManager {
                         e.stopPropagation();
                         const targetPage = (link.getAttribute('href') || '').replace('#', '');
                         if (targetPage) {
+                            const auth = window.authManager;
+                            if (targetPage === 'logout') {
+                                if (auth && typeof auth.logout === 'function') {
+                                    auth.logout();
+                                }
+                                window.location.hash = '#login';
+                                this.switchPage('login');
+                                avatar.setAttribute('aria-expanded', 'false');
+                                dropdown.classList.remove('header__user-dropdown--show');
+                                return;
+                            }
+                            if (auth && !auth.isAuthenticated()) {
+                                window.location.hash = '#login';
+                                this.switchPage('login');
+                                avatar.setAttribute('aria-expanded', 'false');
+                                dropdown.classList.remove('header__user-dropdown--show');
+                                if (auth) auth.toggleAuthUI();
+                                return;
+                            }
+                            if (auth && !auth.allowRoute(targetPage)) {
+                                const fallback = auth.getDefaultPage();
+                                window.location.hash = `#${fallback}`;
+                                this.switchPage(fallback);
+                                avatar.setAttribute('aria-expanded', 'false');
+                                dropdown.classList.remove('header__user-dropdown--show');
+                                return;
+                            }
                             window.location.hash = `#${targetPage}`;
                             this.switchPage(targetPage);
                             // 收起用户菜单

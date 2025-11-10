@@ -62,6 +62,11 @@
                     自动修复
                 </a>
                 
+                <!-- 节点管理页面（新增） -->
+                <a href="#node-mgmt" class="header__nav-item" data-page="node-mgmt">
+                    节点管理
+                </a>
+                
                 <!-- 故障中心页面 - 对应用例图中的 UC_FaultCenter -->
                 <a href="#fault-center" class="header__nav-item" data-page="fault-center">
                     故障中心
@@ -73,7 +78,7 @@
                 </a>
                 
                 <!-- 系统配置下拉菜单 -->
-                <div class="header__dropdown">
+                <div class="header__dropdown" data-role="admin-only">
                     <button class="header__nav-item header__dropdown-trigger" 
                             aria-haspopup="true" aria-expanded="false">
                         系统配置
@@ -129,8 +134,11 @@
                     <a href="#account" class="header__user-dropdown-item" role="menuitem">
                         账号管理
                     </a>
-                    <a href="#clusters" class="header__user-dropdown-item" role="menuitem">
+                    <a href="#clusters" class="header__user-dropdown-item" role="menuitem" data-role="admin-only">
                         集群管理
+                    </a>
+                    <a href="#logout" id="logout-link" class="header__user-dropdown-item" role="menuitem">
+                        退出登录
                     </a>
                 </div>
             </div>
@@ -148,19 +156,19 @@
             
             <!-- 侧边栏导航菜单 -->
             <nav class="sidebar__nav" role="navigation" aria-label="权限管理">
-                <a href="#user-management" class="sidebar__link">
+                <a href="#user-management" class="sidebar__link" data-role="admin-only">
                     <i class="fas fa-users sidebar__icon" aria-hidden="true"></i>
                     用户管理
                 </a>
-                <a href="#role-assignment" class="sidebar__link">
+                <a href="#role-assignment" class="sidebar__link" data-role="admin-only">
                     <i class="fas fa-user-tag sidebar__icon" aria-hidden="true"></i>
                     角色分配
                 </a>
-                <a href="#permission-policy" class="sidebar__link">
+                <a href="#permission-policy" class="sidebar__link" data-role="admin-only">
                     <i class="fas fa-shield-alt sidebar__icon" aria-hidden="true"></i>
                     权限策略
                 </a>
-                <a href="#audit-logs" class="sidebar__link">
+                <a href="#audit-logs" class="sidebar__link" data-role="admin-only">
                     <i class="fas fa-clipboard-list sidebar__icon" aria-hidden="true"></i>
                     审计日志
                 </a>
@@ -170,6 +178,172 @@
         <!-- 主内容区域 -->
         <main class="layout__main" role="main">
             <div class="layout__content">
+                <!-- ==================== 登录页面（新增） ==================== -->
+                <section id="login" class="u-hidden layout__section" aria-labelledby="login-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="login-title" class="layout__page-title">用户登录</h2>
+                            <p class="layout__page-subtitle">统一登录入口，自动识别用户类型</p>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-body">
+                            <form id="login-form" class="layout__grid layout__grid--3" aria-label="登录表单">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">账号</label>
+                                    <input id="login-account" type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="请输入账号" autocomplete="username">
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">密码</label>
+                                    <input id="login-password" type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="请输入密码" autocomplete="current-password">
+                                </div>
+                                <div class="u-flex u-items-end u-gap-2">
+                                    <button id="login-submit" type="submit" class="btn btn--primary u-w-full">登录</button>
+                                    <button id="go-register" type="button" class="btn u-w-full">新用户注册</button>
+                                </div>
+                            </form>
+                            <div class="u-mt-3 u-text-sm u-text-gray-600">
+                                演示账号：管理员 admin/admin123，操作者 ops/ops123，观察者 obs/obs123
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 注册页面（新增） ==================== -->
+                <section id="register" class="u-hidden layout__section" aria-labelledby="register-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="register-title" class="layout__page-title">新用户注册</h2>
+                            <p class="layout__page-subtitle">填写信息后进入审批队列</p>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-body">
+                            <form id="register-form" class="layout__grid layout__grid--3" aria-label="注册表单">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">用户名</label>
+                                    <input id="reg-username" type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="请输入用户名" required>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">密码</label>
+                                    <input id="reg-password" type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="请输入密码" required>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">确认密码</label>
+                                    <input id="reg-password-confirm" type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="请再次输入密码" required>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">联系方式</label>
+                                    <input id="reg-contact" type="text" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="邮箱或电话" required>
+                                </div>
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">注册类型</label>
+                                    <select id="reg-role" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                                        <option value="operator" selected>操作者</option>
+                                        <option value="observer">观察者</option>
+                                        <option value="admin">管理员</option>
+                                    </select>
+                                </div>
+                                <div class="u-flex u-items-end">
+                                    <button id="register-submit" type="submit" class="btn btn--primary u-w-full">提交申请</button>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- ==================== 节点管理（操作者专用，新增） ==================== -->
+                <section id="node-mgmt" class="u-hidden layout__section" aria-labelledby="node-mgmt-title">
+                    <header class="layout__page-header">
+                        <div>
+                            <h2 id="node-mgmt-title" class="layout__page-title">节点管理</h2>
+                            <p class="layout__page-subtitle">查看所属节点、监控状态、日志与维修</p>
+                        </div>
+                        <div class="layout__page-actions">
+                            <button class="btn btn--primary" id="node-add" data-requires-edit="true">新增节点</button>
+                        </div>
+                    </header>
+
+                    <article class="layout__card">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">我的节点列表</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table" id="node-mgmt-table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">节点名称</th>
+                                            <th class="dashboard__table-th" scope="col">IP</th>
+                                            <th class="dashboard__table-th" scope="col">状态</th>
+                                            <th class="dashboard__table-th" scope="col">最近更新时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="node-mgmt-tbody">
+                                        <!-- 动态填充 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="layout__card u-mt-4">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">节点状态监控</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div id="nodeMgmtCpuChart" class="dashboard__chart-container" role="img" aria-label="节点监控图表"></div>
+                        </div>
+                    </article>
+
+                    <article class="layout__card u-mt-4">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">专属日志</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table" id="node-mgmt-logs">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">时间</th>
+                                            <th class="dashboard__table-th" scope="col">节点</th>
+                                            <th class="dashboard__table-th" scope="col">级别</th>
+                                            <th class="dashboard__table-th" scope="col">消息</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="node-mgmt-logs-body">
+                                        <!-- 动态填充 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="layout__card u-mt-4">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">故障维修</h3>
+                        </div>
+                        <div class="layout__card-body">
+                            <div class="layout__grid layout__grid--3">
+                                <div>
+                                    <label class="u-text-sm u-font-medium u-text-gray-700">模型选择</label>
+                                    <select id="repair-model" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                                        <option value="restart">简单重启</option>
+                                        <option value="hdfs-fix">HDFS 修复</option>
+                                        <option value="custom">自定义脚本</option>
+                                    </select>
+                                </div>
+                                <div class="u-flex u-items-end">
+                                    <button id="repair-exec" class="btn btn--danger" data-requires-edit="true">
+                                        执行维修
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
                 <!-- ==================== 仪表板部分 ==================== -->
                 <section id="dashboard" class="dashboard" aria-labelledby="dashboard-title">
                     <!-- 页面标题和更新时间 -->
@@ -660,7 +834,7 @@
                             <p class="layout__page-subtitle">自动修复检测到的系统故障</p>
                         </div>
                         <div class="layout__page-actions">
-                            <button class="btn btn--danger">
+                            <button class="btn btn--danger" data-requires-edit="true" id="repair-exec-global">
                                 <i class="fas fa-tools btn__icon--left" aria-hidden="true"></i>
                                 执行修复
                             </button>
@@ -1051,7 +1225,7 @@ agent1.sinks.k1.hdfs.path = hdfs://namenode:8020/logs/
                             <p class="layout__page-subtitle">管理系统用户、基础信息与状态</p>
                         </div>
                         <div class="layout__page-actions">
-                            <button class="btn btn--primary" disabled title="功能待实现">新增用户</button>
+                            <button class="btn btn--primary" id="admin-add-user" data-requires-edit="true">新增用户</button>
                         </div>
                     </header>
 
@@ -1061,13 +1235,14 @@ agent1.sinks.k1.hdfs.path = hdfs://namenode:8020/logs/
                         </div>
                         <div class="layout__card-body u-p-0">
                             <div class="u-overflow-x-auto">
-                                <table class="dashboard__table">
+                                <table class="dashboard__table" id="admin-user-table">
                                     <thead class="dashboard__table-head">
                                         <tr>
                                             <th class="dashboard__table-th" scope="col">用户名</th>
                                             <th class="dashboard__table-th" scope="col">邮箱</th>
                                             <th class="dashboard__table-th" scope="col">角色</th>
                                             <th class="dashboard__table-th" scope="col">状态</th>
+                                            <th class="dashboard__table-th" scope="col">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1076,13 +1251,42 @@ agent1.sinks.k1.hdfs.path = hdfs://namenode:8020/logs/
                                             <td class="dashboard__table-td">alice@example.com</td>
                                             <td class="dashboard__table-td">管理员</td>
                                             <td class="dashboard__table-td"><span class="u-text-success">启用</span></td>
+                                            <td class="dashboard__table-td">
+                                                <button class="btn u-text-sm" data-action="ban" data-username="alice" data-requires-edit="true">封禁</button>
+                                            </td>
                                         </tr>
                                         <tr class="dashboard__table-row">
                                             <td class="dashboard__table-td">bob</td>
                                             <td class="dashboard__table-td">bob@example.com</td>
                                             <td class="dashboard__table-td">观察员</td>
                                             <td class="dashboard__table-td"><span class="u-text-warning">待审核</span></td>
+                                            <td class="dashboard__table-td">
+                                                <button class="btn u-text-sm" data-action="unban" data-username="bob" data-requires-edit="true">解禁</button>
+                                            </td>
                                         </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="layout__card u-mt-4">
+                        <div class="layout__card-header">
+                            <h3 class="layout__card-title">待审批注册列表</h3>
+                        </div>
+                        <div class="layout__card-body u-p-0">
+                            <div class="u-overflow-x-auto">
+                                <table class="dashboard__table" id="admin-approval-table">
+                                    <thead class="dashboard__table-head">
+                                        <tr>
+                                            <th class="dashboard__table-th" scope="col">用户名</th>
+                                            <th class="dashboard__table-th" scope="col">注册类型</th>
+                                            <th class="dashboard__table-th" scope="col">联系方式</th>
+                                            <th class="dashboard__table-th" scope="col">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-approval-tbody">
+                                        <!-- 动态填充审批项 -->
                                     </tbody>
                                 </table>
                             </div>
@@ -1227,6 +1431,7 @@ agent1.sinks.k1.hdfs.path = hdfs://namenode:8020/logs/
     </div>
 
     <!-- JavaScript 脚本 -->
+    <script src="./utils/auth.js"></script>
     <script src="./utils/charts.js"></script>
     <script src="./utils/navigation.js"></script>
     <script src="./utils/responsive.js"></script>
