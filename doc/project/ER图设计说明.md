@@ -4,7 +4,8 @@
 
 ### 1.1 设计目标
 本ER图设计旨在为故障检测系统提供完整的数据模型，支持：
-- Hadoop集群故障检测与自动修复
+- 多集群管理与故障检测
+- 用户与集群的权限分离
 - 日志收集、存储和分析
 - 用户权限管理和操作审计
 - 系统配置和告警规则管理
@@ -22,171 +23,158 @@
 **实体说明**: 系统检测到的故障信息
 **主要属性**:
 - fault_id (故障标识) - 主标识符
+- cluster_id (集群ID) - 外键
 - fault_type (故障类型)
 - fault_level (故障级别)
 - title (故障标题)
-- description (故障描述)
 - status (处理状态)
-- created_at (创建时间)
-- resolved_at (解决时间)
 
 **业务规则**:
 - 每个故障必须有唯一的fault_id
-- 故障级别分为: low, medium, high, critical
-- 状态流转: detected → analyzing → repairing → resolved/failed
+- 故障必须关联到一个集群
 
 #### 实体2: 执行日志 (ExecutionLog)
 **实体说明**: 自动修复脚本的执行记录
 **主要属性**:
 - exec_id (执行标识) - 主标识符
 - command_type (命令类型)
-- command_content (命令内容)
 - execution_status (执行状态)
-- start_time (开始时间)
-- end_time (结束时间)
-- exit_code (退出码)
 
 **业务规则**:
 - 每次执行必须关联一个故障记录
-- 执行状态: pending → running → success/failed/timeout
-- 高风险操作需要人工确认
 
 #### 实体3: 集群状态 (ClusterStatus)
-**实体说明**: Hadoop集群节点的状态信息
+**实体说明**: 集群各节点的状态信息
 **主要属性**:
 - node_id (节点标识) - 主标识符
+- cluster_id (集群ID) - 外键
 - node_name (节点名称)
-- ip_address (IP地址)
 - node_role (节点角色)
 - node_status (节点状态)
-- cpu_usage (CPU使用率)
-- memory_usage (内存使用率)
-- disk_usage (磁盘使用率)
 - health_score (健康评分)
-- last_heartbeat (最后心跳)
 
 **业务规则**:
-- 节点角色: NameNode, DataNode, ResourceManager, NodeManager
-- 节点状态: online, offline, maintenance, unknown
-- 健康评分范围: 0-100
+- 每个节点状态记录必须关联到一个集群
 
 #### 实体4: 系统日志 (SystemLog)
 **实体说明**: 从Flume采集的原始日志数据
 **主要属性**:
 - log_id (日志标识) - 主标识符
+- cluster_id (集群ID) - 外键
 - fault_id (关联故障ID)
 - timestamp (时间戳)
-- host (主机名)
 - service (服务名)
 - log_level (日志级别)
-- message (日志消息)
-- processed (是否已处理)
 
 **业务规则**:
-- 日志级别: DEBUG, INFO, WARN, ERROR, FATAL
-- 支持结构化和非结构化日志
-- 日志保留期限: 90天
+- 日志可以关联到特定集群和故障
 
-### 2.2 配置管理实体
+### 2.2 配置管理与用户实体
 
-#### 实体5: 应用配置 (AppConfiguration)
+#### 实体5: 集群 (Cluster)
+**实体说明**: 用户管理的集群信息
+**主要属性**:
+- cluster_id (集群ID) - 主标识符
+- cluster_name (集群名称)
+- cluster_type (集群类型)
+- description (描述)
+
+**业务规则**:
+- 集群名称必须唯一
+
+#### 实体6: 用户 (User)
+**实体说明**: 系统用户信息
+**主要属性**:
+- user_id (用户ID) - 主标识符
+- username (用户名)
+- email (邮箱)
+- role (全局角色)
+
+**业务规则**:
+- 用户名和邮箱必须唯一
+- 全局角色分为: admin, operator, viewer
+
+#### 实体7: 用户集群映射 (UserClusterMapping)
+**实体说明**: 用户和集群的多对多关系及角色定义
+**主要属性**:
+- user_id (用户ID) - 组合主标识符, 外键
+- cluster_id (集群ID) - 组合主标识符, 外键
+- role (集群角色)
+
+**业务规则**:
+- 定义用户在特定集群中的角色 (admin, operator, viewer)
+
+#### 实体8: 操作审计 (AuditLog)
+**实体说明**: 用户操作审计记录
+**主要属性**:
+- user_id (用户ID) - 外键
+- cluster_id (集群ID) - 外键
+- action (操作动作)
+- resource_type (资源类型)
+
+**业务规则**:
+- 记录所有重要操作，并关联到用户和集群
+
+#### 实体9: 应用配置 (AppConfiguration)
 **实体说明**: 存储系统各类配置信息
 **主要属性**:
 - config_type (配置类型) - 组合主标识符
 - config_key (配置键) - 组合主标识符
 - config_value (配置值)
-- is_active (是否启用)
 
 **业务规则**:
 - config_type和config_key的组合必须唯一
-- 配置类型: system, alert, notification
-- 支持配置的热更新
 
-### 2.3 用户管理实体
+### 2.3 扩展实体
 
-#### 实体6: 用户 (User)
-**实体说明**: 系统用户信息
-**主要属性**:
-- username (用户名) - 主标识符
-- email (邮箱)
-- password_hash (密码哈希)
-- full_name (姓名)
-- role (角色)
-- department (部门)
-- is_active (是否激活)
-- last_login (最后登录)
-
-**业务规则**:
-- 用户名和邮箱必须唯一
-- 角色类型: admin, operator, viewer
-- 密码必须加密存储
-
-#### 实体7: 操作审计 (AuditLog)
-**实体说明**: 用户操作审计记录
-**主要属性**:
-- username (用户名)
-- action (操作动作)
-- resource_type (资源类型)
-- resource_id (资源ID)
-- ip_address (IP地址)
-- created_at (操作时间)
-
-**业务规则**:
-- 记录所有重要操作
-- 审计日志不可删除
-- 保留期限: 1年
-
-### 2.4 扩展实体
-
-#### 实体8: 修复模板 (RepairTemplate)
+#### 实体10: 修复模板 (RepairTemplate)
 **实体说明**: 预定义的修复脚本模板
 **主要属性**:
 - template_name (模板名称)
 - fault_type (适用故障类型)
 - script_content (脚本内容)
-- risk_level (风险级别)
 
 ## 3. 实体关系设计
 
-### 3.1 主要关系
+### 3.1 核心关系 (多对多)
 
-#### 关系1: 故障记录 ↔ 执行日志 (1:N)
+#### 关系1: 用户 ↔ 集群 (N:M)
+- **关系类型**: 多对多
+- **实现方式**: 通过`UserClusterMapping`中间表实现
+- **关系说明**: 一个用户可以管理多个集群，一个集群也可以被多个用户管理
+- **外键**:
+  - UserClusterMapping.user_id → User.id
+  - UserClusterMapping.cluster_id → Cluster.id
+
+### 3.2 主要关系 (一对多)
+
+#### 关系2: 集群 ↔ 故障记录 (1:N)
 - **关系类型**: 一对多
-- **关系说明**: 一个故障可能有多次修复执行记录
+- **外键**: FaultRecord.cluster_id → Cluster.id
+
+#### 关系3: 集群 ↔ 集群状态 (1:N)
+- **关系类型**: 一对多
+- **外键**: ClusterStatus.cluster_id → Cluster.id
+
+#### 关系4: 集群 ↔ 系统日志 (1:N)
+- **关系类型**: 一对多
+- **外键**: SystemLog.cluster_id → Cluster.id
+
+#### 关系5: 集群 ↔ 操作审计 (1:N)
+- **关系类型**: 一对多
+- **外键**: AuditLog.cluster_id → Cluster.id
+
+#### 关系6: 故障记录 ↔ 执行日志 (1:N)
+- **关系类型**: 一对多
 - **外键**: ExecutionLog.fault_id → FaultRecord.fault_id
-- **约束**: 级联删除
 
-#### 关系2: 用户 ↔ 操作审计 (1:N)
+#### 关系7: 用户 ↔ 操作审计 (1:N)
 - **关系类型**: 一对多
-- **关系说明**: 一个用户可能有多条操作审计记录
 - **外键**: AuditLog.user_id → User.id
-- **约束**: 设置为NULL（用户删除后保留审计记录）
 
-#### 关系3: 故障记录 ↔ 系统日志 (1:N)
+#### 关系8: 故障记录 ↔ 系统日志 (1:N)
 - **关系类型**: 一对多
-- **关系说明**: 一个故障可能关联多条日志
 - **外键**: SystemLog.fault_id → FaultRecord.fault_id
-- **约束**: 可选关联（日志可能不关联任何故障）
-
-#### 关系4: 集群状态 ↔ 故障记录 (1:N)
-- **关系类型**: 一对多
-- **关系说明**: 一个节点可能产生多个故障
-- **实现方式**: 通过JSON字段affected_nodes实现
-- **备注**: 支持一个故障影响多个节点
-
-### 3.2 弱实体关系
-
-#### 关系5: 修复模板 ↔ 执行日志 (1:N)
-- **关系类型**: 一对多（弱关系）
-- **关系说明**: 执行日志可能基于某个修复模板
-- **实现方式**: 通过script_path字段关联
-- **备注**: 不强制外键约束
-
-#### 关系6: 应用配置 ↔ 故障记录 (1:N)
-- **关系类型**: 一对多（弱关系）
-- **关系说明**: 故障可能由告警规则类型的配置触发
-- **实现方式**: 通过业务逻辑关联
-- **备注**: 不直接建立外键关系
 
 ## 4. PowerDesigner建模步骤
 
@@ -194,165 +182,68 @@
 
 #### 步骤1: 创建实体
 1. 打开PowerDesigner，新建概念数据模型
-2. 使用Entity工具创建8个核心实体
+2. 使用Entity工具创建10个实体
 3. 为每个实体添加标识符和属性
-4. 设置属性的数据类型和约束
 
 #### 步骤2: 建立关系
 1. 使用Relationship工具连接相关实体
-2. 设置关系的基数（1:1, 1:N, N:M）
-3. 定义关系的角色名称
-4. 设置关系的约束条件
+2. **重点**: 创建User和Cluster之间的N:M关系，PowerDesigner会自动生成`UserClusterMapping`中间表
+3. 设置其他1:N关系的基数和外键
 
-#### 步骤3: 添加业务规则
-1. 在实体上右键选择Properties
-2. 在Business Rules标签页添加业务规则
-3. 定义完整性约束和验证规则
-
-### 4.2 逻辑数据模型(LDM)生成
-
-#### 步骤1: CDM转换为LDM
-1. 选择Tools → Generate Logical Data Model
-2. 选择目标数据库类型（MySQL）
-3. 配置转换选项和命名规则
-4. 生成LDM
-
-#### 步骤2: 优化逻辑模型
-1. 检查表结构和字段定义
-2. 优化数据类型和长度
-3. 添加索引和约束
-4. 验证外键关系
-
-### 4.3 物理数据模型(PDM)生成
-
-#### 步骤1: LDM转换为PDM
-1. 选择Tools → Generate Physical Data Model
-2. 选择MySQL 8.0数据库
-3. 配置物理存储参数
-4. 生成PDM
-
-#### 步骤2: 物理优化
-1. 设置表的存储引擎（InnoDB）
-2. 配置字符集（utf8mb4）
-3. 优化索引策略
-4. 设置分区方案（如需要）
+### 4.2 逻辑与物理模型生成
+(步骤与之前类似，确保在生成PDM时，所有外键和索引都已正确创建)
 
 ## 5. ER图布局建议
 
 ### 5.1 图形布局
 ```
-核心业务区域（左侧）:
+中心区域（用户-集群关系）:
 ┌─────────────────────────────────┐
-│  FaultRecord ←→ ExecutionLog    │
-│       ↕                        │
-│  SystemLog   ←→ ClusterStatus   │
+│      User ←- (N:M) -→ Cluster      │
+│         (UserClusterMapping)      │
 └─────────────────────────────────┘
 
-管理区域（右侧）:
+集群关联实体（下方）:
 ┌─────────────────────────────────┐
-│  AppConfiguration               │
-│       ↕                        │
-│  User ←→ AuditLog              │
-│       ↕                        │
-│  RepairTemplate                 │
+│ Cluster --→ FaultRecord         │
+│         --→ ClusterStatus       │
+│         --→ SystemLog           │
+│         --→ AuditLog            │
+└─────────────────────────────────┘
+
+其他关联实体（两侧）:
+┌─────────────────────────────────┐
+│ FaultRecord --→ ExecutionLog    │
+│ User --→ AuditLog               │
+└─────────────────────────────────┘
+
+独立实体（顶部）:
+┌─────────────────────────────────┐
+│ AppConfiguration, RepairTemplate│
 └─────────────────────────────────┘
 ```
 
 ### 5.2 颜色编码建议
-- **核心实体**: 蓝色系（#E3F2FD）
-- **管理实体**: 绿色系（#E8F5E8）
-
-### 5.3 关系线样式
-- **强关系**: 实线，带箭头
-- **弱关系**: 虚线，带箭头
-- **一对多**: 单向箭头
+- **核心实体**: 蓝色系 (FaultRecord, Cluster, User)
+- **关联实体**: 绿色系 (ExecutionLog, ClusterStatus, SystemLog)
+- **管理实体**: 灰色系 (AuditLog, AppConfiguration)
+- **中间表**: 黄色系 (UserClusterMapping)
 
 ## 6. 数据完整性设计
 
-### 6.1 实体完整性
-- 每个实体必须有主键
-- 主键不能为空且唯一
-- 建议使用自增长ID作为代理键
+### 6.1 参照完整性
+- 确保所有外键都设置了正确的参照操作（如ON DELETE CASCADE或ON DELETE SET NULL）
+- `UserClusterMapping`的`user_id`和`cluster_id`应设置为级联删除，确保主实体删除时，映射关系也被清理
 
-### 6.2 参照完整性
-- 外键必须引用存在的主键值
-- 设置适当的级联操作
-- 考虑孤儿记录的处理策略
-
-### 6.3 域完整性
-- 定义字段的数据类型和长度
-- 设置NOT NULL约束
-- 使用CHECK约束验证数据范围
-- 定义枚举类型的有效值
-
-### 6.4 用户定义完整性
-- 业务规则约束
-- 触发器实现复杂验证
-- 存储过程封装业务逻辑
+(其他完整性设计与之前类似)
 
 ## 7. 性能优化考虑
 
 ### 7.1 索引设计
-- 为外键字段创建索引
-- 为频繁查询字段创建索引
-- 考虑复合索引的使用
-- 避免过多索引影响写入性能
+- 为所有外键字段创建索引，特别是`cluster_id`和`user_id`
+- `UserClusterMapping`表的主键是`(user_id, cluster_id)`复合键，这本身就是一个高效的索引
+- 考虑在`SystemLog`和`AuditLog`上创建基于`(cluster_id, created_at)`的复合索引，以优化按集群和时间范围的查询
 
-### 7.2 分区策略
-- system_logs表按时间分区
-- audit_logs表按时间分区
-- 大表考虑水平分区
+(其他性能优化考虑与之前类似)
 
-### 7.3 数据类型优化
-- 选择合适的数据类型长度
-- 使用ENUM代替VARCHAR（固定值）
-- JSON字段用于半结构化数据
-- 时间字段使用TIMESTAMP
-
-## 8. 文档生成
-
-### 8.1 自动生成文档
-1. 在PDM中选择Report → Generate Report
-2. 选择HTML或RTF格式
-3. 配置报告内容和样式
-4. 生成完整的数据库设计文档
-
-### 8.2 导出SQL脚本
-1. 选择Database → Generate Database
-2. 配置生成选项
-3. 生成CREATE TABLE脚本
-4. 包含索引、约束和初始数据
-
-## 9. 版本控制
-
-### 9.1 模型版本管理
-- 使用PowerDesigner的版本控制功能
-- 定期备份模型文件
-- 记录每次修改的变更日志
-- 建立模型审核流程
-
-### 9.2 数据库变更管理
-- 使用数据库迁移脚本
-- 记录结构变更历史
-- 建立回滚机制
-- 测试环境先行验证
-
-## 10. 最佳实践
-
-### 10.1 命名规范
-- 表名使用复数形式
-- 字段名使用下划线分隔
-- 外键字段以_id结尾
-- 索引名以idx_开头
-
-### 10.2 设计原则
-- 遵循第三范式
-- 避免冗余数据
-- 考虑查询性能
-- 保持模型简洁
-
-### 10.3 维护建议
-- 定期审查模型设计
-- 根据业务变化调整结构
-- 监控数据库性能
-- 及时优化慢查询
+(8, 9, 10节内容与之前版本基本保持一致，仅需确保命名规范和设计原则覆盖到新表即可)

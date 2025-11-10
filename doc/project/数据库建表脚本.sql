@@ -74,6 +74,7 @@ CREATE TABLE exec_logs (
 DROP TABLE IF EXISTS cluster_status;
 CREATE TABLE cluster_status (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    cluster_id BIGINT NOT NULL COMMENT '集群ID',
     node_id VARCHAR(50) NOT NULL COMMENT '节点标识',
     node_name VARCHAR(100) NOT NULL COMMENT '节点名称',
     ip_address VARCHAR(15) NOT NULL COMMENT 'IP地址',
@@ -89,6 +90,7 @@ CREATE TABLE cluster_status (
     
     PRIMARY KEY (id),
     UNIQUE KEY uk_node_id (node_id),
+    KEY idx_cluster_id (cluster_id),
     KEY idx_node_status (node_status),
     KEY idx_last_heartbeat (last_heartbeat)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集群状态表';
@@ -99,6 +101,7 @@ CREATE TABLE system_logs (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
     log_id VARCHAR(32) NOT NULL COMMENT '日志唯一标识',
     fault_id VARCHAR(32) COMMENT '关联故障ID',
+    cluster_id BIGINT COMMENT '关联集群ID',
     timestamp TIMESTAMP NOT NULL COMMENT '日志时间戳',
     host VARCHAR(100) NOT NULL COMMENT '主机名',
     service VARCHAR(50) NOT NULL COMMENT '服务名',
@@ -112,6 +115,7 @@ CREATE TABLE system_logs (
     PRIMARY KEY (id),
     UNIQUE KEY uk_log_id (log_id),
     KEY idx_fault_id (fault_id),
+    KEY idx_cluster_id (cluster_id),
     KEY idx_timestamp (timestamp),
     KEY idx_log_level (log_level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统日志表';
@@ -120,7 +124,81 @@ CREATE TABLE system_logs (
 -- 2. 配置管理与用户表
 -- =====================================================
 
--- 2.1 应用统一配置表
+-- 2.1 集群信息表
+DROP TABLE IF EXISTS clusters;
+CREATE TABLE clusters (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    cluster_name VARCHAR(100) NOT NULL COMMENT '集群名称',
+    cluster_type VARCHAR(50) NOT NULL COMMENT '集群类型 (e.g., Hadoop, Kubernetes)',
+    description TEXT COMMENT '集群描述',
+    config_info JSON COMMENT '集群配置信息 (e.g., NameNode地址)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_cluster_name (cluster_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集群信息表';
+
+-- 2.2 角色表
+DROP TABLE IF EXISTS roles;
+CREATE TABLE roles (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    role_name VARCHAR(50) NOT NULL COMMENT '角色名称',
+    role_key VARCHAR(50) NOT NULL COMMENT '角色唯一标识',
+    description VARCHAR(255) COMMENT '角色描述',
+    is_system_role BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否为系统内置角色',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_role_key (role_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
+
+-- 2.3 权限表
+DROP TABLE IF EXISTS permissions;
+CREATE TABLE permissions (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    permission_name VARCHAR(100) NOT NULL COMMENT '权限名称',
+    permission_key VARCHAR(100) NOT NULL COMMENT '权限唯一标识',
+    description VARCHAR(255) COMMENT '权限描述',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_permission_key (permission_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='权限表';
+
+-- 2.4 角色-权限映射表
+DROP TABLE IF EXISTS role_permission_mapping;
+CREATE TABLE role_permission_mapping (
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    permission_id BIGINT NOT NULL COMMENT '权限ID',
+    
+    PRIMARY KEY (role_id, permission_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色-权限映射表';
+
+-- 2.5 用户-角色映射表
+DROP TABLE IF EXISTS user_role_mapping;
+CREATE TABLE user_role_mapping (
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    
+    PRIMARY KEY (user_id, role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户-角色映射表';
+
+-- 2.6 用户与集群映射表
+DROP TABLE IF EXISTS user_cluster_mapping;
+CREATE TABLE user_cluster_mapping (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    cluster_id BIGINT NOT NULL COMMENT '集群ID',
+    role_id BIGINT NOT NULL COMMENT '用户在该集群的角色ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_cluster (user_id, cluster_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户与集群映射表';
+
+-- 2.7 应用统一配置表
 DROP TABLE IF EXISTS app_configurations;
 CREATE TABLE app_configurations (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
@@ -137,7 +215,7 @@ CREATE TABLE app_configurations (
     KEY idx_is_enabled (is_enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应用统一配置表';
 
--- 2.2 用户表
+-- 2.8 用户表
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
@@ -145,7 +223,6 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL COMMENT '邮箱',
     password_hash VARCHAR(255) NOT NULL COMMENT '密码哈希',
     full_name VARCHAR(100) NOT NULL COMMENT '姓名',
-    role ENUM('admin', 'operator', 'viewer') NOT NULL DEFAULT 'operator' COMMENT '角色',
     is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '是否激活',
     last_login TIMESTAMP NULL COMMENT '最后登录时间',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -156,11 +233,13 @@ CREATE TABLE users (
     UNIQUE KEY uk_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
--- 2.3 操作审计表
+-- 2.9 操作审计表
 DROP TABLE IF EXISTS audit_logs;
 CREATE TABLE audit_logs (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
     user_id BIGINT COMMENT '用户ID',
+    cluster_id BIGINT COMMENT '集群ID',
+    role_id BIGINT COMMENT '角色ID',
     username VARCHAR(50) NOT NULL COMMENT '用户名',
     action VARCHAR(100) NOT NULL COMMENT '操作动作',
     resource_type VARCHAR(50) NOT NULL COMMENT '资源类型',
@@ -172,6 +251,8 @@ CREATE TABLE audit_logs (
     
     PRIMARY KEY (id),
     KEY idx_user_id (user_id),
+    KEY idx_cluster_id (cluster_id),
+    KEY idx_role_id (role_id),
     KEY idx_action (action),
     KEY idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作审计表';
@@ -203,6 +284,13 @@ CREATE TABLE repair_templates (
 -- 4. 外键约束
 -- =====================================================
 
+-- 故障记录表关联集群
+ALTER TABLE fault_records
+ADD COLUMN cluster_id BIGINT COMMENT '关联集群ID' AFTER fault_id,
+ADD CONSTRAINT fk_fault_records_cluster_id
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE SET NULL ON UPDATE CASCADE;
+
 -- 执行日志表关联故障记录表
 ALTER TABLE exec_logs 
 ADD CONSTRAINT fk_exec_logs_fault_id 
@@ -215,15 +303,148 @@ ADD CONSTRAINT fk_system_logs_fault_id
 FOREIGN KEY (fault_id) REFERENCES fault_records(fault_id)
 ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- 系统日志表关联集群
+ALTER TABLE system_logs
+ADD CONSTRAINT fk_system_logs_cluster_id
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 集群状态表关联集群
+ALTER TABLE cluster_status
+ADD CONSTRAINT fk_cluster_status_cluster_id
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 角色-权限映射表关联
+ALTER TABLE role_permission_mapping
+ADD CONSTRAINT fk_rp_mapping_role_id
+FOREIGN KEY (role_id) REFERENCES roles(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE role_permission_mapping
+ADD CONSTRAINT fk_rp_mapping_permission_id
+FOREIGN KEY (permission_id) REFERENCES permissions(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 用户-角色映射表关联
+ALTER TABLE user_role_mapping
+ADD CONSTRAINT fk_ur_mapping_user_id
+FOREIGN KEY (user_id) REFERENCES users(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE user_role_mapping
+ADD CONSTRAINT fk_ur_mapping_role_id
+FOREIGN KEY (role_id) REFERENCES roles(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 用户与集群映射表关联
+ALTER TABLE user_cluster_mapping
+ADD CONSTRAINT fk_mapping_user_id
+FOREIGN KEY (user_id) REFERENCES users(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE user_cluster_mapping
+ADD CONSTRAINT fk_mapping_cluster_id
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE user_cluster_mapping
+ADD CONSTRAINT fk_mapping_role_id
+FOREIGN KEY (role_id) REFERENCES roles(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- 审计日志表关联用户表
 ALTER TABLE audit_logs 
 ADD CONSTRAINT fk_audit_logs_user_id 
 FOREIGN KEY (user_id) REFERENCES users(id) 
 ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- 审计日志表关联集群
+ALTER TABLE audit_logs
+ADD CONSTRAINT fk_audit_logs_cluster_id
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 审计日志表关联角色
+ALTER TABLE audit_logs
+ADD CONSTRAINT fk_audit_logs_role_id
+FOREIGN KEY (role_id) REFERENCES roles(id)
+ON DELETE SET NULL ON UPDATE CASCADE;
+
 -- =====================================================
 -- 5. 初始化数据
 -- =====================================================
+
+-- 插入默认集群
+INSERT INTO clusters (cluster_name, cluster_type, description, config_info) VALUES
+('Hadoop主集群', 'Hadoop', '生产环境主Hadoop集群', '{"namenode_uri": "hdfs://nn1.hadoop.prod:8020"}'),
+('Hadoop测试集群', 'Hadoop', '用于测试的Hadoop集群', '{"namenode_uri": "hdfs://nn.hadoop.test:8020"}');
+
+-- 插入默认系统角色
+INSERT INTO roles (role_name, role_key, description, is_system_role) VALUES
+('超级管理员', 'super_admin', '拥有系统所有权限', TRUE),
+('集群管理员', 'cluster_admin', '管理指定集群的所有功能', TRUE),
+('普通操作员', 'operator', '执行常规操作，如查看和执行修复任务', TRUE),
+('只读观察员', 'viewer', '只能查看数据，不能进行任何修改操作', TRUE);
+
+-- 插入默认权限
+INSERT INTO permissions (permission_name, permission_key, description) VALUES
+-- 用户管理
+('查看用户', 'user:read', '查看用户列表和详情'),
+('创建用户', 'user:create', '创建新用户'),
+('编辑用户', 'user:update', '修改用户信息'),
+('删除用户', 'user:delete', '删除用户'),
+-- 角色管理
+('查看角色', 'role:read', '查看角色列表和详情'),
+('创建角色', 'role:create', '创建自定义角色'),
+('编辑角色', 'role:update', '修改角色信息'),
+('删除角色', 'role:delete', '删除自定义角色'),
+('分配权限', 'role:assign_permissions', '为角色分配权限'),
+-- 集群管理
+('查看集群', 'cluster:read', '查看集群列表和状态'),
+('添加集群', 'cluster:create', '添加新集群'),
+('编辑集群', 'cluster:update', '修改集群配置'),
+('删除集群', 'cluster:delete', '删除集群'),
+-- 故障管理
+('查看故障', 'fault:read', '查看故障记录'),
+('分析故障', 'fault:analyze', '执行故障分析'),
+('修复故障', 'fault:repair', '执行修复操作'),
+-- 日志审计
+('查看系统日志', 'log:read', '查看系统运行日志'),
+('查看审计日志', 'audit:read', '查看用户操作审计');
+
+-- 为系统角色分配权限
+-- 超级管理员拥有所有权限
+INSERT INTO role_permission_mapping (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.role_key = 'super_admin';
+
+-- 集群管理员权限
+INSERT INTO role_permission_mapping (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.role_key = 'cluster_admin' AND p.permission_key IN (
+    'cluster:read', 'cluster:update',
+    'fault:read', 'fault:analyze', 'fault:repair',
+    'log:read'
+);
+
+-- 普通操作员权限
+INSERT INTO role_permission_mapping (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.role_key = 'operator' AND p.permission_key IN (
+    'fault:read', 'fault:repair', 'log:read'
+);
+
+-- 只读观察员权限
+INSERT INTO role_permission_mapping (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.role_key = 'viewer' AND p.permission_key IN (
+    'user:read', 'role:read', 'cluster:read', 'fault:read', 'log:read', 'audit:read'
+);
 
 -- 插入默认系统配置
 INSERT INTO app_configurations (config_type, config_key, config_value, description, is_enabled) VALUES
@@ -243,8 +464,25 @@ INSERT INTO app_configurations (config_type, config_key, config_value, descripti
 ('notification', '默认邮件通知', '{"type": "email", "triggers": ["high", "critical"], "recipients": ["admin@example.com"]}', '向管理员发送高危和严重故障的邮件通知', TRUE);
 
 -- 插入默认管理员用户 (密码: admin123)
-INSERT INTO users (username, email, password_hash, full_name, role, is_active) VALUES
-('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDjS', '系统管理员', 'admin', TRUE);
+INSERT INTO users (username, email, password_hash, full_name, is_active) VALUES
+('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDjS', '系统管理员', TRUE);
+
+-- 为管理员分配全局角色
+INSERT INTO user_role_mapping (user_id, role_id)
+SELECT u.id, r.id
+FROM users u, roles r
+WHERE u.username = 'admin' AND r.role_key = 'super_admin';
+
+-- 插入用户与集群的映射关系
+INSERT INTO user_cluster_mapping (user_id, cluster_id, role_id)
+SELECT u.id, c.id, r.id
+FROM users u, clusters c, roles r
+WHERE u.username = 'admin' AND c.cluster_name = 'Hadoop主集群' AND r.role_key = 'cluster_admin';
+
+INSERT INTO user_cluster_mapping (user_id, cluster_id, role_id)
+SELECT u.id, c.id, r.id
+FROM users u, clusters c, roles r
+WHERE u.username = 'admin' AND c.cluster_name = 'Hadoop测试集群' AND r.role_key = 'cluster_admin';
 
 -- 插入修复脚本模板
 INSERT INTO repair_templates (template_name, fault_type, script_content, risk_level, description, parameters) VALUES
