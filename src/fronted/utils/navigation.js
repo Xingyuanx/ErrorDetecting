@@ -4,7 +4,12 @@
  */
 class NavigationManager {
     constructor() {
-        this.currentPage = 'dashboard'; // 当前激活的页面
+        this.currentPage = 'cluster-list';
+        this.logOriginal = [];
+        this.logFiltered = [];
+        this.logPage = 1;
+        this.logPageSize = 10;
+        this.logDebounce = null;
         this.init();
     }
 
@@ -36,6 +41,10 @@ class NavigationManager {
         this.bindUserMenuEvents();
         this.bindGlobalClickEvents();
         this.bindSearchEvents();
+        this.bindClusterListEvents();
+        this.bindLogPaginationEvents();
+        this.bindSidebarToggle();
+        this.bindClusterRegister();
     }
 
     /**
@@ -64,7 +73,7 @@ class NavigationManager {
                 this.switchPage(hash);
             }
         } else {
-            const fallback = auth ? auth.getDefaultPage() : 'dashboard';
+            const fallback = auth ? auth.getDefaultPage() : 'cluster-list';
             window.location.hash = `#${fallback}`;
             this.switchPage(fallback);
         }
@@ -245,6 +254,20 @@ class NavigationManager {
     }
 
     /**
+     * 绑定顶部隐藏侧边栏按钮
+     */
+    bindSidebarToggle() {
+        const btn = document.getElementById('sidebar-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (!btn || !sidebar) return;
+        btn.addEventListener('click', () => {
+            const collapsed = sidebar.classList.toggle('sidebar--collapsed');
+            btn.textContent = collapsed ? '显示侧边栏' : '隐藏侧边栏';
+            btn.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+        });
+    }
+
+    /**
      * 页面切换回调
      * @param {string} pageName - 切换到的页面名称
      */
@@ -252,38 +275,348 @@ class NavigationManager {
         // 根据页面执行特定操作
         switch (pageName) {
             case 'dashboard':
-                // 刷新图表数据
                 if (window.chartManager) {
                     window.chartManager.resizeAllCharts();
                 }
+                this.updateDashboardClusterMeta();
                 break;
             case 'logs':
-                // 可以在这里加载日志数据
-                console.log('切换到日志查询页面');
+                this.captureLogDataset();
+                this.applyLogSearch();
                 break;
             case 'diagnosis':
-                // 可以在这里初始化诊断功能
-                console.log('切换到故障诊断页面');
+                this.initDiagnosisTriplePane();
+                this.bindDiagnosisDnD();
+                this.bindDiagnosisTreeEvents();
                 break;
-            case 'repair':
-                // 可以在这里加载修复建议
-                console.log('切换到自动修复页面');
+            case 'profile':
+                if (window.authManager && typeof window.authManager.renderProfile === 'function') {
+                    window.authManager.renderProfile();
+                }
                 break;
-            case 'flume-config':
-                console.log('切换到 Flume 配置页面');
+            case 'cluster-list':
+                console.log('切换到 集群列表页面');
                 break;
             case 'alert-config':
-                console.log('切换到 告警配置页面');
+                this.bindAlertConfig();
                 break;
             case 'fault-center':
-                console.log('切换到 故障中心页面');
+                this.bindFaultCenterFilters();
                 break;
             case 'exec-logs':
                 console.log('切换到 执行日志页面');
                 break;
-            case 'llm-config':
-                console.log('切换到 LLM 配置页面');
-                break;
+        }
+    }
+
+    bindFaultCenterFilters() {
+        const form = document.getElementById('fault-filter-form');
+        const clusterSel = document.getElementById('fault-filter-cluster');
+        const nodeSel = document.getElementById('fault-filter-node');
+        const timeSel = document.getElementById('fault-filter-time');
+        const tbody = document.getElementById('fault-center-tbody');
+        if (!tbody) return;
+        const apply = () => {
+            const c = clusterSel?.value || '';
+            const n = nodeSel?.value || '';
+            const t = timeSel?.value || '';
+            const now = Date.now();
+            const toMs = (v) => v==='1h'?3600000:v==='6h'?21600000:v==='24h'?86400000:v==='7d'?604800000:0;
+            const range = toMs(t);
+            const rows = Array.from(tbody.querySelectorAll('tr.dashboard__table-row'));
+            rows.forEach(row => {
+                const rc = row.getAttribute('data-cluster') || '';
+                const rn = row.getAttribute('data-node') || '';
+                const rt = row.getAttribute('data-time') || '';
+                let ok = true;
+                if (c && rc !== c) ok = false;
+                if (ok && n && rn !== n) ok = false;
+                if (ok && range) {
+                    const ts = Date.parse(rt);
+                    if (isNaN(ts) || (now - ts) > range) ok = false;
+                }
+                row.style.display = ok ? '' : 'none';
+            });
+        };
+        ['change','input'].forEach(evt => {
+            clusterSel?.addEventListener(evt, apply);
+            nodeSel?.addEventListener(evt, apply);
+            timeSel?.addEventListener(evt, apply);
+        });
+        apply();
+    }
+
+    bindAlertConfig() {
+        const addBtn = document.getElementById('alert-add-rule');
+        const modal = document.getElementById('alert-add-modal');
+        const form = document.getElementById('alert-add-form');
+        const cancel = document.getElementById('alert-rule-cancel');
+        const err = document.getElementById('alert-add-error');
+        const tbody = document.getElementById('alert-rules-tbody');
+        const table = document.getElementById('alert-rules-table');
+        if (addBtn && modal) {
+            addBtn.addEventListener('click', () => { modal.style.display = ''; });
+        }
+        if (cancel && modal) {
+            cancel.addEventListener('click', () => {
+                modal.style.display = 'none';
+                if (err) { err.style.display = 'none'; err.textContent = ''; }
+                form?.reset();
+            });
+        }
+        if (form && tbody) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('alert-rule-name')?.value.trim();
+                const cond = document.getElementById('alert-rule-cond')?.value.trim();
+                const level = document.getElementById('alert-rule-level')?.value;
+                const channel = document.getElementById('alert-rule-channel')?.value;
+                if (!name || !cond) {
+                    if (err) { err.style.display = ''; err.textContent = '请填写规则名称与条件'; }
+                    return;
+                }
+                if (Array.from(tbody.querySelectorAll('tr')).some(tr => tr.querySelector('td')?.textContent === name)) {
+                    if (err) { err.style.display = ''; err.textContent = '规则名称已存在'; }
+                    return;
+                }
+                const tr = document.createElement('tr');
+                tr.className = 'dashboard__table-row';
+                tr.innerHTML = `
+                    <td class="dashboard__table-td">${name}</td>
+                    <td class="dashboard__table-td">${cond}</td>
+                    <td class="dashboard__table-td"><span class="u-text-${level==='WARN'?'warning':level==='ERROR'?'error':'primary'}">${level}</span></td>
+                    <td class="dashboard__table-td">${channel}</td>
+                    <td class="dashboard__table-td">
+                        <button class="btn u-text-sm" data-action="rule-edit" data-name="${name}" data-requires-edit="true">编辑</button>
+                        <button class="btn u-text-sm u-ml-1" data-action="rule-delete" data-name="${name}" data-requires-edit="true">删除</button>
+                    </td>`;
+                tbody.appendChild(tr);
+                modal.style.display = 'none';
+                if (err) { err.style.display = 'none'; err.textContent = ''; }
+                form.reset();
+            });
+        }
+        if (table && !table.__binded) {
+            table.__binded = true;
+            table.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const action = btn.getAttribute('data-action');
+                const name = btn.getAttribute('data-name') || '';
+                if (action === 'rule-delete') {
+                    const row = btn.closest('tr');
+                    if (row) row.remove();
+                } else if (action === 'rule-edit') {
+                    if (modal && form) {
+                        const row = btn.closest('tr');
+                        const cells = row ? row.querySelectorAll('td') : null;
+                        if (cells && cells.length >= 4) {
+                            document.getElementById('alert-rule-name').value = cells[0].textContent || '';
+                            document.getElementById('alert-rule-cond').value = cells[1].textContent || '';
+                            document.getElementById('alert-rule-level').value = (cells[2].textContent || '').trim();
+                            document.getElementById('alert-rule-channel').value = cells[3].textContent || '';
+                            modal.style.display = '';
+                            form.addEventListener('submit', (ev) => {
+                                ev.preventDefault();
+                                cells[0].textContent = document.getElementById('alert-rule-name').value.trim();
+                                cells[1].textContent = document.getElementById('alert-rule-cond').value.trim();
+                                const lvl = document.getElementById('alert-rule-level').value;
+                                cells[2].innerHTML = `<span class="u-text-${lvl==='WARN'?'warning':lvl==='ERROR'?'error':'primary'}">${lvl}</span>`;
+                                cells[3].textContent = document.getElementById('alert-rule-channel').value;
+                                modal.style.display = 'none';
+                                if (err) { err.style.display = 'none'; err.textContent = ''; }
+                                form.reset();
+                            }, { once: true });
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * 初始化故障诊断页面分割布局，支持拖动调整左右面板宽度
+     */
+    initDiagnosisTriplePane() {
+        const left = document.getElementById('diag-left');
+        const mid = document.getElementById('diag-middle');
+        const right = document.getElementById('diag-right');
+        const d1 = document.getElementById('diag-divider-1');
+        const d2 = document.getElementById('diag-divider-2');
+        if (!left || !mid || !right || !d1 || !d2) return;
+        let drag1 = false, drag2 = false, startX1 = 0, startX2 = 0;
+        let leftW = left.getBoundingClientRect().width;
+        let midW = mid.getBoundingClientRect().width;
+        let rightW = right.getBoundingClientRect().width;
+        const minLeft = 240, minMid = 300, minRight = 320;
+        const onMove1 = (e) => {
+            if (!drag1) return;
+            const dx = e.clientX - startX1;
+            const newLeft = Math.max(minLeft, leftW + dx);
+            const delta = newLeft - leftW;
+            const newMid = Math.max(minMid, midW - delta);
+            left.style.width = `${newLeft}px`;
+            mid.style.width = `${newMid}px`;
+        };
+        const onUp1 = () => {
+            drag1 = false;
+            leftW = left.getBoundingClientRect().width;
+            midW = mid.getBoundingClientRect().width;
+            document.removeEventListener('mousemove', onMove1);
+            document.removeEventListener('mouseup', onUp1);
+        };
+        d1.addEventListener('mousedown', (e) => {
+            drag1 = true;
+            startX1 = e.clientX;
+            leftW = left.getBoundingClientRect().width;
+            midW = mid.getBoundingClientRect().width;
+            document.addEventListener('mousemove', onMove1);
+            document.addEventListener('mouseup', onUp1);
+        });
+        const onMove2 = (e) => {
+            if (!drag2) return;
+            const dx = startX2 - e.clientX;
+            const newRight = Math.max(minRight, rightW + dx);
+            const delta = newRight - rightW;
+            const newMid = Math.max(minMid, midW - delta);
+            right.style.width = `${newRight}px`;
+            mid.style.width = `${newMid}px`;
+        };
+        const onUp2 = () => {
+            drag2 = false;
+            rightW = right.getBoundingClientRect().width;
+            midW = mid.getBoundingClientRect().width;
+            document.removeEventListener('mousemove', onMove2);
+            document.removeEventListener('mouseup', onUp2);
+        };
+        d2.addEventListener('mousedown', (e) => {
+            drag2 = true;
+            startX2 = e.clientX;
+            rightW = right.getBoundingClientRect().width;
+            midW = mid.getBoundingClientRect().width;
+            document.addEventListener('mousemove', onMove2);
+            document.addEventListener('mouseup', onUp2);
+        });
+    }
+
+    /**
+     * 绑定左侧日志/节点到右侧聊天框的拖拽交互
+     */
+    bindDiagnosisDnD() {
+        const chatInput = document.getElementById('chat-input');
+        if (!chatInput) return;
+        chatInput.addEventListener('dragover', (e) => { e.preventDefault(); });
+        chatInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const data = e.dataTransfer?.getData('text/plain') || '';
+            chatInput.value = `${chatInput.value}\n${data}`.trim();
+        });
+        const left = document.getElementById('diag-left');
+        if (left) {
+            left.addEventListener('dragstart', (e) => {
+                const t = e.target;
+                if (!t) return;
+                const log = t.getAttribute('data-log');
+                const node = t.getAttribute('data-node');
+                const text = log || node || '';
+                if (text && e.dataTransfer) e.dataTransfer.setData('text/plain', text);
+            });
+        }
+    }
+
+    bindDiagnosisTreeEvents() {
+        const tree = document.getElementById('diag-tree');
+        const search = document.getElementById('diag-tree-search');
+        const list = document.getElementById('diag-live-logs-list');
+        if (!tree) return;
+        const render = (rows) => {
+            const content = document.getElementById('diag-preview-content');
+            const ld = document.getElementById('diag-preview-loading');
+            const err = document.getElementById('diag-preview-error');
+            if (!content) return;
+            if (ld) ld.style.display = 'none';
+            if (err) err.style.display = 'none';
+            content.textContent = rows.length ? rows.map(r => r.message || '').join('\n\n') : '无相关日志';
+        };
+        const renderList = (rows) => {
+            if (!list) return;
+            list.innerHTML = rows.length ? rows.map((r, i) => {
+                const t = (r.time || '').split('T')[1] || r.time;
+                const head = (r.message || '').split('\n')[0].slice(0, 100);
+                return `<button class="btn diag-log-btn" draggable="true" data-diag-idx="${i}" data-log="${r.message || ''}">[${r.level.toUpperCase()}] ${r.node} ${t} - ${head}</button>`;
+            }).join('') : '<div class="u-text-sm u-text-gray-500">无相关日志</div>';
+        };
+        const ensureDataset = () => {
+            if (!(this.logOriginal && this.logOriginal.length)) {
+                const body = document.getElementById('logs-tbody');
+                if (body) {
+                    const rows = Array.from(body.querySelectorAll('tr.dashboard__table-row'));
+                    this.logOriginal = rows.map(r => ({
+                        time: r.querySelector('time')?.getAttribute('datetime') || '',
+                        level: (r.querySelector('.u-font-medium')?.textContent || '').toLowerCase(),
+                        cluster: r.getAttribute('data-cluster') || '',
+                        node: r.getAttribute('data-node') || '',
+                        message: r.querySelectorAll('td.dashboard__table-td')?.[6]?.textContent || ''
+                    }));
+                } else {
+                    this.logOriginal = [];
+                }
+            }
+        };
+        tree.addEventListener('click', (e) => {
+            const arrow = e.target.closest('.cluster-toggle-icon');
+            const cBtn = e.target.closest('[data-cluster]');
+            const nItem = e.target.closest('[data-node]');
+            ensureDataset();
+            if (arrow && cBtn) {
+                const li = cBtn.parentElement;
+                const nodes = li ? li.querySelector('.diag-node-list') : null;
+                if (nodes) {
+                    const collapsed = nodes.classList.toggle('diag-node-list--collapsed');
+                    arrow.classList.remove('fa-chevron-right','fa-chevron-down');
+                    arrow.classList.add(collapsed ? 'fa-chevron-right' : 'fa-chevron-down');
+                }
+                e.preventDefault();
+                return;
+            }
+            if (cBtn) {
+                const uuid = cBtn.getAttribute('data-cluster') || '';
+                const rows = (this.logOriginal||[]).filter(x => x.cluster === uuid);
+                this.diagFiltered = rows;
+                renderList(rows);
+                return;
+            }
+            if (nItem) {
+                const nid = nItem.getAttribute('data-node') || '';
+                const rows = (this.logOriginal||[]).filter(x => x.node === nid);
+                this.diagFiltered = rows;
+                renderList(rows);
+            }
+        });
+        if (list && !list.__binded) {
+            list.__binded = true;
+            list.addEventListener('click', (e) => {
+                const btn = e.target.closest('.diag-log-btn');
+                if (!btn) return;
+                const idx = parseInt(btn.getAttribute('data-diag-idx') || '-1', 10);
+                const rows = this.diagFiltered || [];
+                const item = rows[idx];
+                if (!item) return;
+                const content = document.getElementById('diag-preview-content');
+                if (content) content.textContent = item.message || '';
+            });
+        }
+        if (search) {
+            search.addEventListener('input', (e) => {
+                const kw = (e.target.value||'').trim().toLowerCase();
+                const clusters = tree.querySelectorAll('[data-cluster]');
+                clusters.forEach(el => {
+                    const v = (el.getAttribute('data-cluster')||'').toLowerCase();
+                    const visible = !kw || v.includes(kw);
+                    const li = el.parentElement;
+                    if (li) li.style.display = visible ? '' : 'none';
+                });
+            });
         }
     }
 
@@ -343,6 +676,10 @@ class NavigationManager {
         
         // 时间范围下拉菜单
         this.bindSelectDropdown('time-range');
+        // 来源集群下拉菜单
+        this.bindSelectDropdown('source-cluster');
+        // 操作类型下拉菜单
+        this.bindSelectDropdown('op-type');
     }
 
     /**
@@ -543,12 +880,21 @@ class NavigationManager {
         }
 
         // 日志搜索表单
-        const logSearchForm = document.querySelector('form[role="search"]');
+        const logSearchForm = document.getElementById('log-search-form');
         if (logSearchForm) {
             logSearchForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.performLogSearch();
             });
+            // 实时搜索（防抖）
+            ['log-level','source-cluster','source-node','op-type','user-id','time-range'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const evt = (el.tagName === 'INPUT') ? 'input' : 'change';
+                el.addEventListener(evt, () => this.applyLogSearch());
+            });
+            const clearBtn = document.getElementById('log-clear-filters');
+            if (clearBtn) clearBtn.addEventListener('click', () => this.clearLogFilters());
         }
     }
 
@@ -566,18 +912,275 @@ class NavigationManager {
      * 执行日志搜索
      */
     performLogSearch() {
-        const logLevel = document.getElementById('log-level')?.value;
-        const sourceNode = document.getElementById('source-node')?.value;
-        const timeRange = document.getElementById('time-range')?.value;
+        this.applyLogSearch(true);
+    }
 
-        console.log('执行日志搜索:', {
-            logLevel,
-            sourceNode,
-            timeRange
+    /**
+     * 获取并备份日志原始数据集
+     */
+    captureLogDataset() {
+        if (this.logOriginal && this.logOriginal.length) return;
+        const tbody = document.getElementById('logs-tbody');
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr.dashboard__table-row'));
+        this.logOriginal = rows.map(r => ({
+            time: r.querySelector('time')?.getAttribute('datetime') || '',
+            level: (r.querySelector('.u-font-medium')?.textContent || '').toLowerCase(),
+            cluster: r.getAttribute('data-cluster') || '',
+            node: r.getAttribute('data-node') || '',
+            op: r.getAttribute('data-op') || '',
+            user: r.getAttribute('data-user') || '',
+            message: r.querySelectorAll('td.dashboard__table-td')?.[6]?.textContent || ''
+        }));
+        this.logFiltered = [...this.logOriginal];
+    }
+
+    /**
+     * 应用筛选与搜索（支持防抖、权限过滤、脱敏、分页）
+     * @param {boolean} manual - 是否人为触发
+     */
+    applyLogSearch(manual = false) {
+        const start = Date.now();
+        const setLoading = (v) => {
+            const ld = document.getElementById('log-loading');
+            if (ld) ld.style.display = v ? '' : 'none';
+        };
+        setLoading(true);
+        if (this.logDebounce) clearTimeout(this.logDebounce);
+        this.logDebounce = setTimeout(() => {
+            const role = window.authManager?.getRole();
+            const q = {
+                level: document.getElementById('log-level')?.value || '',
+                cluster: document.getElementById('source-cluster')?.value || '',
+                node: document.getElementById('source-node')?.value || '',
+                op: document.getElementById('op-type')?.value || '',
+                user: (document.getElementById('user-id')?.value || '').trim().toLowerCase(),
+            };
+            let data = [...this.logOriginal];
+            data = this.applyRoleLogScope(data, role);
+            data = data.filter(item => (
+                (!q.level || item.level === q.level)
+                && (!q.cluster || item.cluster === q.cluster)
+                && (!q.node || item.node === q.node)
+                && (!q.op || item.op === q.op)
+                && (!q.user || item.user.toLowerCase().includes(q.user))
+            ));
+            data = this.maskSensitiveForRole(data, role);
+            this.logFiltered = data;
+            this.logPage = 1;
+            this.updateFilterSummary(q);
+            this.renderLogs();
+            setLoading(false);
+            if (Date.now() - start > 2000) console.warn('搜索响应超过2秒');
+        }, manual ? 0 : 300);
+    }
+
+    /**
+     * 渲染日志列表（分页）
+     */
+    renderLogs() {
+        const tbody = document.getElementById('logs-tbody');
+        const pageInfo = document.getElementById('log-page-info');
+        if (!tbody) return;
+        const size = this.logPageSize;
+        const begin = (this.logPage - 1) * size;
+        const end = begin + size;
+        const pageData = this.logFiltered.slice(begin, end);
+        tbody.innerHTML = pageData.map(item => `
+            <tr class="dashboard__table-row" data-cluster="${item.cluster}" data-node="${item.node}" data-op="${item.op}" data-user="${item.user}">
+                <td class="dashboard__table-td"><time datetime="${item.time}">${(item.time || '').split('T')[1] || item.time}</time></td>
+                <td class="dashboard__table-td"><span class="u-font-medium">${item.level.toUpperCase()}</span></td>
+                <td class="dashboard__table-td"><code>${item.cluster}</code></td>
+                <td class="dashboard__table-td">${item.node}</td>
+                <td class="dashboard__table-td">${item.op}</td>
+                <td class="dashboard__table-td">${item.user}</td>
+                <td class="dashboard__table-td">${item.message}</td>
+            </tr>
+        `).join('');
+        if (pageInfo) pageInfo.textContent = `第 ${this.logPage} 页`;
+    }
+
+    /**
+     * 清除筛选并恢复原始数据
+     */
+    clearLogFilters() {
+        ['log-level','source-cluster','source-node','op-type','user-id','time-range'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
         });
+        this.logFiltered = [...this.logOriginal];
+        this.logPage = 1;
+        this.updateFilterSummary({});
+        this.renderLogs();
+    }
 
-        // 这里可以实现实际的日志搜索逻辑
-        // 例如：向后端发送搜索请求，更新日志表格等
+    /**
+     * 角色日志范围过滤
+     * @param {Array} data - 原始日志列表
+     * @param {string} role - 角色
+     */
+    applyRoleLogScope(data, role) {
+        if (role === 'admin') return data;
+        if (role === 'operator') {
+            const visibleClusters = ['CL-1111-AAAA','CL-2222-BBBB'];
+            return data.filter(d => visibleClusters.includes(d.cluster));
+        }
+        if (role === 'observer' || role === 'user') {
+            const visibleClusters = ['CL-1111-AAAA'];
+            return data.filter(d => visibleClusters.includes(d.cluster));
+        }
+        return [];
+    }
+
+    /**
+     * 敏感信息脱敏
+     * @param {Array} data - 日志列表
+     * @param {string} role - 角色
+     */
+    maskSensitiveForRole(data, role) {
+        const sensitiveOps = ['security'];
+        if (role === 'admin') return data;
+        return data.map(d => sensitiveOps.includes(d.op) ? { ...d, message: '***' } : d);
+    }
+
+    /**
+     * 更新筛选摘要
+     * @param {Object} q - 查询条件
+     */
+    updateFilterSummary(q) {
+        const el = document.getElementById('log-filter-summary');
+        if (!el) return;
+        const parts = [];
+        if (q.level) parts.push(`级别=${q.level}`);
+        if (q.cluster) parts.push(`集群=${q.cluster}`);
+        if (q.node) parts.push(`节点=${q.node}`);
+        if (q.op) parts.push(`操作=${q.op}`);
+        if (q.user) parts.push(`用户=${q.user}`);
+        el.textContent = parts.length ? `当前筛选：${parts.join('，')}` : '当前筛选：无';
+    }
+
+    /**
+     * 绑定分页事件
+     */
+    bindLogPaginationEvents() {
+        const prev = document.getElementById('log-prev');
+        const next = document.getElementById('log-next');
+        const sizeSel = document.getElementById('log-page-size');
+        if (prev) prev.addEventListener('click', () => {
+            if (this.logPage > 1) { this.logPage -= 1; this.renderLogs(); }
+        });
+        if (next) next.addEventListener('click', () => {
+            const maxPage = Math.max(1, Math.ceil(this.logFiltered.length / this.logPageSize));
+            if (this.logPage < maxPage) { this.logPage += 1; this.renderLogs(); }
+        });
+        if (sizeSel) sizeSel.addEventListener('change', (e) => {
+            this.logPageSize = parseInt(e.target.value, 10) || 10;
+            this.logPage = 1;
+            this.renderLogs();
+        });
+    }
+
+    /**
+     * 绑定集群列表事件：点击行进入详情页
+     */
+    bindClusterListEvents() {
+        const table = document.getElementById('cluster-list-table');
+        if (!table || table.__binded) return;
+        table.__binded = true;
+        table.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action="unregister-cluster"]');
+            if (btn) {
+                e.stopPropagation();
+                const uuid = btn.getAttribute('data-cluster-uuid') || '';
+                const tr = btn.closest('tr');
+                if (tr) tr.remove();
+                return;
+            }
+            const tr = e.target.closest('tr[data-cluster-uuid]');
+            if (!tr) return;
+            const uuid = tr.getAttribute('data-cluster-uuid') || '';
+            const host = tr.getAttribute('data-master-host') || '';
+            const ip = tr.getAttribute('data-master-ip') || '';
+            window.selectedCluster = { uuid, host, ip };
+            window.location.hash = '#dashboard';
+            this.switchPage('dashboard');
+        });
+    }
+
+    bindClusterRegister() {
+        const toggle = document.getElementById('cluster-register-toggle');
+        const panel = document.getElementById('cluster-register-panel');
+        const form = document.getElementById('cluster-register-form');
+        const cancel = document.getElementById('cluster-register-cancel');
+        const error = document.getElementById('cluster-register-error');
+        const tbody = document.getElementById('cluster-list-tbody');
+        if (toggle && panel) {
+            toggle.addEventListener('click', () => {
+                panel.style.display = panel.style.display === 'none' ? '' : 'none';
+            });
+        }
+        if (cancel && panel && form) {
+            cancel.addEventListener('click', () => {
+                panel.style.display = 'none';
+                if (error) { error.style.display = 'none'; error.textContent = ''; }
+                form.reset();
+            });
+        }
+        if (form && tbody) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const uuid = document.getElementById('reg-cluster-uuid')?.value.trim();
+                const host = document.getElementById('reg-master-host')?.value.trim();
+                const ip = document.getElementById('reg-master-ip')?.value.trim();
+                const count = document.getElementById('reg-node-count')?.value.trim();
+                const health = document.getElementById('reg-health')?.value;
+                if (!uuid || !host || !ip || !count) {
+                    if (error) { error.style.display = ''; error.textContent = '请填写完整信息'; }
+                    return;
+                }
+                if (Array.from(tbody.querySelectorAll('tr')).some(tr => (tr.getAttribute('data-cluster-uuid') || '') === uuid)) {
+                    if (error) { error.style.display = ''; error.textContent = '该集群UUID已存在'; }
+                    return;
+                }
+                const tr = document.createElement('tr');
+                tr.className = 'dashboard__table-row';
+                tr.setAttribute('data-cluster-uuid', uuid);
+                tr.setAttribute('data-master-host', host);
+                tr.setAttribute('data-master-ip', ip);
+                tr.innerHTML = `
+                    <td class="dashboard__table-td"><code>${uuid}</code></td>
+                    <td class="dashboard__table-td">${host}</td>
+                    <td class="dashboard__table-td">${ip}</td>
+                    <td class="dashboard__table-td">${count}</td>
+                    <td class="dashboard__table-td">
+                        <span class="dashboard__status-indicator">
+                            <span class="dashboard__status-dot dashboard__status-dot--${health}" aria-hidden="true"></span>
+                            <span class="dashboard__status-text">${health==='running'?'健康':health==='warning'?'警告':'异常'}</span>
+                        </span>
+                    </td>
+                    <td class="dashboard__table-td">
+                        <button class="btn u-text-sm" data-action="unregister-cluster" data-cluster-uuid="${uuid}" data-requires-edit="true">注销集群</button>
+                    </td>`;
+                tbody.appendChild(tr);
+                panel.style.display = 'none';
+                if (error) { error.style.display = 'none'; error.textContent = ''; }
+                form.reset();
+            });
+        }
+    }
+
+    /**
+     * 更新仪表板顶部当前集群元信息
+     */
+    updateDashboardClusterMeta() {
+        const meta = window.selectedCluster || { uuid: '未选择', host: '-', ip: '-' };
+        const uuidEl = document.getElementById('current-cluster-uuid');
+        const hostEl = document.getElementById('current-cluster-master-host');
+        const ipEl = document.getElementById('current-cluster-master-ip');
+        if (uuidEl) uuidEl.textContent = meta.uuid || '未选择';
+        if (hostEl) hostEl.textContent = meta.host || '-';
+        if (ipEl) ipEl.textContent = meta.ip || '-';
     }
 
     /**

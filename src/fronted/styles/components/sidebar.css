@@ -10,6 +10,10 @@
     flex-direction: column;
 }
 
+.sidebar--collapsed {
+    display: none;
+}
+
 /* 侧边栏标题区域 */
 .sidebar__header {
     padding: var(--spacing-4);
