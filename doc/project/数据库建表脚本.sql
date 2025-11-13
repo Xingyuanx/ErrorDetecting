@@ -26,6 +26,7 @@ CREATE TABLE fault_records (
     title VARCHAR(200) NOT NULL COMMENT '故障标题',
     description TEXT COMMENT '故障详细描述',
     affected_nodes JSON COMMENT '受影响的节点列表',
+    affected_clusters JSON COMMENT '受影响的集群列表',
     root_cause TEXT COMMENT '根本原因分析',
     repair_suggestion TEXT COMMENT '修复建议',
     status ENUM('detected', 'analyzing', 'repairing', 'resolved', 'failed') NOT NULL DEFAULT 'detected' COMMENT '状态',
@@ -70,30 +71,42 @@ CREATE TABLE exec_logs (
     KEY idx_execution_status (execution_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='执行日志表';
 
--- 1.3 集群状态表
-DROP TABLE IF EXISTS cluster_status;
-CREATE TABLE cluster_status (
+-- 1.3 节点信息表 (原 cluster_status 表，优化后)
+DROP TABLE IF EXISTS nodes;
+CREATE TABLE nodes (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
-    cluster_id BIGINT NOT NULL COMMENT '集群ID',
-    node_id VARCHAR(50) NOT NULL COMMENT '节点标识',
-    node_name VARCHAR(100) NOT NULL COMMENT '节点名称',
-    ip_address VARCHAR(15) NOT NULL COMMENT 'IP地址',
-    node_role ENUM('NameNode', 'DataNode', 'ResourceManager', 'NodeManager') NOT NULL COMMENT '节点角色',
-    node_status ENUM('online', 'offline', 'maintenance', 'unknown') NOT NULL DEFAULT 'unknown' COMMENT '节点状态',
-    cpu_usage DECIMAL(5,2) COMMENT 'CPU使用率(%)',
-    memory_usage DECIMAL(5,2) COMMENT '内存使用率(%)',
-    disk_usage DECIMAL(5,2) COMMENT '磁盘使用率(%)',
-    health_score INT DEFAULT 100 COMMENT '健康评分(0-100)',
+    uuid VARCHAR(36) NOT NULL COMMENT '节点唯一标识UUID',
+    cluster_id BIGINT NOT NULL COMMENT '所属集群ID',
+    hostname VARCHAR(100) NOT NULL COMMENT '节点主机名',
+    ip_address VARCHAR(45) NOT NULL COMMENT '节点IP地址',
+    status ENUM('healthy', 'unhealthy', 'warning', 'unknown') NOT NULL DEFAULT 'unknown' COMMENT '节点健康状态',
+    cpu_usage DECIMAL(5, 2) COMMENT 'CPU使用率 (%)',
+    memory_usage DECIMAL(5, 2) COMMENT '内存使用率 (%)',
+    disk_usage DECIMAL(5, 2) COMMENT '磁盘使用率 (%)',
     last_heartbeat TIMESTAMP COMMENT '最后心跳时间',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_uuid (uuid),
+    KEY idx_cluster_id (cluster_id),
+    UNIQUE KEY uk_cluster_hostname (cluster_id, hostname)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='节点信息表';
+
+-- 1.4 集群-节点关系表（一对多：一个节点只属于一个集群）
+DROP TABLE IF EXISTS cluster_node_mapping;
+CREATE TABLE cluster_node_mapping (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    cluster_id BIGINT NOT NULL COMMENT '集群ID',
+    node_id BIGINT NOT NULL COMMENT '节点ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+
     PRIMARY KEY (id),
     UNIQUE KEY uk_node_id (node_id),
+    UNIQUE KEY uk_cluster_node (cluster_id, node_id),
     KEY idx_cluster_id (cluster_id),
-    KEY idx_node_status (node_status),
-    KEY idx_last_heartbeat (last_heartbeat)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集群状态表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集群-节点关系表：节点唯一绑定至一个集群';
 
 -- 1.4 系统日志表
 DROP TABLE IF EXISTS system_logs;
@@ -124,19 +137,23 @@ CREATE TABLE system_logs (
 -- 2. 配置管理与用户表
 -- =====================================================
 
--- 2.1 集群信息表
+-- 2.1 集群信息表 (优化后)
 DROP TABLE IF EXISTS clusters;
 CREATE TABLE clusters (
     id BIGINT AUTO_INCREMENT COMMENT '主键ID',
-    cluster_name VARCHAR(100) NOT NULL COMMENT '集群名称',
-    cluster_type VARCHAR(50) NOT NULL COMMENT '集群类型 (e.g., Hadoop, Kubernetes)',
+    uuid VARCHAR(36) NOT NULL COMMENT '集群唯一标识UUID',
+    name VARCHAR(100) NOT NULL COMMENT '集群名称',
+    type VARCHAR(50) NOT NULL COMMENT '集群类型 (e.g., Hadoop, Kubernetes)',
+    node_count INT DEFAULT 0 COMMENT '集群节点数量',
+    health_status ENUM('healthy', 'warning', 'error', 'unknown') NOT NULL DEFAULT 'unknown' COMMENT '集群健康状态',
     description TEXT COMMENT '集群描述',
     config_info JSON COMMENT '集群配置信息 (e.g., NameNode地址)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     
     PRIMARY KEY (id),
-    UNIQUE KEY uk_cluster_name (cluster_name)
+    UNIQUE KEY uk_uuid (uuid),
+    UNIQUE KEY uk_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集群信息表';
 
 -- 2.2 角色表
@@ -286,10 +303,11 @@ CREATE TABLE repair_templates (
 
 -- 故障记录表关联集群
 ALTER TABLE fault_records
-ADD COLUMN cluster_id BIGINT COMMENT '关联集群ID' AFTER fault_id,
-ADD CONSTRAINT fk_fault_records_cluster_id
-FOREIGN KEY (cluster_id) REFERENCES clusters(id)
-ON DELETE SET NULL ON UPDATE CASCADE;
+ADD COLUMN cluster_id BIGINT COMMENT '关联集群ID' AFTER fault_id; 
+-- 外键约束将在所有表创建后统一添加
+-- ADD CONSTRAINT fk_fault_records_cluster_id
+-- FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+-- ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- 执行日志表关联故障记录表
 ALTER TABLE exec_logs 
@@ -303,17 +321,31 @@ ADD CONSTRAINT fk_system_logs_fault_id
 FOREIGN KEY (fault_id) REFERENCES fault_records(fault_id)
 ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- 节点与集群外键约束（在所有表创建后统一添加）
+ALTER TABLE nodes
+ADD CONSTRAINT fk_nodes_cluster
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 集群-节点关系表外键约束
+ALTER TABLE cluster_node_mapping
+ADD CONSTRAINT fk_cnm_cluster
+FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE cluster_node_mapping
+ADD CONSTRAINT fk_cnm_node
+FOREIGN KEY (node_id) REFERENCES nodes(id)
+ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- 系统日志表关联集群
 ALTER TABLE system_logs
 ADD CONSTRAINT fk_system_logs_cluster_id
 FOREIGN KEY (cluster_id) REFERENCES clusters(id)
 ON DELETE SET NULL ON UPDATE CASCADE;
 
--- 集群状态表关联集群
-ALTER TABLE cluster_status
-ADD CONSTRAINT fk_cluster_status_cluster_id
-FOREIGN KEY (cluster_id) REFERENCES clusters(id)
-ON DELETE CASCADE ON UPDATE CASCADE;
+-- 节点信息表关联集群 (外键已在CREATE TABLE中定义)
+-- ALTER TABLE nodes ADD CONSTRAINT fk_nodes_cluster FOREIGN KEY (cluster_id) REFERENCES clusters(id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 角色-权限映射表关联
 ALTER TABLE role_permission_mapping
@@ -376,9 +408,9 @@ ON DELETE SET NULL ON UPDATE CASCADE;
 -- =====================================================
 
 -- 插入默认集群
-INSERT INTO clusters (cluster_name, cluster_type, description, config_info) VALUES
-('Hadoop主集群', 'Hadoop', '生产环境主Hadoop集群', '{"namenode_uri": "hdfs://nn1.hadoop.prod:8020"}'),
-('Hadoop测试集群', 'Hadoop', '用于测试的Hadoop集群', '{"namenode_uri": "hdfs://nn.hadoop.test:8020"}');
+INSERT INTO clusters (uuid, name, type, description, config_info) VALUES
+('a1b2c3d4-e5f6-7890-1234-567890abcdef', 'Hadoop主集群', 'Hadoop', '生产环境主Hadoop集群', '{"namenode_uri": "hdfs://nn1.hadoop.prod:8020"}'),
+('b2c3d4e5-f6a7-8901-2345-67890abcdef1', 'Hadoop测试集群', 'Hadoop', '用于测试的Hadoop集群', '{"namenode_uri": "hdfs://nn.hadoop.test:8020"}');
 
 -- 插入默认系统角色
 INSERT INTO roles (role_name, role_key, description, is_system_role) VALUES
@@ -477,12 +509,232 @@ WHERE u.username = 'admin' AND r.role_key = 'super_admin';
 INSERT INTO user_cluster_mapping (user_id, cluster_id, role_id)
 SELECT u.id, c.id, r.id
 FROM users u, clusters c, roles r
-WHERE u.username = 'admin' AND c.cluster_name = 'Hadoop主集群' AND r.role_key = 'cluster_admin';
+WHERE u.username = 'admin' AND c.name = 'Hadoop主集群' AND r.role_key = 'cluster_admin';
 
 INSERT INTO user_cluster_mapping (user_id, cluster_id, role_id)
 SELECT u.id, c.id, r.id
 FROM users u, clusters c, roles r
-WHERE u.username = 'admin' AND c.cluster_name = 'Hadoop测试集群' AND r.role_key = 'cluster_admin';
+WHERE u.username = 'admin' AND c.name = 'Hadoop测试集群' AND r.role_key = 'cluster_admin';
+
+-- =====================================================
+-- 触发器：数据一致性校验、关联同步、操作日志记录
+-- 覆盖表：nodes、cluster_node_mapping、fault_records（并对clusters做节点计数聚合）
+-- 设计原则：
+-- 1) BEFORE 阶段进行有效性校验与变更合法性检查；
+-- 2) AFTER 阶段进行关联数据同步与操作日志记录；
+-- 3) DELETE 阶段维护一致性与日志记录；
+-- 4) 使用最小化逻辑，依赖唯一与外键约束，避免全表扫描；
+-- 5) 所有触发器均带有详细注释，便于维护与排障。
+-- =====================================================
+
+DELIMITER $$
+
+-- -------------------------------
+-- nodes 表触发器
+-- -------------------------------
+
+-- BEFORE INSERT：基本有效性校验
+DROP TRIGGER IF EXISTS tr_nodes_bi;
+CREATE TRIGGER tr_nodes_bi BEFORE INSERT ON nodes
+FOR EACH ROW
+BEGIN
+  -- 数据有效性验证
+  IF NEW.hostname IS NULL OR NEW.hostname = '' THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nodes.hostname 不能为空';
+  END IF;
+  IF NEW.ip_address IS NULL OR NEW.ip_address = '' THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nodes.ip_address 不能为空';
+  END IF;
+END$$
+
+-- BEFORE UPDATE：变更合法性校验
+DROP TRIGGER IF EXISTS tr_nodes_bu;
+CREATE TRIGGER tr_nodes_bu BEFORE UPDATE ON nodes
+FOR EACH ROW
+BEGIN
+  -- 数据有效性验证
+  IF NEW.hostname IS NULL OR NEW.hostname = '' THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nodes.hostname 不能为空';
+  END IF;
+  IF NEW.ip_address IS NULL OR NEW.ip_address = '' THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nodes.ip_address 不能为空';
+  END IF;
+END$$
+
+-- AFTER INSERT：同步映射 + 更新集群计数 + 操作日志
+DROP TRIGGER IF EXISTS tr_nodes_ai;
+CREATE TRIGGER tr_nodes_ai AFTER INSERT ON nodes
+FOR EACH ROW
+BEGIN
+  -- 关联数据同步
+  IF NEW.cluster_id IS NOT NULL THEN
+    INSERT INTO cluster_node_mapping (cluster_id, node_id)
+    VALUES (NEW.cluster_id, NEW.id)
+    ON DUPLICATE KEY UPDATE cluster_id = VALUES(cluster_id), updated_at = CURRENT_TIMESTAMP;
+    -- 更新集群节点计数（增）
+    UPDATE clusters SET node_count = node_count + 1 WHERE id = NEW.cluster_id;
+  END IF;
+
+  -- 操作日志记录
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NULL, NEW.cluster_id, NOW(), NEW.hostname, 'db_trigger', 'INFO', CONCAT('Nodes INSERT: id=', NEW.id, ', cluster=', NEW.cluster_id));
+END$$
+
+-- AFTER UPDATE：若归属集群变化，同步映射与计数 + 操作日志
+DROP TRIGGER IF EXISTS tr_nodes_au;
+CREATE TRIGGER tr_nodes_au AFTER UPDATE ON nodes
+FOR EACH ROW
+BEGIN
+  IF (NEW.cluster_id <> OLD.cluster_id) THEN
+    INSERT INTO cluster_node_mapping (cluster_id, node_id)
+    VALUES (NEW.cluster_id, NEW.id)
+    ON DUPLICATE KEY UPDATE cluster_id = VALUES(cluster_id), updated_at = CURRENT_TIMESTAMP;
+    -- 更新计数：旧集群减，新集群加
+    IF OLD.cluster_id IS NOT NULL THEN
+      UPDATE clusters SET node_count = GREATEST(node_count - 1, 0) WHERE id = OLD.cluster_id;
+    END IF;
+    IF NEW.cluster_id IS NOT NULL THEN
+      UPDATE clusters SET node_count = node_count + 1 WHERE id = NEW.cluster_id;
+    END IF;
+  END IF;
+
+  -- 操作日志记录
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NULL, NEW.cluster_id, NOW(), NEW.hostname, 'db_trigger', 'INFO', CONCAT('Nodes UPDATE: id=', NEW.id, ', cluster=', NEW.cluster_id));
+END$$
+
+-- AFTER DELETE：维护集群计数 + 操作日志
+DROP TRIGGER IF EXISTS tr_nodes_ad;
+CREATE TRIGGER tr_nodes_ad AFTER DELETE ON nodes
+FOR EACH ROW
+BEGIN
+  IF OLD.cluster_id IS NOT NULL THEN
+    UPDATE clusters SET node_count = GREATEST(node_count - 1, 0) WHERE id = OLD.cluster_id;
+  END IF;
+
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NULL, OLD.cluster_id, NOW(), OLD.hostname, 'db_trigger', 'INFO', CONCAT('Nodes DELETE: id=', OLD.id, ', cluster=', OLD.cluster_id));
+END$$
+
+-- -------------------------------
+-- cluster_node_mapping 表触发器
+-- -------------------------------
+
+-- BEFORE INSERT：有效性与唯一性提示（依赖唯一约束）
+DROP TRIGGER IF EXISTS tr_cnm_bi;
+CREATE TRIGGER tr_cnm_bi BEFORE INSERT ON cluster_node_mapping
+FOR EACH ROW
+BEGIN
+  IF NEW.cluster_id IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'cluster_node_mapping.cluster_id 不能为空';
+  END IF;
+  IF NEW.node_id IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'cluster_node_mapping.node_id 不能为空';
+  END IF;
+  -- 若节点已绑定其它集群，阻止插入，提示使用 UPDATE 修改归属
+  IF EXISTS (SELECT 1 FROM cluster_node_mapping WHERE node_id = NEW.node_id AND cluster_id <> NEW.cluster_id) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '节点已绑定其它集群，请使用UPDATE修改归属';
+  END IF;
+END$$
+
+-- AFTER INSERT：同步 nodes.cluster_id + 日志
+DROP TRIGGER IF EXISTS tr_cnm_ai;
+CREATE TRIGGER tr_cnm_ai AFTER INSERT ON cluster_node_mapping
+FOR EACH ROW
+BEGIN
+  UPDATE nodes n SET n.cluster_id = NEW.cluster_id WHERE n.id = NEW.node_id;
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NULL, NEW.cluster_id, NOW(), 'db', 'db_trigger', 'INFO', CONCAT('CNM INSERT: node_id=', NEW.node_id, ', cluster=', NEW.cluster_id));
+END$$
+
+-- BEFORE UPDATE：有效性校验
+DROP TRIGGER IF EXISTS tr_cnm_bu;
+CREATE TRIGGER tr_cnm_bu BEFORE UPDATE ON cluster_node_mapping
+FOR EACH ROW
+BEGIN
+  IF NEW.cluster_id IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'cluster_node_mapping.cluster_id 不能为空';
+  END IF;
+END$$
+
+-- AFTER UPDATE：同步 nodes.cluster_id + 日志
+DROP TRIGGER IF EXISTS tr_cnm_au;
+CREATE TRIGGER tr_cnm_au AFTER UPDATE ON cluster_node_mapping
+FOR EACH ROW
+BEGIN
+  UPDATE nodes n SET n.cluster_id = NEW.cluster_id WHERE n.id = NEW.node_id;
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NULL, NEW.cluster_id, NOW(), 'db', 'db_trigger', 'INFO', CONCAT('CNM UPDATE: node_id=', NEW.node_id, ', cluster=', NEW.cluster_id));
+END$$
+
+-- AFTER DELETE：解除 nodes.cluster_id + 日志
+DROP TRIGGER IF EXISTS tr_cnm_ad;
+CREATE TRIGGER tr_cnm_ad AFTER DELETE ON cluster_node_mapping
+FOR EACH ROW
+BEGIN
+  UPDATE nodes n SET n.cluster_id = NULL WHERE n.id = OLD.node_id AND n.cluster_id = OLD.cluster_id;
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NULL, OLD.cluster_id, NOW(), 'db', 'db_trigger', 'INFO', CONCAT('CNM DELETE: node_id=', OLD.node_id, ', cluster=', OLD.cluster_id));
+END$$
+
+-- -------------------------------
+-- fault_records 表触发器
+-- -------------------------------
+
+-- BEFORE INSERT：JSON有效性验证
+DROP TRIGGER IF EXISTS tr_fault_bi;
+CREATE TRIGGER tr_fault_bi BEFORE INSERT ON fault_records
+FOR EACH ROW
+BEGIN
+  IF NEW.affected_nodes IS NOT NULL AND JSON_VALID(NEW.affected_nodes) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fault_records.affected_nodes 必须为合法JSON';
+  END IF;
+  IF NEW.affected_clusters IS NOT NULL AND JSON_VALID(NEW.affected_clusters) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fault_records.affected_clusters 必须为合法JSON';
+  END IF;
+END$$
+
+-- BEFORE UPDATE：JSON有效性校验
+DROP TRIGGER IF EXISTS tr_fault_bu;
+CREATE TRIGGER tr_fault_bu BEFORE UPDATE ON fault_records
+FOR EACH ROW
+BEGIN
+  IF NEW.affected_nodes IS NOT NULL AND JSON_VALID(NEW.affected_nodes) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fault_records.affected_nodes 必须为合法JSON';
+  END IF;
+  IF NEW.affected_clusters IS NOT NULL AND JSON_VALID(NEW.affected_clusters) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fault_records.affected_clusters 必须为合法JSON';
+  END IF;
+END$$
+
+-- AFTER INSERT：记录操作日志
+DROP TRIGGER IF EXISTS tr_fault_ai;
+CREATE TRIGGER tr_fault_ai AFTER INSERT ON fault_records
+FOR EACH ROW
+BEGIN
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NEW.fault_id, NULL, NOW(), 'db', 'db_trigger', 'INFO', CONCAT('Fault INSERT: fault_id=', NEW.fault_id, ', level=', NEW.fault_level));
+END$$
+
+-- AFTER UPDATE：记录操作日志
+DROP TRIGGER IF EXISTS tr_fault_au;
+CREATE TRIGGER tr_fault_au AFTER UPDATE ON fault_records
+FOR EACH ROW
+BEGIN
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), NEW.fault_id, NULL, NOW(), 'db', 'db_trigger', 'INFO', CONCAT('Fault UPDATE: fault_id=', NEW.fault_id, ', status=', NEW.status));
+END$$
+
+-- AFTER DELETE：记录操作日志
+DROP TRIGGER IF EXISTS tr_fault_ad;
+CREATE TRIGGER tr_fault_ad AFTER DELETE ON fault_records
+FOR EACH ROW
+BEGIN
+  INSERT INTO system_logs (log_id, fault_id, cluster_id, timestamp, host, service, log_level, message)
+  VALUES (REPLACE(UUID(), '-', ''), OLD.fault_id, NULL, NOW(), 'db', 'db_trigger', 'INFO', CONCAT('Fault DELETE: fault_id=', OLD.fault_id));
+END$$
+
+DELIMITER ;
 
 -- 插入修复脚本模板
 INSERT INTO repair_templates (template_name, fault_type, script_content, risk_level, description, parameters) VALUES
