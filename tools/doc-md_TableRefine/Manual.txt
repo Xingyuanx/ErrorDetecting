@@ -1,0 +1,44 @@
+用途
+- 将 Markdown/HTML 表格统一转换为纯 Markdown 管道表格（GFM），并自动设置列对齐。
+
+目录结构
+- html_table_to_md.lua：Pandoc Lua 过滤器，解析 MD 中嵌入的 HTML <table> 并注入为 AST 表格；根据列内容自动设置对齐。
+- convert_html_tables_to_md.py：Python 脚本，递归处理指定根路径下的所有 .md 文件，
+  - 将 HTML <table> 转换为管道表格；
+  - 自动重写管道表格的分隔行，设置对齐（数值列右对齐，ID/日期/版本列居中，其余左对齐）。
+
+环境要求
+- Pandoc ≥ 3.8（验证：pandoc -v）
+- Python ≥ 3.8（本项目为 3.11，验证：python --version）
+
+一、复现（从 docx 生成 md 并抽取图片）
+1) 在项目根目录执行（示例三份文档）：
+   pandoc "doc\project\Reference\案例：Adriod点餐系统_用例文档.docx" -f docx -t gfm -o "doc\project\Reference\案例：Adriod点餐系统_用例文档.md" --extract-media="doc\project\Reference\media"
+   pandoc "doc\project\Reference\案例：Adriod点餐系统_系统需求规格说明书.docx" -f docx -t gfm -o "doc\project\Reference\案例：Adriod点餐系统_系统需求规格说明书.md" --extract-media="doc\project\Reference\media"
+   pandoc "doc\project\Reference\案例：Adriod点餐系统_项目前景与范围文档.docx" -f docx -t gfm -o "doc\project\Reference\案例：Adriod点餐系统_项目前景与范围文档.md" --extract-media="doc\project\Reference\media"
+
+二、批量表格精炼（Lua 过滤器方式）
+2) 处理任意目录下的所有 .md 文件（递归）：
+   $filter = "tools\doc-md_TableRefine\html_table_to_md.lua";
+   Get-ChildItem -Path "." -Filter *.md -Recurse -File | ForEach-Object {
+     $tmp = Join-Path $_.DirectoryName ("{0}.tmp.md" -f $_.BaseName);
+     pandoc $_.FullName -f gfm -t gfm -o $tmp --lua-filter $filter;
+     Move-Item -Force $tmp $_.FullName;
+   }
+
+三、二次批处理（Python 脚本方式）
+3) 指定待处理文件列表（支持同时传入多个文件）：
+   - 处理单个或多个 .md / .docx：
+     python tools\doc-md_TableRefine\convert_html_tables_to_md.py --files "doc\project\Reference\案例：Adriod点餐系统_用例文档.md" "doc\project\Reference\案例：Adriod点餐系统_系统需求规格说明书.docx"
+   - 自定义图片提取目录名（默认为 media）：
+     python tools\doc-md_TableRefine\convert_html_tables_to_md.py --files "D:\docs\目标.docx" --media imgs
+
+四、可选：标准化为 GFM 输出
+4) 若需要统一写法或再次格式化，可执行：
+   pandoc "目标.md" -f markdown -t gfm -o "目标.md"
+
+注意
+- 对齐策略：数值列（≥60% 数值单元格）右对齐；列名匹配 ID/编号/日期/时间/版本 时居中；其他列左对齐。
+- Lua 过滤器保留 Pandoc 的结构化转换并在写出时生成对齐；Python 脚本用于兜底，复杂嵌套将拍平为纯文本并重写分隔行。
+- docx 转换时，图片提取到同级目录下的 `media`（或 `--media` 指定的目录）；Markdown 中图片路径自动指向该目录。
+- Windows 路径建议始终使用引号包裹，避免中文/空格导致路径解析问题。
