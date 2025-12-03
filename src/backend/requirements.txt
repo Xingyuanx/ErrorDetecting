@@ -1,3 +1,6 @@
 fastapi
 uvicorn[standard]
+SQLAlchemy
+asyncpg
+python-dotenv
 psycopg2-binary
