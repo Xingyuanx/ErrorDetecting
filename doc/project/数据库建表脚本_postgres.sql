@@ -476,7 +476,7 @@ INSERT INTO user_cluster_mapping (user_id, cluster_id, role_id)
 SELECT u.id, c.id, r.id FROM users u, clusters c, roles r WHERE u.username = 'admin' AND c.name = 'Hadoop主集群' AND r.role_key = 'cluster_admin';
 INSERT INTO user_cluster_mapping (user_id, cluster_id, role_id)
 SELECT u.id, c.id, r.id FROM users u, clusters c, roles r WHERE u.username = 'admin' AND c.name = 'Hadoop测试集群' AND r.role_key = 'cluster_admin';
-
+    
 -- =====================================================
 -- 脚本执行完成
 -- =====================================================
