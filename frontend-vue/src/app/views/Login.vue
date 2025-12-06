@@ -21,12 +21,14 @@ import { useAuthStore } from '../stores/auth'
 const username = ref('')
 const password = ref('')
 const msg = ref('')
+const loading = ref(false)
 const router = useRouter()
 const auth = useAuthStore()
-function onSubmit() {
-  const r = auth.login(username.value, password.value)
+async function onSubmit() {
+  loading.value = true
+  const r = await auth.login(username.value, password.value)
+  loading.value = false
   if (r.ok) router.replace({ name: auth.defaultPage })
   else msg.value = r.message || '登录失败'
 }
 </script>
-
