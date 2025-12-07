@@ -13,7 +13,7 @@
 ### 1.2 建模工具
 - **推荐工具**: PowerDesigner 16.5+
 - **模型类型**: 概念数据模型(CDM) → 逻辑数据模型(LDM) → 物理数据模型(PDM)
-- **数据库**: MySQL 8.0+
+- **数据库**: PostgreSQL 14+
 
 ## 2. 实体设计
 
@@ -27,7 +27,12 @@
 - fault_type (故障类型)
 - fault_level (故障级别)
 - title (故障标题)
+- affected_nodes (JSONB)
+- affected_clusters (JSONB)
+- root_cause (TEXT)
+- repair_suggestion (TEXT)
 - status (处理状态)
+- created_at/updated_at/resolved_at (TIMESTAMPTZ)
 
 **业务规则**:
 - 每个故障必须有唯一的fault_id
@@ -38,23 +43,28 @@
 **主要属性**:
 - exec_id (执行标识) - 主标识符
 - command_type (命令类型)
+- parameters/target_nodes (JSONB)
 - execution_status (执行状态)
+- start_time/end_time (TIMESTAMPTZ)
+- stdout_log/stderr_log (TEXT)
+- operator (执行人)
+- created_at/updated_at (TIMESTAMPTZ)
 
 **业务规则**:
 - 每次执行必须关联一个故障记录
 
-#### 实体3: 集群状态 (ClusterStatus)
-**实体说明**: 集群各节点的状态信息
+#### 实体3: 节点 (Node)
+**实体说明**: 集群内各节点的核心信息与状态
 **主要属性**:
-- node_id (节点标识) - 主标识符
+- uuid (节点UUID) - 主标识符
 - cluster_id (集群ID) - 外键
-- node_name (节点名称)
-- node_role (节点角色)
-- node_status (节点状态)
-- health_score (健康评分)
+- hostname (主机名)
+- ip_address (INET)
+- status (healthy/unhealthy/warning/unknown)
+- cpu_usage/memory_usage/disk_usage
 
 **业务规则**:
-- 每个节点状态记录必须关联到一个集群
+- 节点在同一集群下`(cluster_id, hostname)`唯一
 
 #### 实体4: 系统日志 (SystemLog)
 **实体说明**: 从Flume采集的原始日志数据
@@ -62,9 +72,11 @@
 - log_id (日志标识) - 主标识符
 - cluster_id (集群ID) - 外键
 - fault_id (关联故障ID)
-- timestamp (时间戳)
+- timestamp (TIMESTAMPTZ)
 - service (服务名)
 - log_level (日志级别)
+- message/exception/raw_log (TEXT)
+- created_at (TIMESTAMPTZ)
 
 **业务规则**:
 - 日志可以关联到特定集群和故障
@@ -74,10 +86,12 @@
 #### 实体5: 集群 (Cluster)
 **实体说明**: 用户管理的集群信息
 **主要属性**:
-- cluster_id (集群ID) - 主标识符
-- cluster_name (集群名称)
-- cluster_type (集群类型)
-- description (描述)
+- id (自增主键)
+- uuid (集群UUID)
+- name (集群名称)
+- type (集群类型)
+- node_count / health_status
+- config_info (JSONB)
 
 **业务规则**:
 - 集群名称必须唯一
@@ -88,7 +102,7 @@
 - user_id (用户ID) - 主标识符
 - username (用户名)
 - email (邮箱)
-- role (全局角色)
+**说明**: 全局角色由`UserRoleMapping`实现
 
 **业务规则**:
 - 用户名和邮箱必须唯一
@@ -97,12 +111,14 @@
 #### 实体7: 用户集群映射 (UserClusterMapping)
 **实体说明**: 用户和集群的多对多关系及角色定义
 **主要属性**:
-- user_id (用户ID) - 组合主标识符, 外键
-- cluster_id (集群ID) - 组合主标识符, 外键
-- role (集群角色)
+- id (主键)
+- user_id (用户ID) - 外键
+- cluster_id (集群ID) - 外键
+- role_id (角色ID) - 外键
+- created_at (TIMESTAMPTZ)
 
 **业务规则**:
-- 定义用户在特定集群中的角色 (admin, operator, viewer)
+- `(user_id, cluster_id)`唯一；角色通过`role_id`指向Role
 
 #### 实体8: 操作审计 (AuditLog)
 **实体说明**: 用户操作审计记录
@@ -127,7 +143,7 @@
 
 ### 2.3 扩展实体
 
-#### 实体10: 修复模板 (RepairTemplate)
+#### 实体12: 修复模板 (RepairTemplate)
 **实体说明**: 预定义的修复脚本模板
 **主要属性**:
 - template_name (模板名称)
@@ -138,13 +154,17 @@
 
 ### 3.1 核心关系 (多对多)
 
-#### 关系1: 用户 ↔ 集群 (N:M)
-- **关系类型**: 多对多
-- **实现方式**: 通过`UserClusterMapping`中间表实现
-- **关系说明**: 一个用户可以管理多个集群，一个集群也可以被多个用户管理
-- **外键**:
-  - UserClusterMapping.user_id → User.id
-  - UserClusterMapping.cluster_id → Cluster.id
+#### 关系1: 用户 ↔ 角色 (N:M)
+- 通过`UserRoleMapping`实现用户与角色的多对多
+- 外键: UserRoleMapping.user_id → User.id；UserRoleMapping.role_id → Role.id
+
+#### 关系2: 角色 ↔ 权限 (N:M)
+- 通过`RolePermissionMapping`实现角色与权限的多对多
+- 外键: RolePermissionMapping.role_id → Role.id；RolePermissionMapping.permission_id → Permission.id
+
+#### 关系3: 用户 ↔ 集群 (N:M)
+- 通过`UserClusterMapping`实现用户与集群的多对多，并携带角色role_id
+- 外键: UserClusterMapping.user_id → User.id；UserClusterMapping.cluster_id → Cluster.id；UserClusterMapping.role_id → Role.id
 
 ### 3.2 主要关系 (一对多)
 
@@ -152,9 +172,8 @@
 - **关系类型**: 一对多
 - **外键**: FaultRecord.cluster_id → Cluster.id
 
-#### 关系3: 集群 ↔ 集群状态 (1:N)
-- **关系类型**: 一对多
-- **外键**: ClusterStatus.cluster_id → Cluster.id
+#### 关系3: 集群 ↔ 节点 (1:N)
+- 外键: Node.cluster_id → Cluster.id
 
 #### 关系4: 集群 ↔ 系统日志 (1:N)
 - **关系类型**: 一对多
@@ -173,8 +192,7 @@
 - **外键**: AuditLog.user_id → User.id
 
 #### 关系8: 故障记录 ↔ 系统日志 (1:N)
-- **关系类型**: 一对多
-- **外键**: SystemLog.fault_id → FaultRecord.fault_id
+- 外键: SystemLog.fault_id → FaultRecord.fault_id
 
 ## 4. PowerDesigner建模步骤
 
@@ -191,7 +209,7 @@
 3. 设置其他1:N关系的基数和外键
 
 ### 4.2 逻辑与物理模型生成
-(步骤与之前类似，确保在生成PDM时，所有外键和索引都已正确创建)
+- 生成PDM时，使用PostgreSQL类型（JSONB/UUID/INET/TIMESTAMPTZ）并设置检查约束
 
 ## 5. ER图布局建议
 
@@ -200,13 +218,13 @@
 中心区域（用户-集群关系）:
 ┌─────────────────────────────────┐
 │      User ←- (N:M) -→ Cluster      │
-│         (UserClusterMapping)      │
+│       (UserClusterMapping, UserRoleMapping) │
 └─────────────────────────────────┘
 
 集群关联实体（下方）:
 ┌─────────────────────────────────┐
 │ Cluster --→ FaultRecord         │
-│         --→ ClusterStatus       │
+│         --→ Node                │
 │         --→ SystemLog           │
 │         --→ AuditLog            │
 └─────────────────────────────────┘
@@ -214,6 +232,7 @@
 其他关联实体（两侧）:
 ┌─────────────────────────────────┐
 │ FaultRecord --→ ExecutionLog    │
+│ Role       --↔ Permission       │
 │ User --→ AuditLog               │
 └─────────────────────────────────┘
 
@@ -224,10 +243,11 @@
 ```
 
 ### 5.2 颜色编码建议
-- **核心实体**: 蓝色系 (FaultRecord, Cluster, User)
-- **关联实体**: 绿色系 (ExecutionLog, ClusterStatus, SystemLog)
+- **核心实体**: 蓝色系 (FaultRecord, Cluster, User, Node)
+- **关联实体**: 绿色系 (ExecutionLog, SystemLog)
 - **管理实体**: 灰色系 (AuditLog, AppConfiguration)
-- **中间表**: 黄色系 (UserClusterMapping)
+- **安全与权限**: 紫色系 (Role, Permission)
+- **中间表**: 黄色系 (UserClusterMapping, UserRoleMapping, RolePermissionMapping)
 
 ## 6. 数据完整性设计
 
@@ -247,3 +267,27 @@
 (其他性能优化考虑与之前类似)
 
 (8, 9, 10节内容与之前版本基本保持一致，仅需确保命名规范和设计原则覆盖到新表即可)
+#### 实体7: 角色 (Role)
+**实体说明**: 系统角色定义
+**主要属性**:
+- id, role_name, role_key, is_system_role
+
+#### 实体8: 权限 (Permission)
+**实体说明**: 系统权限定义
+**主要属性**:
+- id, permission_name, permission_key
+
+#### 实体9: 角色-权限映射 (RolePermissionMapping)
+**实体说明**: 角色与权限多对多关系
+**主要属性**:
+- role_id, permission_id (复合主键)
+
+#### 实体10: 用户-角色映射 (UserRoleMapping)
+**实体说明**: 用户与角色多对多关系
+**主要属性**:
+- user_id, role_id (复合主键)
+
+#### 实体11: 用户集群映射 (UserClusterMapping)
+**实体说明**: 用户和集群的多对多关系及角色定义
+**主要属性**:
+- id, user_id, cluster_id, role_id, created_at

@@ -23,7 +23,62 @@
 
 ¶þ¡¢ÏîÄ¿ºËÐÄÈÎÎñ¿ò¼Ü
 ÏîÄ¿ºËÐÄÈÎÎñ¹²·ÖÎª 4 ´óÀà¡¢10 ¸öÄ£¿é£¬¸÷Ä£¿é°´ ¡°»ù´¡Ö§³Å¡ú¹¦ÄÜÊµÏÖ¡úÂäµØ±£ÕÏ¡± µÄÂß¼­·Ö²ã£¬¾ßÌå¿ò¼ÜÈçÏÂ£º
-ÈÎÎñÀà±ðÈÎÎñ±àºÅ¾ßÌåÈÎÎñÄ£¿éºËÐÄÄ¿±êÏÎ½Ó¹ØÏµ»ù´¡»·¾³´î½¨1Hadoop ¼¯Èº²¿ÊðÓëÅäÖÃ¹¹½¨ÏîÄ¿ÔËÐÐµÄ¼ÆËãÓë´æ´¢»ù´¡¼¯ÈºÎªÈÎÎñ 3£¨ÈÕÖ¾²É¼¯£©¡¢ÈÎÎñ 4£¨ÈÕÖ¾´¦Àí£©Ìá¹© Hadoop »·¾³Ö§³Å2·Ö²¼Ê½Êý¾Ý´æ´¢ÌåÏµ¹¹½¨¼°³ÖÐøÐÔÎ¬»¤´î½¨ ¡°Ô­Ê¼ÈÕÖ¾¹éµµ + ÒµÎñÊý¾Ý¹ÜÀí¡± µÄ´æ´¢¼Ü¹¹ÎªÈÎÎñ 3£¨ÈÕÖ¾´æ´¢£©¡¢ÈÎÎñ 4£¨Êý¾Ý²éÑ¯£©¡¢ÈÎÎñ 7£¨½á¹û´æ´¢£©Ìá¹©Êý¾ÝÖ§³ÅÓ¦ÓÃ¿ª·¢3Hadoop ÈÕÖ¾ÊµÊ±²É¼¯Ä£¿é¿ª·¢ÊµÏÖ Hadoop ¼¯ÈºÈÕÖ¾µÄÈ«Á¿¡¢ÊµÊ±²É¼¯ÎªÈÎÎñ 4£¨ÈÕÖ¾´¦Àí£©Ìá¹©Ô­Ê¼Êý¾ÝÊäÈë£¬ÒÀÀµÈÎÎñ 1£¨Hadoop »·¾³£©¡¢ÈÎÎñ 2£¨HDFS ´æ´¢£©4ÈÕÖ¾´«Êä¡¢´¦Àí¼°Óë¹¤¾ßµÄÍ¨ÐÅ½Ó¿Ú¿ª·¢Íê³ÉÈÕÖ¾½á¹¹»¯´¦ÀíÓë¿ç¹¤¾ßÍ¨ÐÅÏÎ½ÓÈÎÎñ 3£¨ÈÕÖ¾ÊäÈë£©ÓëÈÎÎñ 6£¨´óÄ£ÐÍµ÷ÓÃ£©£¬ÒÀÀµÈÎÎñ 2£¨MySQL/Redis ´æ´¢£©5½»»¥Ê½ Web Ó¦ÓÃÇ°¶Ë¿ª·¢ÊµÏÖ¼¯Èº¼à¿Ø¡¢¹ÊÕÏ¹ÜÀí¡¢½á¹ûÕ¹Ê¾µÄ¿ÉÊÓ»¯ÒÀÀµÈÎÎñ 4£¨ºó¶Ë½Ó¿ÚÊý¾Ý£©£¬ÎªÔËÎ¬ÈËÔ±Ìá¹©²Ù×÷Èë¿ÚºËÐÄ¹¦ÄÜÊµÏÖ6»ùÓÚ´óÄ£ÐÍµÄ¹ÊÕÏÖÇÄÜÕï¶ÏÓë·ÖÎöÊµÏÖ¹ÊÕÏÀàÐÍÊ¶±ð¡¢Ô­Òò·ÖÎö¡¢ÐÞ¸´·½°¸Éú³ÉÒÀÀµÈÎÎñ 4£¨½á¹¹»¯ÈÕÖ¾ÊäÈë£©£¬ÎªÈÎÎñ 7£¨ÐÞ¸´Ö´ÐÐ£©Ìá¹©¾ö²ßÒÀ¾Ý7¹ÊÕÏÐÞ¸´Ö¸Áî×Ô¶¯»¯Ö´ÐÐ¼°½á¹û·´À¡»úÖÆ´òÍ¨ ¡°Õï¶Ï - ÐÞ¸´ - ·´À¡¡± ±Õ»·ÒÀÀµÈÎÎñ 6£¨ÐÞ¸´·½°¸£©£¬½á¹ûÍ¬²½ÖÁÈÎÎñ 2£¨MySQL ´æ´¢£©ÓëÈÎÎñ 5£¨Ç°¶ËÕ¹Ê¾£©ÂäµØ±£ÕÏ8È«Á÷³ÌÏµÍ³ÐÔ²âÊÔÓëµü´úÓÅ»¯ÑéÖ¤Ä£¿é¼æÈÝÐÔÓëÏµÍ³ÐÔÄÜ£¬½â¾öÇ±ÔÚÎÊÌâ¸²¸ÇÈÎÎñ 1-7£¬ÎªÈÎÎñ 9£¨²¿ÊðÉÏÏß£©É¨ÇåÕÏ°­9ÏîÄ¿²¿ÊðÉÏÏß¼°È«ÖÜÆÚÔËÎ¬¼à¿ØÌåÏµ´î½¨ÊµÏÖ´Ó¿ª·¢»·¾³µ½Éú²ú»·¾³µÄÆ½ÎÈ¹ý¶ÉÒÀÀµÈÎÎñ 8£¨²âÊÔÓÅ»¯½á¹û£©£¬±£ÕÏÉÏÏßºóÏµÍ³ÎÈ¶¨ÔËÐÐ10´¦Àí½á¹ûµÄÁ¿»¯ÆÀ¹ÀÓë³ÖÐø¸Ä½øÁ¿»¯ÏµÍ³Ð§¹û£¬Çý¶¯Ä£¿éµü´úÓÅ»¯»ùÓÚÈÎÎñ 7£¨ÐÞ¸´½á¹û£©¡¢ÈÎÎñ 9£¨ÔËÎ¬Êý¾Ý£©£¬·´²¸ÈÎÎñ 4£¨ÈÕÖ¾´¦Àí£©¡¢ÈÎÎñ 6£¨´óÄ£ÐÍ£©Èý¡¢¸÷ÈÎÎñÄ£¿éÏêÏ¸ËµÃ÷
+ÈÎÎñÀà±ð
+ÈÎÎñ±àºÅ
+¾ßÌåÈÎÎñÄ£¿é
+ºËÐÄÄ¿±ê
+ÏÎ½Ó¹ØÏµ
+»ù´¡»·¾³´î½¨
+1
+Hadoop ¼¯Èº²¿ÊðÓëÅäÖÃ
+¹¹½¨ÏîÄ¿ÔËÐÐµÄ¼ÆËãÓë´æ´¢»ù´¡¼¯Èº
+ÎªÈÎÎñ 3£¨ÈÕÖ¾²É¼¯£©¡¢ÈÎÎñ 4£¨ÈÕÖ¾´¦Àí£©Ìá¹© Hadoop »·¾³Ö§³Å
+
+2
+·Ö²¼Ê½Êý¾Ý´æ´¢ÌåÏµ¹¹½¨¼°³ÖÐøÐÔÎ¬»¤
+´î½¨ ¡°Ô­Ê¼ÈÕÖ¾¹éµµ + ÒµÎñÊý¾Ý¹ÜÀí¡± µÄ´æ´¢¼Ü¹¹
+ÎªÈÎÎñ 3£¨ÈÕÖ¾´æ´¢£©¡¢ÈÎÎñ 4£¨Êý¾Ý²éÑ¯£©¡¢ÈÎÎñ 7£¨½á¹û´æ´¢£©Ìá¹©Êý¾ÝÖ§³Å
+Ó¦ÓÃ¿ª·¢
+3
+Hadoop ÈÕÖ¾ÊµÊ±²É¼¯Ä£¿é¿ª·¢
+ÊµÏÖ Hadoop ¼¯ÈºÈÕÖ¾µÄÈ«Á¿¡¢ÊµÊ±²É¼¯
+ÎªÈÎÎñ 4£¨ÈÕÖ¾´¦Àí£©Ìá¹©Ô­Ê¼Êý¾ÝÊäÈë£¬ÒÀÀµÈÎÎñ 1£¨Hadoop »·¾³£©¡¢ÈÎÎñ 2£¨HDFS ´æ´¢£©
+
+4
+ÈÕÖ¾´«Êä¡¢´¦Àí¼°Óë¹¤¾ßµÄÍ¨ÐÅ½Ó¿Ú¿ª·¢
+Íê³ÉÈÕÖ¾½á¹¹»¯´¦ÀíÓë¿ç¹¤¾ßÍ¨ÐÅ
+ÏÎ½ÓÈÎÎñ 3£¨ÈÕÖ¾ÊäÈë£©ÓëÈÎÎñ 6£¨´óÄ£ÐÍµ÷ÓÃ£©£¬ÒÀÀµÈÎÎñ 2£¨MySQL/Redis ´æ´¢£©
+
+5
+½»»¥Ê½ Web Ó¦ÓÃÇ°¶Ë¿ª·¢
+ÊµÏÖ¼¯Èº¼à¿Ø¡¢¹ÊÕÏ¹ÜÀí¡¢½á¹ûÕ¹Ê¾µÄ¿ÉÊÓ»¯
+ÒÀÀµÈÎÎñ 4£¨ºó¶Ë½Ó¿ÚÊý¾Ý£©£¬ÎªÔËÎ¬ÈËÔ±Ìá¹©²Ù×÷Èë¿Ú
+ºËÐÄ¹¦ÄÜÊµÏÖ
+6
+»ùÓÚ´óÄ£ÐÍµÄ¹ÊÕÏÖÇÄÜÕï¶ÏÓë·ÖÎö
+ÊµÏÖ¹ÊÕÏÀàÐÍÊ¶±ð¡¢Ô­Òò·ÖÎö¡¢ÐÞ¸´·½°¸Éú³É
+ÒÀÀµÈÎÎñ 4£¨½á¹¹»¯ÈÕÖ¾ÊäÈë£©£¬ÎªÈÎÎñ 7£¨ÐÞ¸´Ö´ÐÐ£©Ìá¹©¾ö²ßÒÀ¾Ý
+
+7
+¹ÊÕÏÐÞ¸´Ö¸Áî×Ô¶¯»¯Ö´ÐÐ¼°½á¹û·´À¡»úÖÆ
+´òÍ¨ ¡°Õï¶Ï - ÐÞ¸´ - ·´À¡¡± ±Õ»·
+ÒÀÀµÈÎÎñ 6£¨ÐÞ¸´·½°¸£©£¬½á¹ûÍ¬²½ÖÁÈÎÎñ 2£¨MySQL ´æ´¢£©ÓëÈÎÎñ 5£¨Ç°¶ËÕ¹Ê¾£©
+ÂäµØ±£ÕÏ
+8
+È«Á÷³ÌÏµÍ³ÐÔ²âÊÔÓëµü´úÓÅ»¯
+ÑéÖ¤Ä£¿é¼æÈÝÐÔÓëÏµÍ³ÐÔÄÜ£¬½â¾öÇ±ÔÚÎÊÌâ
+¸²¸ÇÈÎÎñ 1-7£¬ÎªÈÎÎñ 9£¨²¿ÊðÉÏÏß£©É¨ÇåÕÏ°­
+
+9
+ÏîÄ¿²¿ÊðÉÏÏß¼°È«ÖÜÆÚÔËÎ¬¼à¿ØÌåÏµ´î½¨
+ÊµÏÖ´Ó¿ª·¢»·¾³µ½Éú²ú»·¾³µÄÆ½ÎÈ¹ý¶É
+ÒÀÀµÈÎÎñ 8£¨²âÊÔÓÅ»¯½á¹û£©£¬±£ÕÏÉÏÏßºóÏµÍ³ÎÈ¶¨ÔËÐÐ
+
+10
+´¦Àí½á¹ûµÄÁ¿»¯ÆÀ¹ÀÓë³ÖÐø¸Ä½ø
+Á¿»¯ÏµÍ³Ð§¹û£¬Çý¶¯Ä£¿éµü´úÓÅ»¯
+»ùÓÚÈÎÎñ 7£¨ÐÞ¸´½á¹û£©¡¢ÈÎÎñ 9£¨ÔËÎ¬Êý¾Ý£©£¬·´²¸ÈÎÎñ 4£¨ÈÕÖ¾´¦Àí£©¡¢ÈÎÎñ 6£¨´óÄ£ÐÍ£©
+Èý¡¢¸÷ÈÎÎñÄ£¿éÏêÏ¸ËµÃ÷
 £¨Ò»£©»ù´¡»·¾³´î½¨Àà
 ÈÎÎñ 1£ºHadoop ¼¯Èº²¿ÊðÓëÅäÖÃ
 ? ÈÎÎñ¶¨Î»£ºÏîÄ¿ÔËÐÐµÄ»ù´¡¼ÆËãÖ§³Å£¬Ìá¹© HDFS£¨´æ´¢ÈÕÖ¾£©¡¢YARN£¨×ÊÔ´µ÷¶È£©¡¢MapReduce£¨¿ÉÑ¡ÅúÁ¿´¦Àí£©ºËÐÄ×é¼þ¡£
@@ -42,16 +97,24 @@ c. ÑéÖ¤£ºÍ¨¹ýjpsÃüÁî²é¿´½ø³Ì£¨NameNode¡¢DataNode µÈ½ø³ÌÕý³££©£¬·ÃÎÊ Web ½çÃæ£¨Na
 d. HDFS ´æ´¢ÅäÖÃ£º
 ? ´´½¨ÈÕÖ¾¹éµµÄ¿Â¼£ºhdfs dfs -mkdir -p /user/hadoop/log_archive£¬ÉèÖÃÈ¨ÏÞ£¨hdfs dfs -chmod 755 /user/hadoop/log_archive£©£¬½öÔÊÐí Flume¡¢ºó¶Ë·þÎñÐ´Èë£»
 ? ÅäÖÃ¸±±¾²ßÂÔ£ºhdfs-site.xmlÖÐÉèÖÃdfs.replication=3£¬È·±£ÈÕÖ¾Êý¾Ý¸ß¿ÉÓÃ£¬±ÜÃâµ¥µã¶ªÊ§¡£
-e. MySQL+Redis ²¿ÊðÓëÅäÖÃ£º
-? MySQL£º°²×° MySQL 8.0+£¬´´½¨Êý¾Ý¿âhadoop_fault_db£¬Éè¼ÆºËÐÄÊý¾Ý±í£¨ÈçÏÂ£©£º
+e. PostgreSQL+Redis ²¿ÊðÓëÅäÖÃ£º
+? PostgreSQL£º°²×° PostgreSQL 14+£¬´´½¨Êý¾Ý¿âhadoop_fault_db£¬°´ÏîÄ¿½Å±¾³õÊ¼»¯±í½á¹¹£¨²Î¼û doc/project/Êý¾Ý¿â½¨±í½Å±¾_postgres.sql£©£º
 
-±íÃûºËÐÄ×Ö¶Îcluster_node½Úµã ID¡¢IP µØÖ·¡¢½ÇÉ«£¨NameNode/DataNode£©¡¢´ÅÅÌãÐÖµ¡¢×´Ì¬£¨ÔÚÏß / ÀëÏß£©fault_record¹ÊÕÏ ID¡¢ÀàÐÍ¡¢·¢ÉúÊ±¼ä¡¢Õï¶Ï½á¹û¡¢ÐÞ¸´½Å±¾¡¢ÐÞ¸´×´Ì¬¡¢Ö´ÐÐÈÕÖ¾operation_log²Ù×÷ ID¡¢ÓÃ»§Ãû¡¢²Ù×÷Ê±¼ä¡¢²Ù×÷ÄÚÈÝ¡¢½á¹û£¨³É¹¦ / Ê§°Ü£©? Redis£º°²×° Redis 6.0+£¬ÅäÖÃ»º´æ²ßÂÔ£¨¼¯Èº×´Ì¬Êý¾Ý»º´æ 10 ·ÖÖÓ£¬¹ÊÕÏÁÐ±íÊý¾Ý»º´æ 5 ·ÖÖÓ£©£¬±ÜÃâ¸ßÆµ²éÑ¯´©Í¸ MySQL¡£
+±íÃû
+ºËÐÄ×Ö¶Î
+cluster_node
+½Úµã ID¡¢IP µØÖ·¡¢½ÇÉ«£¨NameNode/DataNode£©¡¢´ÅÅÌãÐÖµ¡¢×´Ì¬£¨ÔÚÏß / ÀëÏß£©
+fault_record
+¹ÊÕÏ ID¡¢ÀàÐÍ¡¢·¢ÉúÊ±¼ä¡¢Õï¶Ï½á¹û¡¢ÐÞ¸´½Å±¾¡¢ÐÞ¸´×´Ì¬¡¢Ö´ÐÐÈÕÖ¾
+operation_log
+²Ù×÷ ID¡¢ÓÃ»§Ãû¡¢²Ù×÷Ê±¼ä¡¢²Ù×÷ÄÚÈÝ¡¢½á¹û£¨³É¹¦ / Ê§°Ü£©
+? Redis£º°²×° Redis 6.0+£¬ÅäÖÃ»º´æ²ßÂÔ£¨¼¯Èº×´Ì¬Êý¾Ý»º´æ 10 ·ÖÖÓ£¬¹ÊÕÏÁÐ±íÊý¾Ý»º´æ 5 ·ÖÖÓ£©£¬±ÜÃâ¸ßÆµ²éÑ¯´©Í¸ PostgreSQL¡£
 f. ´æ´¢Î¬»¤£º
 ? HDFS£ºÃ¿ÖÜÖ´ÐÐhdfs fsck /¼ì²éÎÄ¼þÍêÕûÐÔ£¬Ã¿ÔÂ½« 3 ¸öÔÂÇ°µÄÈÕÖ¾¹éµµÖÁÀä´æ´¢£¨ÈçµÍ³É±¾ÔÆ´æ´¢£©£»
-? MySQL£ºÅäÖÃÃ¿ÈÕÔöÁ¿±¸·Ý£¨mysqldump -u root -p hadoop_fault_db > backup_$(date +%Y%m%d).sql£©£¬±£Áô 30 Ìì±¸·ÝÎÄ¼þ£»
-? È¨ÏÞ¹Ü¿Ø£ºMySQL ½öÔÊÐíºó¶Ë·þÎñ IP ·ÃÎÊ£¬Redis ÉèÖÃÃÜÂëÈÏÖ¤£¬±ÜÃâÊý¾ÝÐ¹Â¶¡£
-? ÊµÊ©Òªµã£ºÓÃ Navicat µÈ¹¤¾ß¹ÜÀí MySQL£¬¼ÇÂ¼Êý¾Ý¿âÕËºÅÃÜÂëÓë±¸·ÝÂ·¾¶£¬¶¨ÆÚÑéÖ¤±¸·ÝÎÄ¼þ¿ÉÓÃÐÔ¡£
-? ±ØÒªÐÔ£ºHDFS ½â¾ö TB ¼¶Ô­Ê¼ÈÕÖ¾´æ´¢ÎÊÌâ£¬MySQL ½â¾öÒµÎñÊý¾Ý¸ßÐ§²éÑ¯ÎÊÌâ£¬È±ÉÙÈÎÒ»´æ´¢¾ù»áµ¼ÖÂÏµÍ³¹¦ÄÜ¶ÏÁÑ£¨ÈçÇ°¶ËÎÞ·¨¼ÓÔØ¹ÊÕÏÁÐ±í¡¢ÈÕÖ¾ÎÞ·¨¹éµµ£©¡£
+? PostgreSQL£ºÅäÖÃÃ¿ÈÕÔöÁ¿±¸·Ý£¨pg_dump -U postgres -d hadoop_fault_db > backup_$(date +%Y%m%d).sql£©£¬±£Áô 30 Ìì±¸·ÝÎÄ¼þ£»
+? È¨ÏÞ¹Ü¿Ø£ºPostgreSQL ½öÔÊÐíºó¶Ë·þÎñ IP ·ÃÎÊ£¬Redis ÉèÖÃÃÜÂëÈÏÖ¤£¬±ÜÃâÊý¾ÝÐ¹Â¶¡£
+? ÊµÊ©Òªµã£ºÓÃ pgAdmin µÈ¹¤¾ß¹ÜÀí PostgreSQL£¬¼ÇÂ¼Êý¾Ý¿âÕËºÅÃÜÂëÓë±¸·ÝÂ·¾¶£¬¶¨ÆÚÑéÖ¤±¸·ÝÎÄ¼þ¿ÉÓÃÐÔ¡£
+? ±ØÒªÐÔ£ºHDFS ½â¾ö TB ¼¶Ô­Ê¼ÈÕÖ¾´æ´¢ÎÊÌâ£¬PostgreSQL ½â¾öÒµÎñÊý¾Ý¸ßÐ§²éÑ¯ÎÊÌâ£¬È±ÉÙÈÎÒ»´æ´¢¾ù»áµ¼ÖÂÏµÍ³¹¦ÄÜ¶ÏÁÑ£¨ÈçÇ°¶ËÎÞ·¨¼ÓÔØ¹ÊÕÏÁÐ±í¡¢ÈÕÖ¾ÎÞ·¨¹éµµ£©¡£
 £¨¶þ£©Ó¦ÓÃ¿ª·¢Àà
 ÈÎÎñ 3£ºHadoop ÈÕÖ¾ÊµÊ±²É¼¯Ä£¿é¿ª·¢
 ? ÈÎÎñ¶¨Î»£ºÊµÏÖ Hadoop ¼¯ÈºÈÕÖ¾µÄ ¡°È«Á¿¡¢ÊµÊ±¡± ²É¼¯£¬ÎªºóÐøÈÕÖ¾´¦ÀíÌá¹©Ô­Ê¼Êý¾ÝÀ´Ô´¡£
@@ -67,10 +130,10 @@ i. ²É¼¯ÑéÖ¤£ºÆô¶¯ Flume Agent£¨flume-ng agent -n agent -c conf -f hadoop-log-age
 ? ÊµÊ©Òªµã£º±ÜÃâ Flume ½ø³ÌÕ¼ÓÃ¹ý¶à CPU / ÄÚ´æ£¬¶¨ÆÚÇåÀí Flume ÈÕÖ¾£¨/var/log/flume-ng/£©£¬·ÀÖ¹´ÅÅÌÂú¡£
 ? ±ØÒªÐÔ£ºÎÞÈÕÖ¾²É¼¯ÔòºóÐøÈÕÖ¾´¦Àí¡¢´óÄ£ÐÍÕï¶Ï¾ùÎÞÊý¾ÝÊäÈë£¬ÏµÍ³ÎÞ·¨¸ÐÖª¼¯Èº¹ÊÕÏ¡£
 ÈÎÎñ 4£ºÈÕÖ¾´«Êä¡¢´¦Àí¼°Óë¹¤¾ßµÄÍ¨ÐÅ½Ó¿Ú¿ª·¢
-? ÈÎÎñ¶¨Î»£º×÷ÎªÏµÍ³ ¡°Êý¾ÝÖÐÊà¡±£¬Íê³ÉÈÕÖ¾½á¹¹»¯´¦Àí¡¢¿ç¹¤¾ß£¨Flume / ´óÄ£ÐÍ / MySQL£©Í¨ÐÅ£¬ÏÎ½Ó ¡°²É¼¯¡± Óë ¡°Õï¶Ï¡± »·½Ú¡£
+? ÈÎÎñ¶¨Î»£º×÷ÎªÏµÍ³ ¡°Êý¾ÝÖÐÊà¡±£¬Íê³ÉÈÕÖ¾½á¹¹»¯´¦Àí¡¢¿ç¹¤¾ß£¨Flume / ´óÄ£ÐÍ / PostgreSQL£©Í¨ÐÅ£¬ÏÎ½Ó ¡°²É¼¯¡± Óë ¡°Õï¶Ï¡± »·½Ú¡£
 ? ºËÐÄÄÚÈÝ£º
 j. ºó¶Ë·þÎñ´î½¨£¨»ùÓÚ FastAPI£©£º
-? ÏîÄ¿³õÊ¼»¯£ºpip install fastapi uvicorn mysql-connector-python redis requests£¬´´½¨Ö÷³ÌÐòmain.py£»
+? ÏîÄ¿³õÊ¼»¯£ºpip install fastapi uvicorn sqlalchemy asyncpg redis requests pydantic£¬´´½¨Ö÷³ÌÐòmain.py£»
 ? ½Ó¿Ú¿ª·¢£º
 ? ÈÕÖ¾½ÓÊÕ½Ó¿Ú£¨POST /api/log/auto-upload£©£º½ÓÊÕ Flume ÍÆËÍµÄÈÕÖ¾£¬µ÷ÓÃpreprocess_logº¯ÊýÌáÈ¡Ê±¼ä´Á¡¢ÈÕÖ¾¼¶±ð¡¢×é¼þÃû£¨½á¹¹»¯£©£»
 ? ¼¯Èº×´Ì¬½Ó¿Ú£¨GET /api/cluster/status£©£ºµ÷ÓÃ Hadoop API£¨hdfs dfsadmin -report£©»ñÈ¡½Úµã×´Ì¬£¬»º´æÖÁ Redis£»
@@ -78,7 +141,7 @@ j. ºó¶Ë·þÎñ´î½¨£¨»ùÓÚ FastAPI£©£º
 k. ÈÕÖ¾½á¹¹»¯´¦Àí£º±àÐ´preprocess_logº¯Êý£¬ÓÃÕýÔòÆ¥Åä Hadoop ÈÕÖ¾¸ñÊ½£¨(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+) (\w+): (.*)£©£¬Êä³ö½á¹¹»¯×Öµä£¨º¬timestamp¡¢log_level¡¢component¡¢content×Ö¶Î£©¡£
 l. ¹¤¾ßÍ¨ÐÅÊÊÅä£º
 ? Óë Hadoop Í¨ÐÅ£ºÓÃsubprocessµ÷ÓÃ Hadoop ÃüÁî£¨Èçhdfs dfs -du -h /£©£¬»òÍ¨¹ý PyHive Á¬½Ó Hive »ñÈ¡ÈÎÎñÈÕÖ¾£»
-? Óë MySQL/Redis Í¨ÐÅ£º·â×°Êý¾Ý¶ÁÐ´º¯Êý£¨save_fault_to_mysql¡¢get_cluster_status_from_redis£©£¬È·±£Êý¾ÝÒ»ÖÂÐÔ¡£
+? Óë PostgreSQL/Redis Í¨ÐÅ£º·â×°Êý¾Ý¶ÁÐ´º¯Êý£¨save_fault_to_pg¡¢get_cluster_status_from_redis£©£¬È·±£Êý¾ÝÒ»ÖÂÐÔ¡£
 ? ÊµÊ©Òªµã£ºÓÃuvicornÆô¶¯·þÎñÊ±ÅäÖÃ--workers 4Ìá¸ß²¢·¢ÄÜÁ¦£¬½Ó¿ÚÌí¼Ó²ÎÊýÐ£Ñé£¨ÈçÓÃ Pydantic ¶¨ÒåLogModel£©£¬±ÜÃâ·Ç·¨Êý¾ÝÊäÈë¡£
 ? ±ØÒªÐÔ£ºÔ­Ê¼ÈÕÖ¾¸ñÊ½ÔÓÂÒ£¬È±ÉÙ½á¹¹»¯´¦ÀíÔò´óÄ£ÐÍÎÞ·¨¾«×¼Õï¶Ï£»ÎÞÍ¨ÐÅ½Ó¿ÚÔò¸÷¹¤¾ßÎÞ·¨Ð­Í¬£¬ÏµÍ³³Ê ¡°ËéÆ¬»¯¡±¡£
 ÈÎÎñ 5£º½»»¥Ê½ Web Ó¦ÓÃÇ°¶Ë¿ª·¢
@@ -94,10 +157,11 @@ o. ÑùÊ½Óë½»»¥ÓÅ»¯£ºÍ³Ò»Ò³Ãæ·ç¸ñ£¨ÈçÉîÉ«Ö÷ÌâÊÊÅäÔËÎ¬³¡¾°£©£¬Ìí¼Ó¼ÓÔØ¶¯»­¡¢´íÎóÌáÊ
 ? ÊµÊ©Òªµã£ºÓÃaxiosÀ¹½ØÆ÷´¦Àí Token ¹ýÆÚ£¨×Ô¶¯Ìø×ªµÇÂ¼Ò³£©£¬Í¼±í²ÉÓÃÀÁ¼ÓÔØ¼õÉÙÊ×ÆÁ¼ÓÔØÊ±¼ä¡£
 ? ±ØÒªÐÔ£ºÎÞÇ°¶ËÔòÔËÎ¬ÈËÔ±ÎÞ·¨Ö±¹Û²é¿´¼¯Èº×´Ì¬Óë¹ÊÕÏÐÅÏ¢£¬ÏµÍ³È±ÉÙ ¡°ÈË»ú½»»¥¡± Èë¿Ú£¬ÊµÓÃÐÔ´ó·ù½µµÍ¡£
 £¨Èý£©ºËÐÄ¹¦ÄÜÊµÏÖÀà
-ÈÎÎñ 6£º»ùÓÚ´óÄ£ÐÍµÄ¹ÊÕÏÖÇÄÜÕï¶ÏÓë·ÖÎö
+ÈÎÎñ 6£º»ùÓÚ´óÄ£ÐÍÓë¶àÖÇÄÜÌåµÄ¹ÊÕÏÖÇÄÜÕï¶ÏÓë·ÖÎö
 ? ÈÎÎñ¶¨Î»£ºÏµÍ³ ¡°¾ö²ßºËÐÄ¡±£¬Í¨¹ý´óÄ£ÐÍ·ÖÎö½á¹¹»¯ÈÕÖ¾£¬ÊµÏÖ¹ÊÕÏÀàÐÍÊ¶±ð¡¢Ô­Òò¶¨Î»¡¢ÐÞ¸´·½°¸Éú³É¡£
 ? ºËÐÄÄÚÈÝ£º
-p. ´óÄ£ÐÍÑ¡ÐÍÓë API ÅäÖÃ£ºÑ¡ÔñÖ§³Ö¹¤¾ßµ÷ÓÃµÄ´óÄ£ÐÍ£¨ÈçÍ¨ÒåÇ§ÎÊ Qwen-Max¡¢Scholar ICP£©£¬ÉêÇë API ÃÜÔ¿£¬ÅäÖÃµ÷ÓÃ²ÎÊý£¨temperature=0.3£¬½µµÍËæ»úÐÔ£©¡£
+p. ´óÄ£ÐÍÑ¡ÐÍÓë API ÅäÖÃ£ºÑ¡ÔñÖ§³Ö¹¤¾ßµ÷ÓÃµÄ´óÄ£ÐÍ£¨ÈçÍ¨ÒåÇ§ÎÊ Qwen-Max¡¢ÎÄÐÄÒ»ÑÔ£©£¬ÉêÇë API ÃÜÔ¿£¬ÅäÖÃµ÷ÓÃ²ÎÊý£¨temperature=0.3£¬½µµÍËæ»úÐÔ£©¡£
+? ¶àÖÇÄÜÌå¼Ü¹¹£º²ÉÓÃ Agent Orchestrator£¨Èç LangGraph/Ray/Celery£©±àÅÅ DiagnosisAgent£¨Õï¶Ï£©¡¢LogParserAgent£¨½âÎö£©¡¢PolicyAgent£¨·çÏÕÓëÉóÅú²ßÂÔ£©¡£
 q. Prompt ¹¤³ÌÉè¼Æ£º¹¹Ôì½á¹¹»¯ Prompt£¬Ç¿ÖÆ´óÄ£ÐÍÊä³ö¿ÉÖ´ÐÐÐÞ¸´Ö¸Áî£¬Ê¾Àý£º
 
 ÄãÊÇHadoopÔËÎ¬×¨¼Ò£¬Ðè»ùÓÚÒÔÏÂ½á¹¹»¯ÈÕÖ¾Êä³ö£º
@@ -106,7 +170,8 @@ q. Prompt ¹¤³ÌÉè¼Æ£º¹¹Ôì½á¹¹»¯ Prompt£¬Ç¿ÖÆ´óÄ£ÐÍÊä³ö¿ÉÖ´ÐÐÐÞ¸´Ö¸Áî£¬Ê¾Àý£º
 3. fix_script£¨¿ÉÖ´ÐÐShell/HadoopÃüÁî£¬ÎÞ¶àÓà½âÊÍ£©£»
 4. risk_level£¨·çÏÕµÈ¼¶£ºlow/medium/high£©¡£
 Êä³ö¸ñÊ½ÎªJSON£¬²»º¬ÆäËûÎÄ×Ö£¡
-ÈÕÖ¾£º{½á¹¹»¯ÈÕÖ¾ÁÐ±í}r. Õï¶ÏÂß¼­¿ª·¢£ºÔÚ FastAPI ÖÐ±àÐ´call_llm_diagnoseº¯Êý£¬´«µÝ½á¹¹»¯ÈÕÖ¾ÖÁ´óÄ£ÐÍ API£¬½âÎö·µ»Ø½á¹û£¨ÓÃ Pydantic ¶¨ÒåFixCommandÀàÐ£Ñé¸ñÊ½£©£¬¹ýÂËÎ£ÏÕÖ¸Áî£¨Èçrm -rf /*£©¡£
+ÈÕÖ¾£º{½á¹¹»¯ÈÕÖ¾ÁÐ±í}
+r. Õï¶ÏÂß¼­¿ª·¢£ºÔÚ FastAPI ÖÐ±àÐ´call_llm_diagnoseº¯Êý£¬´«µÝ½á¹¹»¯ÈÕÖ¾ÖÁ´óÄ£ÐÍ API£¬½âÎö·µ»Ø½á¹û£¨ÓÃ Pydantic ¶¨ÒåFixCommandÀàÐ£Ñé¸ñÊ½£©£¬¹ýÂËÎ£ÏÕÖ¸Áî£¨Èçrm -rf /*£©¡£
 s. Õï¶ÏÑéÖ¤£ºÄ£Äâ ¡°´ÅÅÌÂú¡± ¹ÊÕÏ£¨dd if=/dev/zero of=/tmp/test bs=1G count=5£©£¬²é¿´´óÄ£ÐÍÊÇ·ñÕýÈ·Êä³ö ¡°ÇåÀíÁÙÊ±ÎÄ¼þ¡± µÄÐÞ¸´½Å±¾¡£
 ? ÊµÊ©Òªµã£ºÌí¼Ó´óÄ£ÐÍµ÷ÓÃÖØÊÔ»úÖÆ£¨Ê§°ÜºóÖØÊÔ 2 ´Î£¬¼ä¸ô 5 Ãë£©£¬¼ÇÂ¼µ÷ÓÃÈÕÖ¾£¨º¬ÊäÈë / Êä³ö£©£¬±ãÓÚÎÊÌâÅÅ²é¡£
 ? ±ØÒªÐÔ£ºÎÞ´óÄ£ÐÍÕï¶ÏÔòÐèÈË¹¤·ÖÎöÈÕÖ¾£¬ÎÞ·¨ÊµÏÖ ¡°×Ô¶¯»¯¹ÊÕÏÊ¶±ð¡±£¬Î¥±³ÏîÄ¿ºËÐÄÄ¿±ê¡£
@@ -118,10 +183,10 @@ t. ÐÞ¸´½Å±¾¿â¿ª·¢£º±àÐ´±ê×¼»¯ Shell ½Å±¾£¬°´¹ÊÕÏÀàÐÍ·ÖÀà´æ´¢£¨Èç/scripts/Ä¿Â¼£©£
 ? clean_temp.sh£ºssh datanode-ip "rm -rf /tmp/hadoop-* && hdfs dfsadmin -refreshNodes"£»
 ? kill_timeout_job.sh£ºyarn application -kill <appId>£¨Ðè¶¯Ì¬´«Èë appId£©¡£
 u. ·çÏÕ¿ØÖÆÂß¼­£º
-? ·çÏÕ·Ö¼¶£ºlow£¨ÈçÇåÀíÁÙÊ±ÎÄ¼þ£©¡ú ×Ô¶¯Ö´ÐÐ£»medium£¨ÈçÖØÆô DataNode£©¡ú Ç°¶Ëµ¯´°È·ÈÏºóÖ´ÐÐ£»high£¨Èç¸ñÊ½»¯ HDFS£©¡ú ¶¤¶¤¸æ¾¯ + ÈË¹¤ÉóÅú£»
+? ·çÏÕ·Ö¼¶£ºlow£¨ÈçÇåÀíÁÙÊ±ÎÄ¼þ£©¡ú RepairAgent ×Ô¶¯Ö´ÐÐ£»medium£¨ÈçÖØÆô DataNode£©¡ú Ç°¶Ëµ¯´°È·ÈÏºóÖ´ÐÐ£»high£¨Èç¸ñÊ½»¯ HDFS£©¡ú ¶¤¶¤¸æ¾¯ + ÈË¹¤ÉóÅú£¨ÓÉ PolicyAgent Ð­Í¬£©£»
 ? È¨ÏÞ¿ØÖÆ£ºÐÞ¸´½Å±¾½öÔÊÐíºó¶Ë·þÎñÓÃ»§£¨Èçhadoop£©Ö´ÐÐ£¬½ûÖ¹ root È¨ÏÞ¡£
 v. ½á¹û·´À¡£º
-? Ö´ÐÐÈÕÖ¾¼ÇÂ¼£ºÓÃsubprocess²¶»ñ½Å±¾Êä³ö£¨stdout/stderr£©£¬´æÈë MySQLfault_record±íµÄexec_log×Ö¶Î£»
+? Ö´ÐÐÈÕÖ¾¼ÇÂ¼£ºÓÃsubprocess²¶»ñ½Å±¾Êä³ö£¨stdout/stderr£©£¬´æÈë PostgreSQL µÄ exec_logs ±í£»
 ? Ç°¶ËÍ¬²½£ºÐÞ¸´Íê³Éºó£¬Í¨¹ý WebSocket ÊµÊ±¸üÐÂÇ°¶Ë¹ÊÕÏ×´Ì¬£¨Èç ¡°Î´ÐÞ¸´¡±¡ú¡°ÒÑÐÞ¸´¡±£©£¬µ¯´°ÌáÊ¾½á¹û¡£
 ? ÊµÊ©Òªµã£º½Å±¾Ìí¼Ó²ÎÊýÐ£Ñé£¨Èçclean_temp.sh¼ì²é/tmp/hadoop-*ÊÇ·ñ´æÔÚ£©£¬±ÜÃâ¿ÕÖ´ÐÐ£»Ö´ÐÐÇ°±¸·Ý¹Ø¼üÅäÖÃÎÄ¼þ£¨Èçhdfs-site.xml£©¡£
 ? ±ØÒªÐÔ£ºÈ±ÉÙ×Ô¶¯ÐÞ¸´ÔòÏµÍ³½öÄÜ ¡°·¢ÏÖ¹ÊÕÏ¡±£¬ÎÞ·¨ ¡°½â¾ö¹ÊÕÏ¡±£¬ÔËÎ¬Ð§ÂÊÎÞÊµÖÊÌáÉý£¬ÏîÄ¿¼ÛÖµ´ó´òÕÛ¿Û¡£
@@ -134,7 +199,19 @@ w. Ä£¿é²âÊÔ£º
 ? ¹¦ÄÜ²âÊÔ£ººó¶Ë½Ó¿Ú£¨ÓÃ Postman ²âÊÔ²ÎÊýºÏ·¨ÐÔ¡¢·µ»Ø¸ñÊ½£©¡¢Ç°¶ËÒ³Ãæ£¨²âÊÔÉ¸Ñ¡ / ·ÖÒ³ / °´Å¥µã»÷¹¦ÄÜ£©¡£
 x. ³¡¾°²âÊÔ£ºÄ£Äâ 3 ÀàºËÐÄ¹ÊÕÏ£¬ÑéÖ¤È«Á÷³ÌÍ¨Ë³ÐÔ£º
 
-¹ÊÕÏÀàÐÍÄ£Äâ·½Ê½Ô¤ÆÚ½á¹ûDataNode ´ÅÅÌÂúdd if=/dev/zero of=/tmp/test bs=1G count=5ÈÕÖ¾²É¼¯¡ú´óÄ£ÐÍÕï¶Ï ¡°´ÅÅÌÂú¡±¡úÊä³öclean_temp.sh¡úÖ´ÐÐºó´ÅÅÌÊ¹ÓÃÂÊÏÂ½µÈÎÎñ³¬Ê±Ìá½»sleep 3600µÄ MapReduce ÈÎÎñÈÕÖ¾²É¼¯¡ú´óÄ£ÐÍÕï¶Ï ¡°ÈÎÎñ³¬Ê±¡±¡úÊä³ökill_timeout_job.sh¡úÈÎÎñ±»³É¹¦ÖÕÖ¹DataNode å´»úsudo systemctl stop hadoop-hdfs-datanodeÈÕÖ¾²É¼¯¡ú´óÄ£ÐÍÕï¶Ï ¡°DataNode ÀëÏß¡±¡úÊä³örestart_datanode.sh¡ú½ÚµãÖØÆô³É¹¦y. ÐÔÄÜÓÅ»¯£º
+¹ÊÕÏÀàÐÍ
+Ä£Äâ·½Ê½
+Ô¤ÆÚ½á¹û
+DataNode ´ÅÅÌÂú
+dd if=/dev/zero of=/tmp/test bs=1G count=5
+ÈÕÖ¾²É¼¯¡ú´óÄ£ÐÍÕï¶Ï ¡°´ÅÅÌÂú¡±¡úÊä³öclean_temp.sh¡úÖ´ÐÐºó´ÅÅÌÊ¹ÓÃÂÊÏÂ½µ
+ÈÎÎñ³¬Ê±
+Ìá½»sleep 3600µÄ MapReduce ÈÎÎñ
+ÈÕÖ¾²É¼¯¡ú´óÄ£ÐÍÕï¶Ï ¡°ÈÎÎñ³¬Ê±¡±¡úÊä³ökill_timeout_job.sh¡úÈÎÎñ±»³É¹¦ÖÕÖ¹
+DataNode å´»ú
+sudo systemctl stop hadoop-hdfs-datanode
+ÈÕÖ¾²É¼¯¡ú´óÄ£ÐÍÕï¶Ï ¡°DataNode ÀëÏß¡±¡úÊä³örestart_datanode.sh¡ú½ÚµãÖØÆô³É¹¦
+y. ÐÔÄÜÓÅ»¯£º
 ? Ç°¶Ë£ºÓÅ»¯Í¼±í¼ÓÔØ£¨ÀÁ¼ÓÔØ·ÇÊ×ÆÁÍ¼±í£©£¬½Ó¿ÚÇëÇóºÏ²¢£¨¼õÉÙÖØ¸´µ÷ÓÃ£©£»
 ? ºó¶Ë£º¸ø¸ßÆµ½Ó¿Ú£¨/api/cluster/status£©¼Ó Redis »º´æ£¬ÓÅ»¯´óÄ£ÐÍµ÷ÓÃ³¬Ê±Ê±¼ä£¨ÉèÎª 30 Ãë£©¡£
 ? ÊµÊ©Òªµã£º¼ÇÂ¼²âÊÔÓÃÀýÓëÈ±ÏÝ£¨ÓÃ Excel »ò Jira£©£¬ÓÅÏÈÐÞ¸´ ¡°×è¶ÏÐÔÈ±ÏÝ¡±£¨ÈçÈÕÖ¾²É¼¯¶ªÊý¾Ý¡¢ÐÞ¸´½Å±¾Ö´ÐÐÊ§°Ü£©¡£
@@ -146,10 +223,10 @@ z. ÈÝÆ÷»¯²¿Êð£º
 ? ±àÐ´ Dockerfile£º
 ? Ç°¶Ë£º»ùÓÚ Nginx ¾µÏñ£¬¸´ÖÆdistÄ¿Â¼ÖÁ/usr/share/nginx/html£»
 ? ºó¶Ë£º»ùÓÚ Python 3.9 ¾µÏñ£¬°²×°ÒÀÀµ£¬±©Â¶ 8000 ¶Ë¿Ú£»
-? ±àÐ´docker-compose.yml£º¶¨ÒåÇ°¶Ë¡¢ºó¶Ë¡¢MySQL¡¢Redis ·þÎñ£¬ÅäÖÃ¶Ë¿ÚÓ³Éä£¨ÈçÇ°¶Ë 80¡úÈÝÆ÷ 80£¬ºó¶Ë 8000¡úÈÝÆ÷ 8000£©¡£
+? ±àÐ´docker-compose.yml£º¶¨ÒåÇ°¶Ë¡¢ºó¶Ë¡¢PostgreSQL¡¢Redis ·þÎñ£¬ÅäÖÃ¶Ë¿ÚÓ³Éä£¨ÈçÇ°¶Ë 80¡úÈÝÆ÷ 80£¬ºó¶Ë 8000¡úÈÝÆ÷ 8000£©¡£
 aa. Éú²ú»·¾³ÅäÖÃ£º
 ? Hadoop ¼¯Èº£ºÔÚÉú²ú½Úµã²¿Êð Flume Agent£¬ÅäÖÃÉú²ú¼¶´óÄ£ÐÍ API ÃÜÔ¿£¨Ìæ»»²âÊÔÃÜÔ¿£©£»
-? °²È«ÅäÖÃ£ºÉèÖÃ·À»ðÇ½¹æÔò£¨½öÔÊÐíÔËÎ¬ IP ·ÃÎÊÇ°¶Ë 80 ¶Ë¿Ú¡¢ºó¶Ë 8000 ¶Ë¿Ú£©£¬MySQL/Redis ¿ªÆôÃÜÂëÈÏÖ¤¡£
+? °²È«ÅäÖÃ£ºÉèÖÃ·À»ðÇ½¹æÔò£¨½öÔÊÐíÔËÎ¬ IP ·ÃÎÊÇ°¶Ë 80 ¶Ë¿Ú¡¢ºó¶Ë 8000 ¶Ë¿Ú£©£¬PostgreSQL/Redis ¿ªÆôÃÜÂëÈÏÖ¤¡£
 bb. ÔËÎ¬¼à¿Ø£º
 ? ÏµÍ³¼à¿ØÃæ°å£º¿ª·¢¼à¿ØÒ³Ãæ£¨»ùÓÚ ECharts£©£¬Õ¹Ê¾ Flume ²É¼¯Á¿¡¢´óÄ£ÐÍµ÷ÓÃ³É¹¦ÂÊ¡¢ÐÞ¸´Ö´ÐÐ³É¹¦ÂÊ£»
 ? Òì³£¸æ¾¯£ºÅäÖÃ¶¤¶¤»úÆ÷ÈË£¬´¥·¢¸æ¾¯Ìõ¼þ£¨Èç Flume 5 ·ÖÖÓÎÞÈÕÖ¾²É¼¯¡¢´óÄ£ÐÍµ÷ÓÃÊ§°ÜÂÊ > 5%£©Ê±×Ô¶¯ÍÆËÍÏûÏ¢¡£
@@ -163,7 +240,7 @@ cc. ÆÀ¹ÀÎ¬¶È¶¨Òå£º
 ? Ê±Ð§ÐÔ£º´ÓÈÕÖ¾²úÉúµ½ÐÞ¸´Íê³ÉµÄÆ½¾ùºÄÊ±£¬Ä¿±ê¡Ü5 ·ÖÖÓ£»
 ? ÓÐÐ§ÐÔ£ºÐÞ¸´ºó¹ÊÕÏ¸´·¢ÂÊ£¨¸´·¢´ÎÊý / ×ÜÐÞ¸´´ÎÊý£©£¬Ä¿±ê¡Ü5%¡£
 dd. ÆÀ¹ÀÊµÊ©£º
-? Êý¾Ý²É¼¯£º´Ó MySQLfault_record±íÌáÈ¡Ã¿ÈÕÕï¶Ï / ÐÞ¸´Êý¾Ý£¬ÓÃ Excel »ò Python£¨Pandas£©Í³¼Æ£»
+? Êý¾Ý²É¼¯£º´Ó PostgreSQL µÄ fault_records Óë exec_logs ±íÌáÈ¡Ã¿ÈÕÕï¶Ï / ÐÞ¸´Êý¾Ý£¬ÓÃ Excel »ò Python£¨Pandas£©Í³¼Æ£»
 ? ±¨¸æÉú³É£ºÃ¿ÖÜÊä³ö¡¶ÏµÍ³ÔËÐÐÆÀ¹À±¨¸æ¡·£¬°üº¬ 3 ¸öÎ¬¶ÈÖ¸±ê¡¢»·±È±ä»¯¡¢Òì³£°¸Àý£¨ÈçÕï¶Ï´íÎóµÄ¹ÊÕÏÈÕÖ¾£©¡£
 ee. ÓÅ»¯µü´ú£º
 ? Èô×¼È·ÐÔµÍ£ºÓÅ»¯´óÄ£ÐÍ Prompt£¨Ôö¼Ó¹ÊÕÏÊ¾Àý£©¡¢¹ýÂËÎÞÐ§ÈÕÖ¾£¨¼õÉÙ¸ÉÈÅÊý¾Ý£©£»
@@ -174,11 +251,41 @@ ee. ÓÅ»¯µü´ú£º
 ËÄ¡¢ÈÎÎñÏÎ½ÓÓëÊµÊ©Ë³Ðò½¨Òé
 1. ÊµÊ©Ë³Ðò£¨°´½×¶Î»®·Ö£©
 
-½×¶Î³ÖÐøÊ±¼äºËÐÄÈÎÎñ£¨°´ÓÅÏÈ¼¶£©½×¶ÎÄ¿±ê»ù´¡´î½¨½×¶Î2 ÖÜÈÎÎñ 1£¨Hadoop ²¿Êð£©¡ú ÈÎÎñ 2£¨´æ´¢ÌåÏµ£©Íê³ÉÓ²¼þÓë´æ´¢»ù´¡£¬¿É²úÉúÈÕÖ¾Êý¾ÝÓ¦ÓÃ¿ª·¢½×¶Î3 ÖÜÈÎÎñ 3£¨ÈÕÖ¾²É¼¯£©¡ú ÈÎÎñ 4£¨ºó¶Ë½Ó¿Ú£©¡ú ÈÎÎñ 5£¨Ç°¶Ë¿ª·¢£©Íê³É ¡°²É¼¯ - ´¦Àí - Õ¹Ê¾¡± Á´Â·£¬¿É²é¿´¼¯Èº×´Ì¬ºËÐÄÂäµØ½×¶Î2 ÖÜÈÎÎñ 6£¨´óÄ£ÐÍÕï¶Ï£©¡ú ÈÎÎñ 7£¨×Ô¶¯ÐÞ¸´£©ÊµÏÖ ¡°Õï¶Ï - ÐÞ¸´¡± ±Õ»·£¬ÏµÍ³¾ß±¸ºËÐÄ¹¦ÄÜ±£ÕÏÓÅ»¯½×¶Î1 ÖÜÈÎÎñ 8£¨²âÊÔÓÅ»¯£©¡ú ÈÎÎñ 9£¨²¿ÊðÉÏÏß£©¡ú ÈÎÎñ 10£¨ÆÀ¹À¸Ä½ø£©ÏµÍ³ÉÏÏßÔËÐÐ£¬½¨Á¢³¤ÆÚÓÅ»¯»úÖÆ2. ¹Ø¼üÏÎ½Óµã
+½×¶Î
+³ÖÐøÊ±¼ä
+ºËÐÄÈÎÎñ£¨°´ÓÅÏÈ¼¶£©
+½×¶ÎÄ¿±ê
+»ù´¡´î½¨½×¶Î
+2 ÖÜ
+ÈÎÎñ 1£¨Hadoop ²¿Êð£©¡ú ÈÎÎñ 2£¨´æ´¢ÌåÏµ£©
+Íê³ÉÓ²¼þÓë´æ´¢»ù´¡£¬¿É²úÉúÈÕÖ¾Êý¾Ý
+Ó¦ÓÃ¿ª·¢½×¶Î
+3 ÖÜ
+ÈÎÎñ 3£¨ÈÕÖ¾²É¼¯£©¡ú ÈÎÎñ 4£¨ºó¶Ë½Ó¿Ú£©¡ú ÈÎÎñ 5£¨Ç°¶Ë¿ª·¢£©
+Íê³É ¡°²É¼¯ - ´¦Àí - Õ¹Ê¾¡± Á´Â·£¬¿É²é¿´¼¯Èº×´Ì¬
+ºËÐÄÂäµØ½×¶Î
+2 ÖÜ
+ÈÎÎñ 6£¨´óÄ£ÐÍÕï¶Ï£©¡ú ÈÎÎñ 7£¨×Ô¶¯ÐÞ¸´£©
+ÊµÏÖ ¡°Õï¶Ï - ÐÞ¸´¡± ±Õ»·£¬ÏµÍ³¾ß±¸ºËÐÄ¹¦ÄÜ
+±£ÕÏÓÅ»¯½×¶Î
+1 ÖÜ
+ÈÎÎñ 8£¨²âÊÔÓÅ»¯£©¡ú ÈÎÎñ 9£¨²¿ÊðÉÏÏß£©¡ú ÈÎÎñ 10£¨ÆÀ¹À¸Ä½ø£©
+ÏµÍ³ÉÏÏßÔËÐÐ£¬½¨Á¢³¤ÆÚÓÅ»¯»úÖÆ
+2. ¹Ø¼üÏÎ½Óµã
 ? ÈÎÎñ 1¡úÈÎÎñ 3£ºHadoop ¼¯Èº²¿ÊðÍê³Éºó£¬²ÅÄÜÔÚ½Úµã²¿Êð Flume Agent£»
-? ÈÎÎñ 2¡úÈÎÎñ 4£ºMySQL/Redis ²¿ÊðÍê³Éºó£¬ºó¶Ë½Ó¿Ú²ÅÄÜÊµÏÖÊý¾Ý´æ´¢Óë»º´æ£»
+? ÈÎÎñ 2¡úÈÎÎñ 4£ºPostgreSQL/Redis ²¿ÊðÍê³Éºó£¬ºó¶Ë½Ó¿Ú²ÅÄÜÊµÏÖÊý¾Ý´æ´¢Óë»º´æ£»
 ? ÈÎÎñ 4¡úÈÎÎñ 6£ººó¶ËÍê³ÉÈÕÖ¾½á¹¹»¯ºó£¬´óÄ£ÐÍ²ÅÄÜ½ÓÊÕÓÐÐ§ÊäÈë£»
 ? ÈÎÎñ 8¡úÈÎÎñ 9£º²âÊÔÐÞ¸´ËùÓÐ×è¶ÏÐÔÈ±ÏÝºó£¬²ÅÄÜÆô¶¯Éú²ú»·¾³²¿Êð¡£
 Îå¡¢·çÏÕÌáÊ¾ÓëÓ¦¶Ô½¨Òé
 
-Ç±ÔÚ·çÏÕÓ¦¶Ô½¨ÒéHadoop ¼¯Èº²¿ÊðÊ§°ÜÌáÇ°×¼±¸¼¯Èº²¿ÊðÎÄµµ£¨²Î¿¼ Apache ¹Ù·½Ö¸ÄÏ£©£¬Ô¤Áô 1 ¸ö±¸ÓÃ½Úµã£¬Ê§°Üºó¿ìËÙÖØ½¨´óÄ£ÐÍ API ²»ÎÈ¶¨ÉêÇë 2 ¸ö±¸ÓÃ´óÄ£ÐÍ API£¨ÈçÍ¨ÒåÇ§ÎÊ + °Ù¶ÈÎÄÐÄÒ»ÑÔ£©£¬´úÂëÖÐÌí¼Ó API ÇÐ»»Âß¼­ÐÞ¸´½Å±¾Ö´ÐÐµ¼ÖÂ¼¯ÈºÒì³£Ö´ÐÐÇ°±¸·Ý¹Ø¼üÊý¾Ý£¨Èç HDFS Ä¿Â¼£©£¬¸ß·çÏÕ½Å±¾ÏÈÔÚ²âÊÔ¼¯ÈºÑéÖ¤Ð§¹ûÉú²ú»·¾³´ÅÅÌÂú¶¨ÆÚÇåÀíÈÕÖ¾£¨Flume / ºó¶Ë / ÈÝÆ÷ÈÕÖ¾£©£¬ÅäÖÃ´ÅÅÌÊ¹ÓÃÂÊ¸æ¾¯£¨ãÐÖµ 85%£©£¨×¢£ºÎÄµµ²¿·ÖÄÚÈÝ¿ÉÄÜÓÉ AI Éú³É£©
+Ç±ÔÚ·çÏÕ
+Ó¦¶Ô½¨Òé
+Hadoop ¼¯Èº²¿ÊðÊ§°Ü
+ÌáÇ°×¼±¸¼¯Èº²¿ÊðÎÄµµ£¨²Î¿¼ Apache ¹Ù·½Ö¸ÄÏ£©£¬Ô¤Áô 1 ¸ö±¸ÓÃ½Úµã£¬Ê§°Üºó¿ìËÙÖØ½¨
+´óÄ£ÐÍ API ²»ÎÈ¶¨
+ÉêÇë 2 ¸ö±¸ÓÃ´óÄ£ÐÍ API£¨ÈçÍ¨ÒåÇ§ÎÊ + °Ù¶ÈÎÄÐÄÒ»ÑÔ£©£¬´úÂëÖÐÌí¼Ó API ÇÐ»»Âß¼­
+ÐÞ¸´½Å±¾Ö´ÐÐµ¼ÖÂ¼¯ÈºÒì³£
+Ö´ÐÐÇ°±¸·Ý¹Ø¼üÊý¾Ý£¨Èç HDFS Ä¿Â¼£©£¬¸ß·çÏÕ½Å±¾ÏÈÔÚ²âÊÔ¼¯ÈºÑéÖ¤Ð§¹û
+Éú²ú»·¾³´ÅÅÌÂú
+¶¨ÆÚÇåÀíÈÕÖ¾£¨Flume / ºó¶Ë / ÈÝÆ÷ÈÕÖ¾£©£¬ÅäÖÃ´ÅÅÌÊ¹ÓÃÂÊ¸æ¾¯£¨ãÐÖµ 85%£©
+£¨×¢£ºÎÄµµ²¿·ÖÄÚÈÝ¿ÉÄÜÓÉ AI Éú³É£©
