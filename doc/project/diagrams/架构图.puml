@@ -12,11 +12,22 @@ Flume --> DN1 : 采集HDFS/YARN日志
 Flume --> DN2 : 采集HDFS/YARN日志
 
 component "FastAPI Service" as API
-database "MySQL" as DB
+database "PostgreSQL" as DB
 queue "Redis" as Cache
 API --> DB : 写入/查询故障记录
 API --> Cache : 状态缓存/队列
 API --> "LLM Diagnose" : 调用大模型\n返回FixCommand
+
+component "Agent Orchestrator" as Orchestrator
+component "Diagnosis Agent" as DA
+component "Repair Agent" as RA
+component "Policy Agent" as PA
+API --> Orchestrator : 触发诊断/修复流程
+Orchestrator --> DA : 传递结构化日志
+Orchestrator --> PA : 风险评估与审批策略
+Orchestrator --> RA : 下发修复命令
+DA --> "LLM Diagnose" : 调用LLM分析
+RA --> Cluster : SSH/命令执行
 
 component "Frontend Web (Vue/React + ECharts)" as FE
 FE --> API : /api/cluster/status\n/api/logs/query\n/api/diagnosis/result\n/api/repair/execute
