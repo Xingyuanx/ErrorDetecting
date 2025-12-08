@@ -37,7 +37,8 @@ VITE_HMR_PORT=443
 ## 步骤三：启动后端隧道（API 8000）
 - 启动命令：
 ```
-.\cloudflared.exe tunnel --protocol http2 --url http://localhost:8000
+根目录执行
+.\cloudflared.exe tunnel --protocol http2 --url http://localhost:8000 --no-autoupdate
 ```
 - 终端会打印另一个临时域名；将前端代理目标指向该域名：
 ```

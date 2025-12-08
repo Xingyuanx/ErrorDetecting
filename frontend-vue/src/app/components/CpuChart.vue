@@ -3,17 +3,35 @@
   </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import * as echarts from 'echarts'
+import api from '../lib/api'
+import { useAuthStore } from '../stores/auth'
+const props = defineProps<{ cluster: string }>()
+const auth = useAuthStore()
 const root = ref<HTMLElement|null>(null)
 let chart: echarts.ECharts | null = null
+function render(times: string[], values: number[]) {
+  chart?.setOption({ xAxis: { type: 'category', boundaryGap: false, data: times }, yAxis: { type: 'value', min:0, max:100 }, series: [{ type: 'line', smooth: true, areaStyle: {}, data: values }] })
+}
+async function load() {
+  if (!chart) return
+  try {
+    const r = await api.get('/v1/metrics/cpu_trend', { params: { cluster: props.cluster }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    const times = Array.isArray(r.data?.times) ? r.data.times : ['00:00','04:00','08:00','12:00','16:00','20:00','24:00']
+    const values = Array.isArray(r.data?.values) ? r.data.values : [20,35,45,60,55,40,30]
+    render(times, values)
+  } catch {
+    render(['00:00','04:00','08:00','12:00','16:00','20:00','24:00'], [20,35,45,60,55,40,30])
+  }
+}
 onMounted(() => {
   if (!root.value) return
   chart = echarts.init(root.value)
-  chart.setOption({ xAxis: { type: 'category', boundaryGap: false, data: ['00:00','04:00','08:00','12:00','16:00','20:00','24:00'] }, yAxis: { type: 'value', min:0, max:100 }, series: [{ type: 'line', smooth: true, data: [20,35,45,60,55,40,30] }] })
+  load()
   const onResize = () => chart && chart.resize()
   window.addEventListener('resize', onResize)
 })
+watch(() => props.cluster, () => load())
 onBeforeUnmount(() => { chart?.dispose(); chart = null })
 </script>
-

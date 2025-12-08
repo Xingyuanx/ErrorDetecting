@@ -2,7 +2,7 @@
   <div class="layout">
     <HeaderNav />
     <div class="layout__container">
-      <Sidebar />
+      <Sidebar v-show="!ui.sidebarHidden" />
       <main class="layout__main">
         <router-view />
       </main>
@@ -13,6 +13,8 @@
 <script setup lang="ts">
 import HeaderNav from './components/HeaderNav.vue'
 import Sidebar from './components/Sidebar.vue'
+import { useUIStore } from './stores/ui'
+const ui = useUIStore()
 </script>
 
 <style>
@@ -46,4 +48,3 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial
 .u-ml-2 { margin-left: 8px }
 .u-ml-3 { margin-left: 12px }
 </style>
-

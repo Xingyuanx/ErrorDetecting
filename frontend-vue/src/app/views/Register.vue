@@ -7,7 +7,6 @@
       <input v-model.trim="confirm" type="password" placeholder="确认密码" class="header__search-input" />
       <input v-model.trim="email" placeholder="邮箱" class="header__search-input" />
       <input v-model.trim="fullName" placeholder="姓名" class="header__search-input" />
-      <select v-model="role" class="header__search-input"><option value="operator">操作员</option><option value="observer">观察员</option><option value="admin">管理员</option></select>
       <button class="btn">提交</button>
     </form>
     <div class="u-text-sm u-text-gray-700">{{ msg }}</div>
