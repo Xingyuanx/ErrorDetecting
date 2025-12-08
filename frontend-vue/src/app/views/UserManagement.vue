@@ -18,20 +18,21 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-const users = reactive<{ username:string; email:string; role:string; status:string }[]>([
-  { username: 'alice', email: 'alice@example.com', role: 'admin', status: 'enabled' },
-  { username: 'bob', email: 'bob@example.com', role: 'observer', status: 'pending' }
-])
+import { reactive, ref, onMounted } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import api from '../lib/api'
+const auth = useAuthStore()
+const users = reactive<{ username:string; email:string; role:string; status:string }[]>([])
 const open = ref(false)
 const err = ref('')
 const form = reactive({ username:'', email:'', role:'operator', status:'enabled' })
 function roleName(r:string){ if(r==='admin')return '管理员'; if(r==='operator')return '操作员'; if(r==='observer')return '观察员'; return r }
 function statusName(s:string){ if(s==='enabled')return '启用'; if(s==='pending')return '待审核'; if(s==='disabled')return '禁用'; return s }
-function save(){ if(!form.username||!form.email||!form.role||!form.status){ err.value='请填写完整信息'; return } if(users.some(u=>u.username===form.username)){ err.value='用户名已存在'; return } users.push({ ...form }); cancel() }
+async function load(){ try{ const r = await api.get('/v1/users',{ headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); users.splice(0,users.length,...(r.data?.users||[])) } catch(e:any){ err.value = e?.response?.data?.detail || '加载失败' } }
+async function save(){ if(!form.username||!form.email||!form.role||!form.status){ err.value='请填写完整信息'; return } try{ await api.post('/v1/users', { ...form }, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load(); cancel() } catch(e:any){ const d=e?.response?.data; const errs=d?.detail?.errors; if(Array.isArray(errs)&&errs.length){ err.value = errs.map((x:any)=>x?.message||'').filter(Boolean).join('；') } else { err.value = d?.detail || '保存失败' } } }
 function cancel(){ open.value=false; err.value=''; form.username=''; form.email=''; form.role='operator'; form.status='enabled' }
-function ban(u:string){ const i=users.findIndex(x=>x.username===u); if(i>=0) users[i].status='disabled' }
-function unban(u:string){ const i=users.findIndex(x=>x.username===u); if(i>=0) users[i].status='enabled' }
-function del(u:string){ const i=users.findIndex(x=>x.username===u); if(i>=0) users.splice(i,1) }
+async function ban(u:string){ try{ await api.patch(`/v1/users/${encodeURIComponent(u)}`, { status:'disabled' }, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load() } catch(e:any){ err.value = e?.response?.data?.detail || '操作失败' } }
+async function unban(u:string){ try{ await api.patch(`/v1/users/${encodeURIComponent(u)}`, { status:'enabled' }, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load() } catch(e:any){ err.value = e?.response?.data?.detail || '操作失败' } }
+async function del(u:string){ try{ await api.delete(`/v1/users/${encodeURIComponent(u)}`, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load() } catch(e:any){ err.value = e?.response?.data?.detail || '删除失败' } }
+onMounted(()=>{ load() })
 </script>
-
