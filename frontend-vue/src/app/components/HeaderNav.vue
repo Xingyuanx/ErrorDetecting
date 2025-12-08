@@ -6,32 +6,27 @@
         <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/cluster-list') }" to="/cluster-list">集群列表</RouterLink>
         <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/logs') }" to="/logs">日志查询</RouterLink>
         <RouterLink v-if="can(['admin','operator'])" class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/diagnosis') }" to="/diagnosis">故障诊断</RouterLink>
+        <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/fault-center') }" to="/fault-center">故障中心</RouterLink>
         <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/exec-logs') }" to="/exec-logs">执行日志</RouterLink>
         <div class="header__dropdown" v-if="can(['admin','operator'])">
-          <button class="header__nav-item header__dropdown-trigger" type="button" aria-haspopup="true" :aria-expanded="configOpen ? 'true' : 'false'" @click.stop.prevent="toggleConfig">
-            系统配置
-            <i class="fas fa-chevron-down header__dropdown-icon" :class="{ 'icon-rot': configOpen }" aria-hidden="true"></i>
-          </button>
-          <div class="header__dropdown-menu" :class="{ 'header__dropdown-menu--show': configOpen }" role="menu">
-            <RouterLink class="header__dropdown-item" to="/alert-config" role="menuitem" @click.stop="closeAll">告警配置</RouterLink>
+          <button class="header__nav-item">系统配置 <i class="fas fa-chevron-down"></i></button>
+          <div class="header__dropdown-menu">
+            <RouterLink class="header__dropdown-item" to="/alert-config">告警配置</RouterLink>
           </div>
         </div>
       </nav>
     </div>
-  <div class="header__right">
-    <div class="header__search">
-      <input id="global-search" class="header__search-input" placeholder="搜索节点、日志或配置..." />
-      <i class="fas fa-search header__search-icon"></i>
-    </div>
-    <button class="btn u-ml-3" type="button" @click="toggleSidebar">{{ ui.sidebarHidden ? '显示侧边栏' : '隐藏侧边栏' }}</button>
-    <div class="header__user-menu" v-if="authed">
-      <button class="header__user-avatar" type="button">
-        <i class="fas fa-user"></i>
-      </button>
-      <div class="header__user-dropdown" role="menu">
-          <RouterLink class="header__user-dropdown-item" to="/profile" role="menuitem">个人主页</RouterLink>
-          <RouterLink class="header__user-dropdown-item" to="/account" role="menuitem">账号管理</RouterLink>
-          <a class="header__user-dropdown-item" href="#" role="menuitem" @click.prevent="onLogout">退出登录</a>
+    <div class="header__right">
+      <div class="header__search">
+        <input id="global-search" class="header__search-input" placeholder="搜索节点、日志或配置..." />
+        <i class="fas fa-search header__search-icon"></i>
+      </div>
+      <div class="header__user-menu" v-if="authed">
+        <button class="header__user-avatar"><i class="fas fa-user"></i></button>
+        <div class="header__user-dropdown">
+          <RouterLink class="header__user-dropdown-item" to="/profile">个人主页</RouterLink>
+          <RouterLink class="header__user-dropdown-item" to="/account">账号管理</RouterLink>
+          <a class="header__user-dropdown-item" href="#" @click.prevent="onLogout">退出登录</a>
         </div>
       </div>
     </div>
@@ -39,12 +34,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../stores/auth'
-import { useUIStore } from '../stores/ui'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -53,30 +46,4 @@ function isActive(p: string) { return route.path === p }
 const authed = isAuthenticated
 function can(roles: string[]) { return roles.includes(role.value || '') }
 function onLogout() { auth.logout(); router.replace({ name: 'login' }) }
-const ui = useUIStore()
-function toggleSidebar(){ ui.toggleSidebar() }
-const configOpen = ref(false)
-function toggleConfig(){ closeAll(); configOpen.value = !configOpen.value }
-function onDocClick(){ closeAll() }
-onMounted(()=>{ document.addEventListener('click', onDocClick) })
-onUnmounted(()=>{ document.removeEventListener('click', onDocClick) })
-function closeAll(){ configOpen.value = false }
 </script>
-
-<style scoped>
-.header__dropdown{ position: relative }
-.header__dropdown-trigger{ display:flex; align-items:center; gap:6px }
-.header__dropdown-icon{ font-size:12px; transition: transform 120ms ease }
-.icon-rot{ transform: rotate(180deg) }
-.header__dropdown-menu{ position:absolute; top:100%; left:0; margin-top:4px; width:12rem; background:#fff; border-radius:8px; box-shadow:0 12px 32px rgba(16,24,40,0.12); padding:4px 0; opacity:0; visibility:hidden; transform: translateY(-8px); transition: all 120ms ease }
-.header__dropdown-menu--show{ opacity:1; visibility:visible; transform: translateY(0) }
-.header__dropdown-item{ display:block; padding:8px 12px; border-radius:6px }
-.header__dropdown-item:hover{ background:#f3f4f6 }
-
-.header__user-menu{ position: relative }
-.header__user-avatar{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; background:#fff }
-.header__user-dropdown{ position:absolute; top:100%; right:0; margin-top:4px; width:12rem; background:#fff; border-radius:8px; box-shadow:0 12px 32px rgba(16,24,40,0.12); padding:4px 0; opacity:0; visibility:hidden; transform: translateY(-8px); transition: all 120ms ease }
-.header__user-menu:hover .header__user-dropdown{ opacity:1; visibility:visible; transform: translateY(0) }
-.header__user-dropdown-item{ display:block; padding:8px 12px; border-radius:6px }
-.header__user-dropdown-item:hover{ background:#f3f4f6 }
-</style>

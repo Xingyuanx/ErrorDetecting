@@ -79,56 +79,11 @@ CREATE INDEX IF NOT EXISTS idx_nodes_status ON nodes(status);
 CREATE INDEX IF NOT EXISTS idx_nodes_last_heartbeat ON nodes(last_heartbeat);
 CREATE INDEX IF NOT EXISTS idx_nodes_ip_address ON nodes(ip_address);
 
--- 1.3 故障记录表
-CREATE TABLE IF NOT EXISTS fault_records (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    fault_id VARCHAR(32) NOT NULL UNIQUE,
-    cluster_id BIGINT REFERENCES clusters(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    fault_type VARCHAR(50) NOT NULL,
-    fault_level VARCHAR(20) NOT NULL DEFAULT 'medium',
-    title VARCHAR(200) NOT NULL,
-    description TEXT,
-    affected_nodes JSONB,
-    affected_clusters JSONB,
-    root_cause TEXT,
-    repair_suggestion TEXT,
-    status VARCHAR(20) NOT NULL DEFAULT 'detected',
-    assignee VARCHAR(50),
-    reporter VARCHAR(50) NOT NULL DEFAULT 'system',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    resolved_at TIMESTAMPTZ,
-    CONSTRAINT fault_records_level_chk CHECK (fault_level IN ('low','medium','high','critical')),
-    CONSTRAINT fault_records_status_chk CHECK (status IN ('detected','analyzing','repairing','resolved','failed'))
-);
--- 表与字段注释
-COMMENT ON TABLE fault_records IS '故障记录表';
-COMMENT ON COLUMN fault_records.id IS '主键ID';
-COMMENT ON COLUMN fault_records.fault_id IS '故障唯一标识';
-COMMENT ON COLUMN fault_records.cluster_id IS '关联集群ID';
-COMMENT ON COLUMN fault_records.fault_type IS '故障类型';
-COMMENT ON COLUMN fault_records.title IS '故障标题';
-COMMENT ON COLUMN fault_records.description IS '故障详细描述';
-COMMENT ON COLUMN fault_records.affected_nodes IS '受影响的节点列表(JSONB)';
-COMMENT ON COLUMN fault_records.affected_clusters IS '受影响的集群列表(JSONB)';
-COMMENT ON COLUMN fault_records.root_cause IS '根本原因分析';
-COMMENT ON COLUMN fault_records.repair_suggestion IS '修复建议';
-COMMENT ON COLUMN fault_records.fault_level IS '故障级别(low/medium/high/critical)';
-COMMENT ON COLUMN fault_records.status IS '状态(detected/analyzing/repairing/resolved/failed)';
-COMMENT ON COLUMN fault_records.assignee IS '负责人';
-COMMENT ON COLUMN fault_records.reporter IS '报告人';
-COMMENT ON COLUMN fault_records.created_at IS '创建时间';
-COMMENT ON COLUMN fault_records.updated_at IS '更新时间';
-COMMENT ON COLUMN fault_records.resolved_at IS '解决时间';
-CREATE INDEX IF NOT EXISTS idx_fault_records_type ON fault_records(fault_type);
-CREATE INDEX IF NOT EXISTS idx_fault_records_status ON fault_records(status);
-CREATE INDEX IF NOT EXISTS idx_fault_records_created_at ON fault_records(created_at);
-
 -- 1.4 执行日志表
 CREATE TABLE IF NOT EXISTS exec_logs (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     exec_id VARCHAR(32) NOT NULL UNIQUE,
-    fault_id VARCHAR(32) NOT NULL REFERENCES fault_records(fault_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    fault_id VARCHAR(32) NOT NULL,
     command_type VARCHAR(50) NOT NULL,
     script_path VARCHAR(255),
     command_content TEXT NOT NULL,
@@ -152,7 +107,7 @@ CREATE TABLE IF NOT EXISTS exec_logs (
 COMMENT ON TABLE exec_logs IS '执行日志表';
 COMMENT ON COLUMN exec_logs.id IS '主键ID';
 COMMENT ON COLUMN exec_logs.exec_id IS '执行唯一标识';
-COMMENT ON COLUMN exec_logs.fault_id IS '关联故障ID';
+COMMENT ON COLUMN exec_logs.fault_id IS '关联故障标识(无外键)';
 COMMENT ON COLUMN exec_logs.command_type IS '命令类型';
 COMMENT ON COLUMN exec_logs.script_path IS '脚本路径';
 COMMENT ON COLUMN exec_logs.command_content IS '执行的命令内容';
@@ -177,11 +132,12 @@ CREATE INDEX IF NOT EXISTS idx_exec_logs_end_time ON exec_logs(end_time);
 CREATE TABLE IF NOT EXISTS system_logs (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     log_id VARCHAR(32) NOT NULL UNIQUE,
-    fault_id VARCHAR(32) REFERENCES fault_records(fault_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    fault_id VARCHAR(32),
     cluster_id BIGINT REFERENCES clusters(id) ON DELETE SET NULL ON UPDATE CASCADE,
     timestamp TIMESTAMPTZ NOT NULL,
     host VARCHAR(100) NOT NULL,
     service VARCHAR(50) NOT NULL,
+    source VARCHAR(50),
     log_level VARCHAR(10) NOT NULL,
     message TEXT NOT NULL,
     exception TEXT,
@@ -194,11 +150,12 @@ CREATE TABLE IF NOT EXISTS system_logs (
 COMMENT ON TABLE system_logs IS '系统日志表';
 COMMENT ON COLUMN system_logs.log_id IS '日志唯一标识';
 COMMENT ON COLUMN system_logs.id IS '主键ID';
-COMMENT ON COLUMN system_logs.fault_id IS '关联故障ID';
+COMMENT ON COLUMN system_logs.fault_id IS '关联故障标识(无外键)';
 COMMENT ON COLUMN system_logs.cluster_id IS '关联集群ID';
 COMMENT ON COLUMN system_logs.timestamp IS '日志时间戳';
 COMMENT ON COLUMN system_logs.host IS '主机名';
 COMMENT ON COLUMN system_logs.service IS '服务名';
+COMMENT ON COLUMN system_logs.source IS '来源';
 COMMENT ON COLUMN system_logs.log_level IS '日志级别(DEBUG/INFO/WARN/ERROR/FATAL)';
 COMMENT ON COLUMN system_logs.message IS '日志消息';
 COMMENT ON COLUMN system_logs.raw_log IS '原始日志内容';

@@ -9,6 +9,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true, roles: ['admin','operator','observer'] } },
   { path: '/logs', name: 'logs', component: () => import('../views/Logs.vue'), meta: { requiresAuth: true, roles: ['admin','operator','observer'] } },
   { path: '/diagnosis', name: 'diagnosis', component: () => import('../views/Diagnosis.vue'), meta: { requiresAuth: true, roles: ['admin','operator'] } },
+  { path: '/fault-center', name: 'fault-center', component: () => import('../views/FaultCenter.vue'), meta: { requiresAuth: true, roles: ['admin','operator','observer'] } },
   { path: '/exec-logs', name: 'exec-logs', component: () => import('../views/ExecLogs.vue'), meta: { requiresAuth: true, roles: ['admin','operator','observer'] } },
   { path: '/alert-config', name: 'alert-config', component: () => import('../views/AlertConfig.vue'), meta: { requiresAuth: true, roles: ['admin','operator'] } },
   { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue'), meta: { requiresAuth: true, roles: ['admin','operator','observer'] } },
@@ -31,3 +32,4 @@ router.beforeEach((to) => {
 })
 
 export default router
+

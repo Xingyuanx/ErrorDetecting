@@ -30,13 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../lib/api'
-import { useAuthStore } from '../stores/auth'
 const router = useRouter()
-const auth = useAuthStore()
-const clusters = reactive<{ uuid:string; host:string; ip:string; count:number; health:string; healthText:string }[]>([])
+const clusters = reactive<{ uuid:string; host:string; ip:string; count:number; health:string; healthText:string }[]>([
+  { uuid: 'CL-1111-AAAA', host: 'master-1', ip: '10.0.0.1', count: 8, health: 'running', healthText: '健康' },
+  { uuid: 'CL-2222-BBBB', host: 'master-2', ip: '10.0.0.2', count: 12, health: 'warning', healthText: '警告' }
+])
 const showRegister = ref(false)
 const uuid = ref('')
 const host = ref('')
@@ -46,32 +46,19 @@ const health = ref('running')
 const err = ref('')
 function toggleRegister() { showRegister.value = !showRegister.value }
 function cancelRegister() { showRegister.value = false; err.value = ''; uuid.value=''; host.value=''; ip.value=''; count.value=''; health.value='running' }
-function healthTextOf(h:string){ return h==='running'?'健康':h==='warning'?'警告':'异常' }
-async function load(){
-  try{
-    const r = await api.get('/v1/clusters', { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const list = Array.isArray(r.data?.clusters) ? r.data.clusters : []
-    clusters.splice(0, clusters.length, ...list.map((x:any)=>({ uuid:x.uuid, host:x.host, ip:x.ip, count:Number(x.count)||0, health:x.health, healthText: healthTextOf(x.health) })))
-  }catch(e:any){ err.value = e?.response?.data?.detail || '加载失败' }
-}
-async function onRegister() {
+function onRegister() {
   if (!uuid.value || !host.value || !ip.value || !count.value) { err.value = '请填写完整信息'; return }
-  try{
-    await api.post('/v1/clusters', { uuid: uuid.value, host: host.value, ip: ip.value, count: Number(count.value)||0, health: health.value }, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    cancelRegister(); await load()
-  }catch(e:any){
-    const d = e?.response?.data; const errs = d?.detail?.errors
-    if (Array.isArray(errs) && errs.length) err.value = errs.map((x:any)=>x?.message||'').filter(Boolean).join('；')
-    else err.value = d?.detail || '提交失败'
-  }
+  if (clusters.some(x => x.uuid === uuid.value)) { err.value = '该集群UUID已存在'; return }
+  clusters.push({ uuid: uuid.value, host: host.value, ip: ip.value, count: Number(count.value)||0, health: health.value, healthText: health.value==='running'?'健康':health.value==='warning'?'警告':'异常' })
+  cancelRegister()
 }
-async function unregister(id: string) {
-  try{ await api.delete(`/v1/clusters/${encodeURIComponent(id)}`, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await load() }
-  catch(e:any){ err.value = e?.response?.data?.detail || '注销失败' }
+function unregister(id: string) {
+  const i = clusters.findIndex(x => x.uuid === id)
+  if (i >= 0) clusters.splice(i, 1)
 }
 function toDashboard(c: any) {
   sessionStorage.setItem('current_cluster', JSON.stringify(c))
   router.push({ name: 'dashboard' })
 }
-onMounted(()=>{ load() })
 </script>
+
