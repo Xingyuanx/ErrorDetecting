@@ -5,7 +5,7 @@ const api = axios.create({ baseURL: '/api' })
 type User = { username: string; role: 'admin'|'operator'|'observer' }
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({ user: null as User|null }),
+  state: () => ({ user: null as User|null, token: null as string|null }),
   getters: {
     isAuthenticated: (s) => !!s.user,
     role: (s) => s.user?.role || null,
@@ -19,18 +19,23 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     restore() {
-      const raw = localStorage.getItem('cm_user')
-      if (raw) this.user = JSON.parse(raw)
+      const rawUser = localStorage.getItem('cm_user')
+      const rawToken = localStorage.getItem('cm_token')
+      if (rawUser) this.user = JSON.parse(rawUser)
+      if (rawToken) this.token = rawToken
     },
     persist() {
       if (this.user) localStorage.setItem('cm_user', JSON.stringify(this.user))
       else localStorage.removeItem('cm_user')
+      if (this.token) localStorage.setItem('cm_token', this.token)
+      else localStorage.removeItem('cm_token')
     },
     async login(username: string, password: string) {
       try {
         const r = await api.post('/v1/user/login', { username, password })
         const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer'
         this.user = { username, role }
+        this.token = r?.data?.token || null
         this.persist()
         return { ok: true, role }
       } catch (e: any) {
@@ -40,6 +45,7 @@ export const useAuthStore = defineStore('auth', {
           if (pass && password === pass) {
             const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : 'observer'
             this.user = { username, role }
+            this.token = null
             this.persist()
             return { ok: true, role }
           }
@@ -49,6 +55,25 @@ export const useAuthStore = defineStore('auth', {
         return { ok: false, message }
       }
     },
-    logout() { this.user = null; this.persist() }
+    async register(username: string, email: string, password: string, fullName: string) {
+      try {
+        const r = await api.post('/v1/user/register', { username, email, password, fullName })
+        const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer'
+        this.user = { username, role }
+        this.token = r?.data?.token || null
+        this.persist()
+        return { ok: true, role }
+      } catch (e: any) {
+        const d = e?.response?.data
+        const errs = d?.detail?.errors
+        if (Array.isArray(errs) && errs.length) {
+          const message = errs.map((x: any) => x?.message || '').filter(Boolean).join('；')
+          return { ok: false, message }
+        }
+        const message = d?.detail === 'user_exists' ? '用户名已存在' : d?.detail === 'email_exists' ? '邮箱已存在' : '注册失败'
+        return { ok: false, message }
+      }
+    },
+    logout() { this.user = null; this.token = null; this.persist() }
   }
 })

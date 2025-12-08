@@ -5,7 +5,8 @@
       <input v-model.trim="username" placeholder="账号" class="header__search-input" />
       <input v-model.trim="password" type="password" placeholder="密码" class="header__search-input" />
       <input v-model.trim="confirm" type="password" placeholder="确认密码" class="header__search-input" />
-      <input v-model.trim="contact" placeholder="联系方式" class="header__search-input" />
+      <input v-model.trim="email" placeholder="邮箱" class="header__search-input" />
+      <input v-model.trim="fullName" placeholder="姓名" class="header__search-input" />
       <select v-model="role" class="header__search-input"><option value="operator">操作员</option><option value="observer">观察员</option><option value="admin">管理员</option></select>
       <button class="btn">提交</button>
     </form>
@@ -15,16 +16,22 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 const username = ref('')
 const password = ref('')
 const confirm = ref('')
-const contact = ref('')
+const email = ref('')
+const fullName = ref('')
 const role = ref('operator')
 const msg = ref('')
-function onSubmit() {
-  if (!username.value || !password.value || !confirm.value || !contact.value) { msg.value = '请填写所有必填字段'; return }
+const router = useRouter()
+const auth = useAuthStore()
+async function onSubmit() {
+  if (!username.value || !password.value || !confirm.value || !email.value || !fullName.value) { msg.value = '请填写所有必填字段'; return }
   if (password.value !== confirm.value) { msg.value = '两次密码不一致'; return }
-  msg.value = '提交成功，已进入审批队列'
+  const r = await auth.register(username.value, email.value, password.value, fullName.value)
+  if (r.ok) router.replace({ name: auth.defaultPage })
+  else msg.value = r.message || '注册失败'
 }
 </script>
-
