@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
-const api = axios.create({ baseURL: '/api' })
+import api from '../lib/api'
 
 type User = { username: string; role: 'admin'|'operator'|'observer' }
 

@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
   const allowedHostsEnv = (env.VITE_ALLOWED_HOSTS || "").split(",").map((s) => s.trim()).filter(Boolean);
   return {
     plugins: [vue()],
+    cacheDir: ".vite",
     server: {
       host: devHost,
       strictPort: true,
