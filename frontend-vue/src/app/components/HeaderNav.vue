@@ -34,15 +34,16 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { RouterLink } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../stores/auth'
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
-auth.restore()
-const authed = auth.isAuthenticated
+const { isAuthenticated, role } = storeToRefs(auth)
 function isActive(p: string) { return route.path === p }
-function can(roles: string[]) { return roles.includes(auth.role || '') }
-function onLogout() { auth.logout() }
+const authed = isAuthenticated
+function can(roles: string[]) { return roles.includes(role.value || '') }
+function onLogout() { auth.logout(); router.replace({ name: 'login' }) }
 </script>
-

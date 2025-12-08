@@ -11,10 +11,12 @@
 
 <script setup lang="ts">
 import { useRoute, RouterLink } from 'vue-router'
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../stores/auth'
 const route = useRoute()
 const auth = useAuthStore()
+const { role } = storeToRefs(auth)
 function isActive(p: string) { return route.path === p }
-const isAdmin = auth.role === 'admin'
+const isAdmin = computed(() => role.value === 'admin')
 </script>
-
