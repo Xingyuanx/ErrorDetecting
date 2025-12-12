@@ -53,6 +53,7 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '../lib/api'
 import { useAuthStore } from '../stores/auth'
+import { RoleLabel, Roles } from '../constants/roles'
 const auth = useAuthStore()
 const users = ref<string[]>([])
 const user = ref('')
@@ -60,7 +61,7 @@ const role = ref('operator')
 const msg = ref('')
 const loading = ref(false)
 const msgClass = computed(() => (msg.value ? (msg.value.startsWith('成功') ? 'u-text-green-600' : 'u-text-error') : 'u-text-gray-600'))
-const roleLabel = computed(() => (role.value === 'admin' ? '管理员' : role.value === 'operator' ? '操作员' : role.value === 'observer' ? '观察员' : '未选择'))
+const roleLabel = computed(() => RoleLabel[(role.value || '') as keyof typeof RoleLabel] || '未选择')
 onMounted(async () => {
   try {
     const r = await api.get('/v1/users', { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
@@ -100,8 +101,6 @@ async function onSave() {
 .layout__card-body { padding: 16px }
 .layout__grid { display: grid; gap: 16px }
 .layout__grid--2 { grid-template-columns: 1fr 1fr }
-.btn--primary { background: #2563eb; color: #fff; border-color: #2563eb }
-.btn--primary:disabled { opacity: 0.6; cursor: not-allowed }
 .u-text-error { color: #dc2626 }
 .u-text-green-600 { color: #16a34a }
 .u-text-gray-600 { color: #4b5563 }

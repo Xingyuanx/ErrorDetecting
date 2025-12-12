@@ -53,5 +53,4 @@ function save(){
 .layout__card-body{ padding:16px }
 .layout__grid{ display:grid; gap:16px }
 .layout__grid--3{ grid-template-columns: 1fr 1fr 1fr }
-.btn--primary{ background:#2563eb; color:#fff; border-color:#2563eb }
 </style>

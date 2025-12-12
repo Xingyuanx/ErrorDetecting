@@ -5,9 +5,9 @@
       <nav class="header__nav" role="navigation" aria-label="主导航">
         <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/cluster-list') }" to="/cluster-list">集群列表</RouterLink>
         <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/logs') }" to="/logs">日志查询</RouterLink>
-        <RouterLink v-if="can(['admin','operator'])" class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/diagnosis') }" to="/diagnosis">故障诊断</RouterLink>
+        <RouterLink v-if="can([Roles.admin, Roles.operator])" class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/diagnosis') }" to="/diagnosis">故障诊断</RouterLink>
         <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/exec-logs') }" to="/exec-logs">执行日志</RouterLink>
-        <div class="header__dropdown" v-if="can(['admin','operator'])">
+        <div class="header__dropdown" v-if="can([Roles.admin, Roles.operator])">
           <button class="header__nav-item header__dropdown-trigger" type="button" aria-haspopup="true" :aria-expanded="configOpen ? 'true' : 'false'" @click.stop.prevent="toggleConfig">
             系统配置
             <i class="fas fa-chevron-down header__dropdown-icon" :class="{ 'icon-rot': configOpen }" aria-hidden="true"></i>
@@ -45,6 +45,7 @@ import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
+import { Roles } from '../constants/roles'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()

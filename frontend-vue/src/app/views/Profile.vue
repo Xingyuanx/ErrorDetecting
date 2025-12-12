@@ -34,6 +34,7 @@ import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../stores/auth'
 import api from '../lib/api'
+import { RoleLabel } from '../constants/roles'
 const auth = useAuthStore()
 const { user, token } = storeToRefs(auth)
 const username = ref('admin')
@@ -47,13 +48,13 @@ onMounted(async () => {
     username.value = name
     email.value = u?.email || `${name}@example.com`
     const roleKey = u?.role || user.value?.role || 'admin'
-    roleName.value = roleKey==='admin'?'管理员': roleKey==='operator'?'操作员':'观察员'
+    roleName.value = RoleLabel[roleKey as keyof typeof RoleLabel] || '观察员'
   }catch(e:any){
     const name = user.value?.username || 'admin'
     username.value = name
     email.value = `${name}@example.com`
     const roleKey = user.value?.role || 'admin'
-    roleName.value = roleKey==='admin'?'管理员': roleKey==='operator'?'操作员':'观察员'
+    roleName.value = RoleLabel[roleKey as keyof typeof RoleLabel] || '观察员'
   }
 })
 </script>

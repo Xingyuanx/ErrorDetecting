@@ -113,7 +113,6 @@ function edit(r:any){ open.value=true; form.name=r.name; form.cond=r.cond; form.
 .layout__grid{ display:grid; gap:16px }
 .layout__grid--3{ grid-template-columns: 1fr 1fr 1fr }
 .form-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px }
-.btn--primary{ background:#2563eb; color:#fff; border-color:#2563eb }
 .level--info{ color:#2563eb }
 .level--warn{ color:#f59e0b }
 .level--error{ color:#dc2626 }

@@ -154,8 +154,6 @@ const summary = computed(() => {
 .layout__card-body { padding: 16px }
 .layout__grid { display: grid; gap: 16px }
 .layout__grid--3 { grid-template-columns: 1fr 1fr 1fr }
-.btn--primary { background: #2563eb; color: #fff; border-color: #2563eb }
-.btn--primary:disabled { opacity: 0.6; cursor: not-allowed }
 .btn-link { background: transparent; border-color: transparent; color: #2563eb }
 .filter-actions { display: flex; justify-content: flex-end; align-items: center; }
 </style>

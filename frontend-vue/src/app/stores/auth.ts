@@ -6,7 +6,7 @@ type User = { username: string; role: 'admin'|'operator'|'observer' }
 export const useAuthStore = defineStore('auth', {
   state: () => ({ user: null as User|null, token: null as string|null }),
   getters: {
-    isAuthenticated: (s) => !!s.user,
+    isAuthenticated: (s) => !!(s.user && s.token),
     role: (s) => s.user?.role || null,
     defaultPage: (s) => {
       const r = s.user?.role
@@ -20,8 +20,15 @@ export const useAuthStore = defineStore('auth', {
     restore() {
       const rawUser = localStorage.getItem('cm_user')
       const rawToken = localStorage.getItem('cm_token')
-      if (rawUser) this.user = JSON.parse(rawUser)
-      if (rawToken) this.token = rawToken
+      if (rawUser && rawToken) {
+        this.user = JSON.parse(rawUser)
+        this.token = rawToken
+      } else {
+        this.user = null
+        this.token = null
+        localStorage.removeItem('cm_user')
+        localStorage.removeItem('cm_token')
+      }
     },
     persist() {
       if (this.user) localStorage.setItem('cm_user', JSON.stringify(this.user))
@@ -33,23 +40,19 @@ export const useAuthStore = defineStore('auth', {
       try {
         const r = await api.post('/v1/user/login', { username, password })
         const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer'
+        const token = r?.data?.token
+        if (!token) {
+          return { ok: false, message: '登录失败' }
+        }
         this.user = { username, role }
-        this.token = r?.data?.token || null
+        this.token = token
         this.persist()
         return { ok: true, role }
       } catch (e: any) {
-        if (!e?.response) {
-          const demo = { admin: 'admin123', ops: 'ops123', obs: 'obs123' } as const
-          const pass = demo[username as keyof typeof demo]
-          if (pass && password === pass) {
-            const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : 'observer'
-            this.user = { username, role }
-            this.token = null
-            this.persist()
-            return { ok: true, role }
-          }
-        }
         const d = e?.response?.data
+        if (!e?.response) {
+          return { ok: false, message: '网络异常，后端不可用' }
+        }
         const message = d?.detail === 'invalid_credentials' ? '账号或密码错误' : d?.detail === 'inactive_user' ? '账号未激活' : '登录失败'
         return { ok: false, message }
       }

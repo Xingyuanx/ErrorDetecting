@@ -37,6 +37,8 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial
 .sidebar__link { padding: 8px 10px; border-radius: 6px }
 .sidebar__link--active { background: #f1f5f9 }
 .btn { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px }
+.btn--primary { background: #2563eb; color: #fff; border-color: #2563eb }
+.btn--primary:disabled { opacity: 0.6; cursor: not-allowed }
 .u-hidden { display: none }
 .dashboard__table { width: 100%; border-collapse: collapse }
 .dashboard__table th, .dashboard__table td { border-bottom: 1px solid #e5e7eb; padding: 8px 10px; text-align: left }

@@ -183,6 +183,4 @@ const previewLogs = computed(() => {
 .chat-progress{ display:flex; align-items:center; gap:8px; margin-top:8px; color:#6b7280 }
 .progress-bar{ flex:1; height:6px; background:#e5e7eb; border-radius:999px; overflow:hidden }
 .progress-fill{ height:100%; background:#2563eb }
-.btn--primary{ background:#2563eb; color:#fff; border-color:#2563eb }
-.btn--primary:disabled{ opacity:0.6; cursor:not-allowed }
 </style>

@@ -16,35 +16,7 @@
     <article class="layout__card">
       <div class="layout__card-header"><h3 class="layout__card-title">执行记录</h3></div>
       <div class="layout__card-body u-p-0">
-        <table class="dashboard__table">
-          <thead>
-            <tr>
-              <th>执行ID</th>
-              <th>故障ID</th>
-              <th>命令类型</th>
-              <th>状态</th>
-              <th>开始时间</th>
-              <th>结束时间</th>
-              <th>退出码</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in records" :key="r.id" class="dashboard__table-row" :class="{ 'row--selected': selected===r.id }" @click="select(r)">
-              <td>{{ r.id }}</td>
-              <td>{{ r.faultId }}</td>
-              <td>{{ r.cmdType }}</td>
-              <td><span :class="statusClass(r.status)">{{ r.status }}</span></td>
-              <td>{{ r.start }}</td>
-              <td>{{ r.end || '-' }}</td>
-              <td>{{ r.code ?? '-' }}</td>
-              <td>
-                <button class="btn u-text-sm" type="button" @click.stop="editRow(r)">编辑</button>
-                <button class="btn u-text-sm u-ml-1" type="button" @click.stop="del(r.id)">删除</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <ExecLogsTable :records="records" :selected-id="selected" @select="select" @edit="editRow" @delete="del" />
       </div>
     </article>
 
@@ -76,6 +48,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import api from '../lib/api'
 import { useAuthStore } from '../stores/auth'
+import ExecLogsTable from '../components/ExecLogsTable.vue'
 type RecordItem = { id:string; faultId:string; cmdType:string; status:'running'|'success'|'failed'; start:string; end:string|''; code:number|null }
 const auth = useAuthStore()
 const records = reactive<RecordItem[]>([])
@@ -161,7 +134,6 @@ onMounted(()=>{ load() })
 .exec-header{ display:flex; justify-content:space-between; align-items:center }
 .layout__page-subtitle{ color:#6b7280; font-size:13px }
 .header-actions{ display:flex; align-items:center }
-.btn--primary{ background:#2563eb; color:#fff; border-color:#2563eb }
 .row--selected{ background:#eef2ff }
 .layout__card{ background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(16,24,40,0.06) }
 .layout__card-header{ padding:12px 16px; border-bottom:1px solid #e5e7eb }
