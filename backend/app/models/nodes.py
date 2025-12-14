@@ -2,7 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy import TIMESTAMP, Float
-from app.models import Base
+from . import Base
 
 class Node(Base):
     __tablename__ = "nodes"
@@ -19,4 +19,3 @@ class Node(Base):
     last_heartbeat: Mapped[str | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     created_at: Mapped[str] = mapped_column(TIMESTAMP(timezone=True))
     updated_at: Mapped[str] = mapped_column(TIMESTAMP(timezone=True))
-

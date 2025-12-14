@@ -2,7 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import TIMESTAMP, Text
-from app.models import Base
+from . import Base
 
 class ExecLog(Base):
     __tablename__ = "exec_logs"

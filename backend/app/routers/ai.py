@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from pydantic import BaseModel, Field
+import os
 
 from ..db import get_db
 from ..deps.auth import get_current_user
 from ..models.system_logs import SystemLog
 from ..agents.diagnosis_agent import run_diagnose_and_repair
+from ..services.llm import LLMClient
 
 
 router = APIRouter()
@@ -19,6 +21,9 @@ class DiagnoseRepairReq(BaseModel):
     keywords: str | None = Field(None, description="关键词")
     auto: bool = Field(True, description="是否允许自动修复")
     maxSteps: int = Field(3, ge=1, le=6, description="最多工具步数")
+
+class ChatReq(BaseModel):
+    messages: list[dict] = Field(..., description="对话消息列表，形如[{role:'system'|'user'|'assistant', content:'...'}]")
 
 
 def _get_username(u) -> str:
@@ -49,3 +54,17 @@ async def diagnose_repair(req: DiagnoseRepairReq, user=Depends(get_current_user)
     except Exception:
         raise HTTPException(status_code=500, detail="server_error")
 
+@router.post("/ai/chat")
+async def ai_chat(req: ChatReq, user=Depends(get_current_user)):
+    try:
+        llm = LLMClient()
+        resp = llm.chat(req.messages, tools=None, stream=False)
+        choices = resp.get("choices") or []
+        if not choices:
+            raise HTTPException(status_code=502, detail="llm_unavailable")
+        msg = choices[0].get("message") or {}
+        return {"reply": msg.get("content") or ""}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="server_error")

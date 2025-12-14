@@ -2,7 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import TIMESTAMP
-from app.models import Base
+from . import Base
 
 class FaultRecord(Base):
     __tablename__ = "fault_records"

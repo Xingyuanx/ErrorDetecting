@@ -70,10 +70,71 @@ psql -h <host> -U <user> -d <db> -f ./doc/project/数据库建表脚本_postgres
 > - `postgresql.conf` 中 `listen_addresses='*'`（或包含服务器地址）
 > - `pg_hba.conf` 中允许来源网段，例如：`host    all    all    192.168.43.0/24    scram-sha-256`
 
+## 启动数据库
+PostgreSQL 15 启动与管理：
+
+pg_ctl 方式（受限环境推荐）：
+```
+# 启动
+sudo -u postgres /usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main -o "-c config_file=/etc/postgresql/15/main/postgresql.conf" -l /var/log/postgresql/postgresql-15-main.log start
+# 状态
+sudo -u postgres /usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main status
+# 停止
+sudo -u postgres /usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main stop
+# 重启
+sudo -u postgres /usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main restart
+```
+
+systemd 方式（标准环境）：
+```
+# 启动所有集群
+sudo systemctl start postgresql
+# 启动指定实例（根据系统实际单元名可能为 postgresql@15-main）
+sudo systemctl start postgresql@15-main
+# 查看状态
+sudo systemctl status postgresql
+sudo systemctl status postgresql@15-main
+```
+进入psql命令行：
+PGPASSWORD='shenyongye123da*' psql -h 127.0.0.1 -U echo -d hadoop_fault_db
+开机自启动：
+```
+# 所有集群自启
+sudo systemctl enable postgresql
+# 指定实例自启
+sudo systemctl enable postgresql@15-main
+```
+
+取消自启动与验证：
+```
+# 取消自启（指定实例）
+sudo systemctl disable postgresql@15-main
+# 查看是否启用（enabled/disabled）
+systemctl is-enabled postgresql@15-main
+# 重启后验证监听状态
+sudo -u postgres /usr/lib/postgresql/15/bin/pg_isready
+```
+
+连接验证：
+```
+# 管理员
+export PGPASSWORD='password'
+psql -h 127.0.0.1 -U postgres -d hadoop_fault_db -c "SELECT 1;"
+# 应用账户 echo
+export PGPASSWORD='shenyongye123da*'
+psql -h 127.0.0.1 -U echo -d hadoop_fault_db -c "SELECT current_user;"
+```
+
+日志查看：
+```
+sudo tail -n 100 /var/log/postgresql/postgresql-15-main.log
+```
+
 ## 启动服务
 开发模式（自动重载）：
 ```
 # 通用方式（推荐）
+进入backend目录:
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 # Windows 若未配置 python 到 PATH，可使用 Python Launcher：

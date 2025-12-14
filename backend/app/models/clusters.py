@@ -2,7 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy import TIMESTAMP
-from app.models import Base
+from . import Base
 
 class Cluster(Base):
     __tablename__ = "clusters"

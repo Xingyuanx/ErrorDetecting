@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Boolean
 from sqlalchemy import TIMESTAMP, Text
-from app.models import Base
+from . import Base
 
 class SystemLog(Base):
     __tablename__ = "system_logs"
