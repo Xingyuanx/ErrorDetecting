@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..services.llm import LLMClient
-from ..services.ops_tools import openai_tools_schema, tool_read_log, tool_kill_process, tool_reboot_node
+from ..services.ops_tools import openai_tools_schema, tool_read_log
 
 
 async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict[str, Any], auto: bool = True, max_steps: int = 3) -> Dict[str, Any]:
@@ -47,10 +47,6 @@ async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict
             result: Dict[str, Any]
             if name == "read_log":
                 result = await tool_read_log(db, operator, args.get("node"), args.get("path"), int(args.get("lines", 200)), args.get("pattern"), args.get("sshUser"))
-            elif name == "kill_process":
-                result = await tool_kill_process(db, operator, args.get("node"), int(args.get("pid")), int(args.get("signal", 9)), args.get("sshUser"))
-            elif name == "reboot_node":
-                result = await tool_reboot_node(db, operator, args.get("node"), args.get("sshUser"))
             else:
                 result = {"error": "unknown_tool"}
             actions.append({"name": name, "args": args, "result": result})

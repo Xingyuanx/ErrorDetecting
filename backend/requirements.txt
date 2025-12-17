@@ -9,3 +9,5 @@ PyJWT
 langchain
 langchain-openai
 httpx
+paramiko
+pydantic-settings

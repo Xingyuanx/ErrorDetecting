@@ -73,32 +73,7 @@ async def tool_read_log(db: AsyncSession, user_name: str, node: str, path: str, 
     return {"execId": exec_id, "exitCode": code, "stdout": out, "stderr": err}
 
 
-async def tool_kill_process(db: AsyncSession, user_name: str, node: str, pid: int, signal: int = 9, ssh_user: Optional[str] = None, timeout: int = 15) -> Dict[str, Any]:
-    """工具：远端 kill 进程。"""
-    n = await _find_accessible_node(db, user_name, node)
-    if not n:
-        return {"error": "node_not_found"}
-    start = _now()
-    cmd = f"kill -{signal} {pid}"
-    code, out, err = await run_remote_command(str(getattr(n, "ip_address", "")), ssh_user or "", cmd, timeout=timeout)
-    end = _now()
-    exec_id = f"tool_{start.timestamp():.0f}"
-    await _write_exec_log(db, exec_id, "kill", ("success" if code == 0 else "failed"), start, end, code, user_name, out, err)
-    return {"execId": exec_id, "exitCode": code, "stdout": out, "stderr": err}
 
-
-async def tool_reboot_node(db: AsyncSession, user_name: str, node: str, ssh_user: Optional[str] = None, timeout: int = 20) -> Dict[str, Any]:
-    """工具：远端重启节点。"""
-    n = await _find_accessible_node(db, user_name, node)
-    if not n:
-        return {"error": "node_not_found"}
-    start = _now()
-    cmd = "sudo -n /sbin/reboot || sudo -n reboot || /sbin/reboot || reboot"
-    code, out, err = await run_remote_command(str(getattr(n, "ip_address", "")), ssh_user or "", cmd, timeout=timeout)
-    end = _now()
-    exec_id = f"tool_{start.timestamp():.0f}"
-    await _write_exec_log(db, exec_id, "reboot", ("success" if code == 0 else "failed"), start, end, code, user_name, out, err)
-    return {"execId": exec_id, "exitCode": code, "stdout": out, "stderr": err}
 
 
 def openai_tools_schema() -> List[Dict[str, Any]]:
@@ -122,37 +97,5 @@ def openai_tools_schema() -> List[Dict[str, Any]]:
                 },
             },
         },
-        {
-            "type": "function",
-            "function": {
-                "name": "kill_process",
-                "description": "在远端节点上按 PID 发送信号 kill 进程",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "node": {"type": "string"},
-                        "pid": {"type": "integer"},
-                        "signal": {"type": "integer", "default": 9},
-                        "sshUser": {"type": "string"},
-                    },
-                    "required": ["node", "pid"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "reboot_node",
-                "description": "在远端节点上执行系统重启",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "node": {"type": "string"},
-                        "sshUser": {"type": "string"},
-                    },
-                    "required": ["node"],
-                },
-            },
-        },
-    ]
 
+    ]
