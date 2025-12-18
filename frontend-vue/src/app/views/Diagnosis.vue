@@ -86,24 +86,27 @@
           <div class="layout__card-header"><h3 class="layout__card-title">对话历史</h3></div>
           <div class="layout__card-body">
             <div class="chat-history">
-              <div class="chat-item">
-                <div class="chat-role">系统</div>
-                <div class="chat-text">欢迎使用多智能体诊断面板</div>
-              </div>
-              <div class="chat-item">
-                <div class="chat-role">诊断智能体</div>
-                <div class="chat-text">请在左侧选择节点并拖入关键日志作为上下文</div>
+              <div class="chat-item" v-for="(m, i) in messages" :key="i">
+                <div class="chat-role">{{ roleLabel(m.role) }}</div>
+                <div class="chat-text">
+                  <div>{{ m.content }}</div>
+                  <details v-if="m.reasoning" class="u-mt-1">
+                    <summary>推理过程</summary>
+                    <pre style="white-space: pre-wrap">{{ m.reasoning }}</pre>
+                  </details>
+                </div>
               </div>
             </div>
-            <textarea class="chat-input" placeholder="支持Markdown输入..."></textarea>
+            <textarea class="chat-input" v-model.trim="inputMsg" placeholder="支持Markdown输入..."></textarea>
             <div class="chat-actions">
-              <button type="button" class="btn btn--primary">发送</button>
-              <button type="button" class="btn btn--primary u-ml-1">生成状态报告</button>
+              <button type="button" class="btn btn--primary" :disabled="sending || !inputMsg" @click="send()">发送</button>
+              <button type="button" class="btn btn--primary u-ml-1" :disabled="sending" @click="generateReport()">生成状态报告</button>
             </div>
             <div class="chat-progress">
-              <span>流式显示占位：</span>
-              <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+              <span>{{ sending ? '正在生成回复...' : '就绪' }}</span>
+              <div class="progress-bar"><div class="progress-fill" :style="{ width: sending ? '60%' : '0%' }"></div></div>
             </div>
+            <div class="u-text-sm u-text-gray-700 u-mt-1">{{ err }}</div>
           </div>
         </article>
       </aside>
@@ -112,7 +115,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
+import api from '../lib/api'
+import { useAuthStore } from '../stores/auth'
 const kw = ref('')
 const tab = ref<'live'|'auto'>('live')
 const agent = ref('诊断智能体')
@@ -138,6 +143,65 @@ const previewLogs = computed(() => {
     { id:3, time:'2025-11-07T10:14:55', level:'info', source:selectedNode.value, message:'尝试重连中' }
   ]
 })
+const auth = useAuthStore()
+const messages = ref<Array<{ role: 'user'|'assistant'|'system'; content: string; reasoning?: string }>>([
+  { role: 'system', content: '欢迎使用多智能体诊断面板' },
+  { role: 'assistant', content: '请在左侧选择节点并拖入关键日志作为上下文' }
+])
+const inputMsg = ref('')
+const sending = ref(false)
+const err = ref('')
+function sessionIdOf(){ return selectedNode.value ? `diagnosis-${selectedNode.value}` : 'diagnosis-global' }
+function roleLabel(r: string){ return r==='assistant' ? '诊断智能体' : r==='user' ? '我' : '系统' }
+async function loadHistory(){
+  err.value = ''
+  try{
+    const r = await api.get('/v1/ai/history', { params: { sessionId: sessionIdOf() }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    const list = Array.isArray(r.data?.messages) ? r.data.messages : []
+    messages.value = list.map((m:any)=>({ role: m.role || 'assistant', content: String(m.content || ''), reasoning: m.reasoning }))
+  }catch(e:any){
+    err.value = formatError(e, '历史记录加载失败')
+  }
+}
+async function send(){
+  if (!inputMsg.value) return
+  sending.value = true
+  err.value = ''
+  const userMsg = { role: 'user' as const, content: inputMsg.value }
+  messages.value.push(userMsg)
+  try{
+    const r = await api.post('/v1/ai/chat', { sessionId: sessionIdOf(), message: inputMsg.value, context: { node: selectedNode.value || '', agent: agent.value, model: model.value } }, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    const reply = String(r.data?.reply || '')
+    const reasoning = r.data?.reasoning
+    messages.value.push({ role: 'assistant', content: reply, reasoning })
+    inputMsg.value = ''
+  }catch(e:any){
+    err.value = formatError(e, '消息发送失败')
+  }finally{
+    sending.value = false
+  }
+}
+async function generateReport(){
+  inputMsg.value = inputMsg.value || `请根据当前节点${selectedNode.value || '（未选定）'}最近关键日志生成一份状态报告（包含症状、影响范围、根因假设与建议）。`
+  await send()
+}
+onMounted(()=>{ loadHistory() })
+watch(selectedNode, () => { loadHistory() })
+function formatError(e:any, def:string){
+  const r = e?.response
+  const s = r?.status
+  const st = r?.statusText
+  const d = r?.data
+  const detail = typeof d?.detail === 'string' ? d.detail : ''
+  const errs = Array.isArray(d?.detail?.errors) ? d.detail.errors : []
+  const msgs: string[] = []
+  if (s) msgs.push(`HTTP ${s}${st ? ' '+st : ''}`)
+  if (detail) msgs.push(detail)
+  if (errs.length) msgs.push(errs.map((x:any)=>x?.message||'').filter(Boolean).join('；'))
+  if (!msgs.length) msgs.push(r ? def : '网络异常或后端不可用')
+  if (s === 401) msgs.push('Token 已过期或未登录，请重新登录')
+  return msgs.join(' | ')
+}
 </script>
 
 <style scoped>
