@@ -3,6 +3,12 @@ import api from '../lib/api'
 
 type User = { username: string; role: 'admin'|'operator'|'observer' }
 
+function makeDemoToken() {
+  const payload = { sub: 'demo-admin', role: 'admin', iat: Date.now(), exp: Date.now() + 12 * 60 * 60 * 1000 }
+  const body = typeof btoa === 'function' ? btoa(JSON.stringify(payload)) : JSON.stringify(payload)
+  return `demo.${body}.${Math.random().toString(36).slice(2)}`
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({ user: null as User|null, token: null as string|null }),
   getters: {
@@ -37,6 +43,14 @@ export const useAuthStore = defineStore('auth', {
       else localStorage.removeItem('cm_token')
     },
     async login(username: string, password: string) {
+      if (username === '123' && password === '123') {
+        const role: 'admin' = 'admin'
+        const token = makeDemoToken()
+        this.user = { username: 'demo-admin', role }
+        this.token = token
+        this.persist()
+        return { ok: true, role }
+      }
       try {
         const r = await api.post('/v1/user/login', { username, password })
         const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer'

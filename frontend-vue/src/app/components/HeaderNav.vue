@@ -2,28 +2,14 @@
   <header class="header" role="banner">
     <div class="header__left">
       <h1 class="header__logo">ClusterManager</h1>
-      <nav class="header__nav" role="navigation" aria-label="主导航">
-        <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/cluster-list') }" to="/cluster-list">集群列表</RouterLink>
-        <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/logs') }" to="/logs">日志查询</RouterLink>
-        <RouterLink v-if="can([Roles.admin, Roles.operator])" class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/diagnosis') }" to="/diagnosis">故障诊断</RouterLink>
-        <RouterLink class="header__nav-item" :class="{ 'header__nav-item--active': isActive('/exec-logs') }" to="/exec-logs">执行日志</RouterLink>
-        <div class="header__dropdown" v-if="can([Roles.admin, Roles.operator])">
-          <button class="header__nav-item header__dropdown-trigger" type="button" aria-haspopup="true" :aria-expanded="configOpen ? 'true' : 'false'" @click.stop.prevent="toggleConfig">
-            系统配置
-            <i class="fas fa-chevron-down header__dropdown-icon" :class="{ 'icon-rot': configOpen }" aria-hidden="true"></i>
-          </button>
-          <div class="header__dropdown-menu" :class="{ 'header__dropdown-menu--show': configOpen }" role="menu">
-            <RouterLink class="header__dropdown-item" to="/alert-config" role="menuitem" @click.stop="closeAll">告警配置</RouterLink>
-          </div>
-        </div>
-      </nav>
+      <nav class="header__nav" role="navigation" aria-label="主导航"></nav>
     </div>
   <div class="header__right">
-    <div class="header__search">
+    <div v-if="!hideSidebar" class="header__search">
       <input id="global-search" class="header__search-input" placeholder="搜索节点、日志或配置..." />
       <i class="fas fa-search header__search-icon"></i>
     </div>
-    <button class="btn u-ml-3" type="button" @click="toggleSidebar">{{ ui.sidebarHidden ? '显示侧边栏' : '隐藏侧边栏' }}</button>
+    <button v-if="!hideSidebar" class="btn u-ml-3" type="button" @click="toggleSidebar">{{ ui.sidebarHidden ? '显示侧边栏' : '隐藏侧边栏' }}</button>
     <div class="header__user-menu" v-if="authed">
       <button class="header__user-avatar" type="button">
         <i class="fas fa-user"></i>
@@ -39,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -56,12 +42,11 @@ function can(roles: string[]) { return roles.includes(role.value || '') }
 function onLogout() { auth.logout(); router.replace({ name: 'login' }) }
 const ui = useUIStore()
 function toggleSidebar(){ ui.toggleSidebar() }
-const configOpen = ref(false)
-function toggleConfig(){ closeAll(); configOpen.value = !configOpen.value }
+const hideSidebar = computed(() => !!(route.meta && (route.meta as any).hideSidebar))
 function onDocClick(){ closeAll() }
 onMounted(()=>{ document.addEventListener('click', onDocClick) })
 onUnmounted(()=>{ document.removeEventListener('click', onDocClick) })
-function closeAll(){ configOpen.value = false }
+function closeAll(){}
 </script>
 
 <style scoped>

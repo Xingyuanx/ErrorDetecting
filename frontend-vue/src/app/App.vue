@@ -2,7 +2,7 @@
   <div class="layout">
     <HeaderNav />
     <div class="layout__container">
-      <Sidebar v-show="!ui.sidebarHidden" />
+      <Sidebar v-show="!ui.sidebarHidden && !hideSidebar" />
       <main class="layout__main">
         <router-view />
       </main>
@@ -14,7 +14,11 @@
 import HeaderNav from './components/HeaderNav.vue'
 import Sidebar from './components/Sidebar.vue'
 import { useUIStore } from './stores/ui'
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 const ui = useUIStore()
+const route = useRoute()
+const hideSidebar = computed(() => !!(route.meta && (route.meta as any).hideSidebar))
 </script>
 
 <style>

@@ -4,8 +4,8 @@ import { Roles, AllRoles } from '../constants/roles'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/cluster-list' },
-  { path: '/login', name: 'login', component: () => import('../views/Login.vue'), meta: { requiresAuth: false } },
-  { path: '/register', name: 'register', component: () => import('../views/Register.vue'), meta: { requiresAuth: false } },
+  { path: '/login', name: 'login', component: () => import('../views/Login.vue'), meta: { requiresAuth: false, hideSidebar: true } },
+  { path: '/register', name: 'register', component: () => import('../views/Register.vue'), meta: { requiresAuth: false, hideSidebar: true } },
   { path: '/cluster-list', name: 'cluster-list', component: () => import('../views/ClusterList.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/logs', name: 'logs', component: () => import('../views/Logs.vue'), meta: { requiresAuth: true, roles: AllRoles } },
