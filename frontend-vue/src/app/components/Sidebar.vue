@@ -22,8 +22,6 @@
       </button>
       <div class="sidebar__dropdown-menu" :class="{ 'sidebar__dropdown-menu--show': permOpen }" role="menu">
         <RouterLink v-if="can([Roles.admin])" class="sidebar__dropdown-item" to="/user-management" role="menuitem" @click.stop="closeAll">用户管理</RouterLink>
-        <RouterLink v-if="can([Roles.admin])" class="sidebar__dropdown-item" to="/role-assignment" role="menuitem" @click.stop="closeAll">角色分配</RouterLink>
-        <RouterLink v-if="can([Roles.admin])" class="sidebar__dropdown-item" to="/permission-policy" role="menuitem" @click.stop="closeAll">权限策略</RouterLink>
         <RouterLink v-if="can([Roles.admin])" class="sidebar__dropdown-item" to="/audit-logs" role="menuitem" @click.stop="closeAll">审计日志</RouterLink>
       </div>
     </div>

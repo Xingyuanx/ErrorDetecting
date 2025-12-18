@@ -15,8 +15,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/account', name: 'account', component: () => import('../views/Account.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/user-management', name: 'user-management', component: () => import('../views/UserManagement.vue'), meta: { requiresAuth: true, roles: [Roles.admin] } },
-  { path: '/role-assignment', name: 'role-assignment', component: () => import('../views/RoleAssignment.vue'), meta: { requiresAuth: true, roles: [Roles.admin] } },
-  { path: '/permission-policy', name: 'permission-policy', component: () => import('../views/PermissionPolicy.vue'), meta: { requiresAuth: true, roles: [Roles.admin] } },
   { path: '/audit-logs', name: 'audit-logs', component: () => import('../views/AuditLogs.vue'), meta: { requiresAuth: true, roles: [Roles.admin] } }
 ]
 

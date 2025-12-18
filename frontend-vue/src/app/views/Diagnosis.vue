@@ -3,14 +3,52 @@
     <div class="layout__page-header diag-header">
       <div class="diag-title">
         <h2 class="layout__page-title">故障诊断</h2>
-        <span class="badge">原型</span>
-      </div>
-      <div class="diag-tools">
-        <input class="header__search-input" v-model.trim="kw" placeholder="搜索节点或集群" />
       </div>
     </div>
     <div class="diag-layout">
       <aside class="diag-sidebar">
+        <div class="diag-filter">
+          <form class="diag-filter-grid">
+            <div>
+              <label class="u-text-sm u-font-medium u-text-gray-700">日志级别</label>
+              <select v-model="filters.level" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                <option value="">全部级别</option>
+                <option value="debug">DEBUG</option>
+                <option value="info">INFO</option>
+                <option value="warn">WARN</option>
+                <option value="error">ERROR</option>
+              </select>
+            </div>
+            <div>
+              <label class="u-text-sm u-font-medium u-text-gray-700">来源集群</label>
+              <select v-model="filters.cluster" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                <option value="">全部集群</option>
+                <option v-for="c in clusterOptions" :key="c" :value="c">{{ c }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="u-text-sm u-font-medium u-text-gray-700">来源节点</label>
+              <select v-model="filters.node" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                <option value="">全部节点</option>
+                <option v-for="n in nodesOptions" :key="n" :value="n">{{ n }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="u-text-sm u-font-medium u-text-gray-700">时间范围</label>
+              <select v-model="filters.timeRange" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+                <option value="">全部时间</option>
+                <option value="1h">最近1小时</option>
+                <option value="6h">最近6小时</option>
+                <option value="24h">最近24小时</option>
+                <option value="7d">最近7天</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <button type="button" class="btn btn-link" @click="clearFilters">清除筛选</button>
+            </div>
+          </form>
+          <div class="u-text-sm u-text-gray-700 u-mt-2">{{ filterSummary }}</div>
+        </div>
         <div class="diag-group" v-for="g in filteredGroups" :key="g.id">
           <button class="diag-group-toggle" type="button" @click="g.open=!g.open">
             <span :class="['chev', g.open?'chev--down':'chev--right']"></span>
@@ -76,7 +114,7 @@
               <div class="assist-field">
                 <label class="u-text-sm u-font-medium u-text-gray-700">模型</label>
                 <select v-model="model" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="deepseek">deepseek</option>
                 </select>
               </div>
             </div>
@@ -85,8 +123,8 @@
         <article class="layout__card u-mt-2">
           <div class="layout__card-header"><h3 class="layout__card-title">对话历史</h3></div>
           <div class="layout__card-body">
-            <div class="chat-history">
-              <div class="chat-item" v-for="(m, i) in messages" :key="i">
+            <div class="chat-history" ref="chatHistory">
+              <div class="chat-item" :class="m.role==='assistant'?'chat-item--assistant':m.role==='user'?'chat-item--user':''" v-for="(m, i) in visibleMessages" :key="'msg-'+i">
                 <div class="chat-role">{{ roleLabel(m.role) }}</div>
                 <div class="chat-text">
                   <div>{{ m.content }}</div>
@@ -115,50 +153,80 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch, onMounted } from 'vue'
+import { reactive, ref, computed, watch, onMounted, nextTick } from 'vue'
 import api from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 const kw = ref('')
 const tab = ref<'live'|'auto'>('live')
 const agent = ref('诊断智能体')
-const model = ref('gpt-4o-mini')
+const model = ref('deepseek')
+const filters = reactive<{ level:string; cluster:string; node:string; opType:string; sourceId:string; timeRange:string }>({ level:'', cluster:'', node:'', opType:'', sourceId:'', timeRange:'' })
 const groups = reactive<Array<{ id:string; name:string; open:boolean; nodes:string[] }>>([
   { id:'cl-1111', name:'CL-1111-AAAA', open:true, nodes:['CL-1111-AAAA-001','CL-1111-AAAA-002','CL-1111-AAAA-003'] },
   { id:'cl-2222', name:'CL-2222-BBBB', open:true, nodes:['CL-2222-BBBB-001'] },
   { id:'cl-3333', name:'CL-3333-CCCC', open:true, nodes:['CL-3333-CCCC-003'] },
 ])
 const selectedNode = ref('')
+const clusterOptions = computed(()=> groups.map(g=>g.name))
+const nodesOptions = computed(()=>{
+  if (filters.cluster) {
+    const g = groups.find(x=>x.name===filters.cluster)
+    return g ? g.nodes : []
+  }
+  return groups.flatMap(g=>g.nodes)
+})
 const filteredGroups = computed(()=>{
   const k = kw.value.trim().toLowerCase()
-  if (!k) return groups
-  return groups.map(g=>({ ...g, nodes: g.nodes.filter(n => n.toLowerCase().includes(k) || g.name.toLowerCase().includes(k)) }))
+  let base = groups
+  if (filters.cluster) base = base.filter(g => g.name === filters.cluster)
+  return base.map(g=>{
+    let nodes = g.nodes
+    if (k) nodes = nodes.filter(n => n.toLowerCase().includes(k) || g.name.toLowerCase().includes(k))
+    if (filters.node) nodes = nodes.filter(n => n === filters.node)
+    return { ...g, nodes }
+  })
 })
 function selectNode(n:string){ selectedNode.value = n }
 function statusDot(n:string){ return n.includes('003') ? 'status-dot--error' : n.includes('002') ? 'status-dot--warning' : 'status-dot--running' }
 const previewLogs = computed(() => {
   if (!selectedNode.value) return [] as Array<{id:number;time:string;level:string;source:string;message:string}>
-  return [
+  const list = [
     { id:1, time:'2025-11-07T10:15:00', level:'error', source:selectedNode.value, message:'连接断开，心跳丢失' },
     { id:2, time:'2025-11-07T10:14:58', level:'warn', source:selectedNode.value, message:'心跳延迟超过阈值' },
     { id:3, time:'2025-11-07T10:14:55', level:'info', source:selectedNode.value, message:'尝试重连中' }
   ]
+  return filters.level ? list.filter(l => l.level === filters.level) : list
 })
 const auth = useAuthStore()
 const messages = ref<Array<{ role: 'user'|'assistant'|'system'; content: string; reasoning?: string }>>([
   { role: 'system', content: '欢迎使用多智能体诊断面板' },
   { role: 'assistant', content: '请在左侧选择节点并拖入关键日志作为上下文' }
 ])
+const visibleMessages = computed(() => messages.value.filter(m => m.role !== 'system'))
+const chatHistory = ref<HTMLElement|null>(null)
+function scrollToLatest(){ const el = chatHistory.value; if (el) el.scrollTop = el.scrollHeight }
 const inputMsg = ref('')
 const sending = ref(false)
 const err = ref('')
 function sessionIdOf(){ return selectedNode.value ? `diagnosis-${selectedNode.value}` : 'diagnosis-global' }
 function roleLabel(r: string){ return r==='assistant' ? '诊断智能体' : r==='user' ? '我' : '系统' }
+const filterSummary = computed(()=>{
+  const items:string[] = []
+  if (filters.level) items.push(`级别=${filters.level.toUpperCase()}`)
+  if (filters.cluster) items.push(`集群=${filters.cluster}`)
+  if (filters.node) items.push(`节点=${filters.node}`)
+  if (filters.timeRange) items.push(`时间=${filters.timeRange}`)
+  return items.length ? `当前筛选：${items.join('；')}` : '当前筛选：无'
+})
+function clearFilters(){ filters.level=''; filters.cluster=''; filters.node=''; filters.opType=''; filters.sourceId=''; filters.timeRange='' }
 async function loadHistory(){
   err.value = ''
   try{
     const r = await api.get('/v1/ai/history', { params: { sessionId: sessionIdOf() }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     const list = Array.isArray(r.data?.messages) ? r.data.messages : []
     messages.value = list.map((m:any)=>({ role: m.role || 'assistant', content: String(m.content || ''), reasoning: m.reasoning }))
+    await nextTick()
+    scrollToLatest()
   }catch(e:any){
     err.value = formatError(e, '历史记录加载失败')
   }
@@ -174,6 +242,8 @@ async function send(){
     const reply = String(r.data?.reply || '')
     const reasoning = r.data?.reasoning
     messages.value.push({ role: 'assistant', content: reply, reasoning })
+    await nextTick()
+    scrollToLatest()
     inputMsg.value = ''
   }catch(e:any){
     err.value = formatError(e, '消息发送失败')
@@ -208,8 +278,13 @@ function formatError(e:any, def:string){
 .diag-header{ display:flex; align-items:center; justify-content:space-between }
 .diag-title{ display:flex; align-items:center; gap:8px }
 .badge{ padding:2px 8px; border-radius:999px; background:#eef2ff; color:#374151; font-size:12px }
-.diag-layout{ display:grid; grid-template-columns: 320px 1fr 380px; gap:16px }
+.diag-layout{ display:grid; grid-template-columns: var(--diag-sidebar-width, 30%) 1fr var(--diag-assistant-width, 45%); gap:16px }
 .diag-sidebar{ background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; display:flex; flex-direction:column }
+.diag-filter{ padding-bottom:12px; border-bottom:1px solid #e5e7eb }
+.diag-filter-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:8px }
+.diag-filter-grid > div{ display:flex; flex-direction:column }
+.diag-filter-grid label{ margin-bottom:4px }
+.filter-actions{ display:flex; justify-content:flex-end; margin-top:8px }
 .diag-group{ margin-top:8px }
 .diag-group-toggle{ width:100%; display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:#374151 }
 .chev{ width:0; height:0; border-style:solid }
@@ -235,16 +310,28 @@ function formatError(e:any, def:string){
 .preview-placeholder{ color:#6b7280; font-size:14px }
 .preview-body{ height:677.6px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; margin-top:8px }
 
-.diag-assistant{ display:flex; flex-direction:column }
+.diag-assistant{ display:flex; flex-direction:column; margin-right: -16px }
 .assist-row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px }
 .assist-field{ display:flex; flex-direction:column }
-.chat-history{ display:flex; flex-direction:column; gap:8px }
+.chat-history{ display:flex; flex-direction:column; gap:8px; max-height: 360px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px }
 .chat-item{ display:flex; gap:8px }
 .chat-role{ width:72px; color:#6b7280 }
-.chat-text{ flex:1 }
+.chat-text{ flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px }
+.chat-item--assistant .chat-text{ background:#f9fafb }
+.chat-item--user .chat-text{ background:#eef2ff; border-color:#c7d2fe }
 .chat-input{ width:100%; min-height:80px; margin-top:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px }
+.chat-input:focus{ outline:none; border-color:#9ca3af; box-shadow:0 0 0 3px rgba(37,99,235,0.1) }
 .chat-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:8px }
 .chat-progress{ display:flex; align-items:center; gap:8px; margin-top:8px; color:#6b7280 }
 .progress-bar{ flex:1; height:6px; background:#e5e7eb; border-radius:999px; overflow:hidden }
 .progress-fill{ height:100%; background:#2563eb }
+
+.layout__card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(16,24,40,0.06) }
+.layout__card-header{ padding:10px 12px; border-bottom:1px solid #e5e7eb }
+.layout__card-title{ font-size:14px; font-weight:700 }
+.layout__card-body{ padding:12px }
+.diag-tabs .btn{ border-radius:999px; padding:6px 12px }
+.diag-tabs .btn--primary{ background:#2563eb; border-color:#2563eb; color:#fff }
+.diag-group-toggle{ transition: background 120ms ease, border-color 120ms ease }
+.diag-group-toggle:hover{ background:#eef2ff; border-color:#c7d2fe }
 </style>

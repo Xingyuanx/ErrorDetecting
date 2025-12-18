@@ -17,12 +17,17 @@
       <div class="u-text-sm u-text-gray-700">{{ err }}</div>
     </div>
     <table id="cluster-list-table" class="dashboard__table">
-      <thead><tr><th>UUID</th><th>主机名</th><th>IP</th><th>节点数</th><th>健康</th><th>操作</th></tr></thead>
+      <thead><tr><th>主机名</th><th>IP</th><th>节点数</th><th>健康</th><th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;操作</th></tr></thead>
       <tbody>
         <tr v-for="c in clusters" :key="c.uuid" class="dashboard__table-row" @click="toDashboard(c)">
-          <td><code>{{ c.uuid }}</code></td><td>{{ c.host }}</td><td>{{ c.ip }}</td><td>{{ c.count }}</td>
+          <td>{{ c.host }}</td><td>{{ c.ip }}</td><td>{{ c.count }}</td>
           <td><span>{{ c.healthText }}</span></td>
-          <td><button class="btn u-text-sm" @click.stop="unregister(c.uuid)">注销集群</button></td>
+          <td>
+            <button class="btn u-text-sm" @click.stop="toDashboard(c)">进入详情</button>
+            <button class="btn u-text-sm u-ml-1" @click.stop="startCluster(c.uuid)">启动集群</button>
+            <button class="btn u-text-sm u-ml-1" @click.stop="stopCluster(c.uuid)">关闭集群</button>
+            <button class="btn u-text-sm u-ml-1" @click.stop="unregister(c.uuid)">注销集群</button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -68,6 +73,22 @@ async function onRegister() {
 async function unregister(id: string) {
   try{ await api.delete(`/v1/clusters/${encodeURIComponent(id)}`, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await load() }
   catch(e:any){ err.value = e?.response?.data?.detail || '注销失败' }
+}
+async function startCluster(id: string) {
+  try{ await api.post(`/v1/clusters/${encodeURIComponent(id)}/start`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await load() }
+  catch(e:any){
+    const d = e?.response?.data; const errs = d?.detail?.errors
+    if (Array.isArray(errs) && errs.length) err.value = errs.map((x:any)=>x?.message||'').filter(Boolean).join('；')
+    else err.value = d?.detail || '启动失败'
+  }
+}
+async function stopCluster(id: string) {
+  try{ await api.post(`/v1/clusters/${encodeURIComponent(id)}/stop`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await load() }
+  catch(e:any){
+    const d = e?.response?.data; const errs = d?.detail?.errors
+    if (Array.isArray(errs) && errs.length) err.value = errs.map((x:any)=>x?.message||'').filter(Boolean).join('；')
+    else err.value = d?.detail || '关闭失败'
+  }
 }
 function toDashboard(c: any) {
   sessionStorage.setItem('current_cluster', JSON.stringify(c))
