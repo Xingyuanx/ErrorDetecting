@@ -17,10 +17,10 @@
       <div class="u-text-sm u-text-gray-700">{{ err }}</div>
     </div>
     <table id="cluster-list-table" class="dashboard__table">
-      <thead><tr><th>主机名</th><th>IP</th><th>节点数</th><th>健康</th><th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;操作</th></tr></thead>
+      <thead><tr><th>集群名</th><th>节点数</th><th>健康</th><th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;操作</th></tr></thead>
       <tbody>
         <tr v-for="c in clusters" :key="c.uuid" class="dashboard__table-row" @click="toDashboard(c)">
-          <td>{{ c.host }}</td><td>{{ c.ip }}</td><td>{{ c.count }}</td>
+          <td>{{ c.host }}</td><td>{{ c.count }}</td>
           <td><span>{{ c.healthText }}</span></td>
           <td>
             <button class="btn u-text-sm" @click.stop="toDashboard(c)">进入详情</button>

@@ -2,7 +2,7 @@
   <section class="layout__section">
     <div class="layout__page-header exec-header">
       <div>
-        <h2 class="layout__page-title">个人主页（原型）</h2>
+        <h2 class="layout__page-title">个人主页</h2>
         <div class="layout__page-subtitle">查看与管理个人基础信息</div>
       </div>
       <div class="layout__page-actions"><button class="btn" disabled>编辑资料</button></div>
@@ -10,7 +10,9 @@
     <article class="layout__card u-mt-2">
       <div class="layout__card-header"><h3 class="layout__card-title">个人信息</h3></div>
       <div class="layout__card-body">
-        <div class="layout__grid layout__grid--3">
+        <div v-if="loading" class="u-text-sm u-text-gray-700">正在加载...</div>
+        <div v-else-if="err" class="u-text-sm" style="color:#dc2626">{{ err }}</div>
+        <div v-else class="layout__grid layout__grid--3">
           <div>
             <span class="u-text-sm u-text-gray-700">用户名</span>
             <div class="u-font-medium u-mt-1">{{ username }}</div>
@@ -37,24 +39,39 @@ import api from '../lib/api'
 import { RoleLabel } from '../constants/roles'
 const auth = useAuthStore()
 const { user, token } = storeToRefs(auth)
-const username = ref('admin')
-const email = ref('admin@example.com')
-const roleName = ref('管理员')
+const username = ref('')
+const email = ref('')
+const roleName = ref('')
+const loading = ref(true)
+const err = ref('')
+function normalizeRole(r: string): 'admin'|'operator'|'observer' {
+  const v = String(r || '').trim().toLowerCase()
+  if (v === 'admin' || v === 'administrator') return 'admin'
+  if (v === 'operator' || v === 'ops' || v === 'op') return 'operator'
+  return 'observer'
+}
 onMounted(async () => {
+  loading.value = true
+  err.value = ''
   try{
-    const r = await api.get('/v1/user/me', { headers: token.value ? { Authorization: `Bearer ${token.value}` } : undefined })
-    const u = r?.data?.user || r?.data || {}
-    const name = u?.username || user.value?.username || 'admin'
+    const r = await api.get('/v1/users', { headers: token.value ? { Authorization: `Bearer ${token.value}` } : undefined })
+    const list = Array.isArray(r?.data?.users) ? r.data.users : (Array.isArray(r?.data) ? r.data : [])
+    const currentName = String(user.value?.username || '')
+    const picked = (list || []).find((x:any) => String(x?.username || '') === currentName)
+    if (!picked) { err.value = '未找到当前用户'; return }
+    const name = String(picked?.username || '')
+    const emailVal = String(picked?.email || '')
+    const roleRaw = String(picked?.role || '')
+    const roleKey = normalizeRole(roleRaw)
     username.value = name
-    email.value = u?.email || `${name}@example.com`
-    const roleKey = u?.role || user.value?.role || 'admin'
-    roleName.value = RoleLabel[roleKey as keyof typeof RoleLabel] || '观察员'
+    email.value = emailVal
+    roleName.value = RoleLabel[roleKey as keyof typeof RoleLabel] || roleRaw || '观察员'
+    if (name && name === currentName) { auth.user = { username: name, role: roleKey as any }; auth.persist() }
   }catch(e:any){
-    const name = user.value?.username || 'admin'
-    username.value = name
-    email.value = `${name}@example.com`
-    const roleKey = user.value?.role || 'admin'
-    roleName.value = RoleLabel[roleKey as keyof typeof RoleLabel] || '观察员'
+    const s = e?.response?.status
+    err.value = s === 403 ? '权限不足，无法读取用户列表' : '个人信息加载失败'
+  }finally{
+    loading.value = false
   }
 })
 </script>

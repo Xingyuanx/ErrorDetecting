@@ -52,7 +52,7 @@ async function onSubmit() {
 .login__subtitle{ color:#6b7280; margin-top:4px }
 .login__form{ display:flex; flex-direction:column; gap:10px; margin-top:8px }
 .login__input{ width:100% }
-.login__btn{ width:100% }
+.login__btn{ width:100%; display:flex; justify-content:center }
 .login__hint{ font-size:12px; color:#a16207; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:8px; margin-top:10px }
 .login__msg{ font-size:12px; color:#dc2626; margin-top:8px }
 .login__health{ font-size:12px; margin-top:8px; color:#6b7280 }

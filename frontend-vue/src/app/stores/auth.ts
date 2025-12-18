@@ -9,6 +9,15 @@ function makeDemoToken() {
   return `demo.${body}.${Math.random().toString(36).slice(2)}`
 }
 
+function normalizeRole(r: string): 'admin'|'operator'|'observer'|'' {
+  const v = String(r || '').trim().toLowerCase()
+  if (!v) return ''
+  if (v === 'admin' || v === 'administrator') return 'admin'
+  if (v === 'operator' || v === 'ops' || v === 'op') return 'operator'
+  if (v === 'observer' || v === 'obs' || v === 'view') return 'observer'
+  return ''
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({ user: null as User|null, token: null as string|null }),
   getters: {
@@ -53,8 +62,10 @@ export const useAuthStore = defineStore('auth', {
       }
       try {
         const r = await api.post('/v1/user/login', { username, password })
-        const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer'
         const token = r?.data?.token
+        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || '') as string
+        const backendRole = normalizeRole(backendRoleRaw)
+        const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer')
         if (!token) {
           return { ok: false, message: '登录失败' }
         }
@@ -74,7 +85,9 @@ export const useAuthStore = defineStore('auth', {
     async register(username: string, email: string, password: string, fullName: string) {
       try {
         const r = await api.post('/v1/user/register', { username, email, password, fullName })
-        const role = username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer'
+        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || '') as string
+        const backendRole = normalizeRole(backendRoleRaw)
+        const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer')
         this.user = { username, role }
         this.token = r?.data?.token || null
         this.persist()

@@ -4,7 +4,7 @@
       <h2 class="layout__page-title">仪表板 · 集群概览</h2>
       <div class="top-meta">
         <span>更新时间：{{ updateTime }}</span>
-        <span>当前集群：{{ meta.uuid }} | 主机名：{{ meta.host }} | 主IP：{{ meta.ip }}</span>
+        <span>当前集群：{{ meta.uuid }} | 集群名：{{ meta.host }}</span>
       </div>
     </div>
     <div class="stats-grid">
@@ -128,7 +128,7 @@ async function detail(name:string){ try{ await api.get(`/v1/nodes/${encodeURICom
 .status-indicator{ display:inline-flex; align-items:center; gap:6px }
 .status-dot{ width:8px; height:8px; border-radius:50% }
 .status-dot--running{ background:#16a34a }
-.status-dot--warning{ background:#f59e0b }
-.status-dot--error{ background:#dc2626 }
+.status-dot--warning{ background:#16a34a }
+.status-dot--error{ background:#16a34a }
 .status-text{ font-size:12px }
 </style>

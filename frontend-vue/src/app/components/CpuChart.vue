@@ -1,9 +1,9 @@
 <template>
-  <div ref="root" style="height:260px"></div>
+  <div ref="root" style="width:100%;height:260px"></div>
   </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import api from '../lib/api'
 import { useAuthStore } from '../stores/auth'
@@ -11,6 +11,7 @@ const props = defineProps<{ cluster: string }>()
 const auth = useAuthStore()
 const root = ref<HTMLElement|null>(null)
 let chart: echarts.ECharts | null = null
+let ro: ResizeObserver | null = null
 function render(times: string[], values: number[]) {
   chart?.setOption({ xAxis: { type: 'category', boundaryGap: false, data: times }, yAxis: { type: 'value', min:0, max:100 }, series: [{ type: 'line', smooth: true, areaStyle: {}, data: values }] })
 }
@@ -31,7 +32,11 @@ onMounted(() => {
   load()
   const onResize = () => chart && chart.resize()
   window.addEventListener('resize', onResize)
+  ro = new ResizeObserver(() => { chart && chart.resize() })
+  ro.observe(root.value)
+  nextTick(() => { chart && chart.resize() })
+  setTimeout(() => { chart && chart.resize() }, 300)
 })
 watch(() => props.cluster, () => load())
-onBeforeUnmount(() => { chart?.dispose(); chart = null })
+onBeforeUnmount(() => { ro?.disconnect(); ro = null; chart?.dispose(); chart = null })
 </script>

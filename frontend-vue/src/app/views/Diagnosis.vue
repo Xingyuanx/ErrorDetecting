@@ -50,12 +50,12 @@
           <div class="u-text-sm u-text-gray-700 u-mt-2">{{ filterSummary }}</div>
         </div>
         <div class="diag-group" v-for="g in filteredGroups" :key="g.id">
-          <button class="diag-group-toggle" type="button" @click="g.open=!g.open">
+          <button class="diag-group-toggle" type="button" @click="toggleGroup(g)">
             <span :class="['chev', g.open?'chev--down':'chev--right']"></span>
             {{ g.name }}
           </button>
           <ul v-show="g.open" class="diag-node-list">
-            <li v-for="n in g.nodes" :key="n" :class="['diag-node-item', selectedNode===n?'diag-node-item--active':'']" @click="selectNode(n)">
+            <li v-for="n in nodesForGroup(g)" :key="n" :class="['diag-node-item', selectedNode===n?'diag-node-item--active':'']" @click="selectNode(n)">
               <span class="status-dot" :class="statusDot(n)"></span>
               {{ n }}
             </li>
@@ -69,14 +69,15 @@
         <article class="layout__card u-mt-2">
           <div class="layout__card-header"><h3 class="layout__card-title">故障信息</h3></div>
           <div class="layout__card-body">
-            <div class="fault-row"><span class="fault-key">故障代码</span><span class="fault-val">FLT-20251107-0001</span></div>
-            <div class="fault-row"><span class="fault-key">发生时间</span><span class="fault-val">2025-11-07 10:15:00</span></div>
-            <div class="fault-row"><span class="fault-key">影响范围</span><span class="fault-val">CL-3333-CCCC-003</span></div>
+            <div class="fault-row"><span class="fault-key">故障代码</span><span class="fault-val">{{ fault?.code || '—' }}</span></div>
+            <div class="fault-row"><span class="fault-key">发生时间</span><span class="fault-val">{{ fault?.time || '—' }}</span></div>
+            <div class="fault-row"><span class="fault-key">影响范围</span><span class="fault-val">{{ fault?.scope || '—' }}</span></div>
+            <div class="u-text-sm u-text-error u-mt-1" v-if="faultErr">{{ faultErr }}</div>
           </div>
         </article>
       </aside>
 
-      <main class="diag-preview">
+      <aside class="diag-preview">
         <article class="layout__card">
           <div class="layout__card-header"><h3 class="layout__card-title">日志预览</h3></div>
           <div class="layout__card-body">
@@ -99,12 +100,12 @@
             </div>
           </div>
         </article>
-      </main>
+      </aside>
 
       <aside class="diag-assistant">
         <article class="layout__card">
           <div class="layout__card-body">
-            <div class="assist-row">
+            <div class="assist-row u-mb-2">
               <div class="assist-field">
                 <label class="u-text-sm u-font-medium u-text-gray-700">智能体</label>
                 <select v-model="agent" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
@@ -119,8 +120,6 @@
               </div>
             </div>
           </div>
-        </article>
-        <article class="layout__card u-mt-2">
           <div class="layout__card-header"><h3 class="layout__card-title">对话历史</h3></div>
           <div class="layout__card-body">
             <div class="chat-history" ref="chatHistory">
@@ -161,11 +160,12 @@ const tab = ref<'live'|'auto'>('live')
 const agent = ref('诊断智能体')
 const model = ref('deepseek')
 const filters = reactive<{ level:string; cluster:string; node:string; opType:string; sourceId:string; timeRange:string }>({ level:'', cluster:'', node:'', opType:'', sourceId:'', timeRange:'' })
-const groups = reactive<Array<{ id:string; name:string; open:boolean; nodes:string[] }>>([
-  { id:'cl-1111', name:'CL-1111-AAAA', open:true, nodes:['CL-1111-AAAA-001','CL-1111-AAAA-002','CL-1111-AAAA-003'] },
-  { id:'cl-2222', name:'CL-2222-BBBB', open:true, nodes:['CL-2222-BBBB-001'] },
-  { id:'cl-3333', name:'CL-3333-CCCC', open:true, nodes:['CL-3333-CCCC-003'] },
-])
+type Group = { id:string; name:string; open:boolean; nodes:string[]; count?:number }
+const groups = reactive<Group[]>([])
+const loadingSidebar = ref(false)
+type FaultInfo = { code:string; time:string; scope:string }
+const fault = ref<FaultInfo|null>(null)
+const faultErr = ref('')
 const selectedNode = ref('')
 const clusterOptions = computed(()=> groups.map(g=>g.name))
 const nodesOptions = computed(()=>{
@@ -176,16 +176,76 @@ const nodesOptions = computed(()=>{
   return groups.flatMap(g=>g.nodes)
 })
 const filteredGroups = computed(()=>{
-  const k = kw.value.trim().toLowerCase()
-  let base = groups
-  if (filters.cluster) base = base.filter(g => g.name === filters.cluster)
-  return base.map(g=>{
-    let nodes = g.nodes
-    if (k) nodes = nodes.filter(n => n.toLowerCase().includes(k) || g.name.toLowerCase().includes(k))
-    if (filters.node) nodes = nodes.filter(n => n === filters.node)
-    return { ...g, nodes }
-  })
+  const kraw = kw.value.trim().toLowerCase()
+  let base = groups.filter(g => !filters.cluster || g.name === filters.cluster)
+  if (kraw) {
+    base = base.filter(g => g.name.toLowerCase().includes(kraw) || g.nodes.some(n => n.toLowerCase().includes(kraw)))
+  }
+  if (filters.node) {
+    base = base.filter(g => g.nodes.includes(filters.node))
+  }
+  return base
 })
+function nodesForGroup(g:{ id:string; name:string; open:boolean; nodes:string[] }){
+  const k = kw.value.trim().toLowerCase()
+  let nodes = g.nodes
+  if (k) nodes = nodes.filter(n => n.toLowerCase().includes(k) || g.name.toLowerCase().includes(k))
+  if (filters.node) nodes = nodes.filter(n => n === filters.node)
+  return nodes
+}
+function pad3(n:number){ return String(n).padStart(3,'0') }
+async function loadClusters(){
+  loadingSidebar.value = true
+  try{
+    const r = await api.get('/v1/clusters', { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    const list = Array.isArray(r.data?.clusters) ? r.data.clusters : []
+    const mapped: Group[] = list.map((x:any)=>({
+      id: String(x.uuid || x.id || x.host || x.name || ''),
+      name: String(x.host || x.name || x.uuid || ''),
+      open: false,
+      nodes: [],
+      count: Number(x.count)||0
+    })).filter(g=>g.id && g.name)
+    groups.splice(0, groups.length, ...mapped)
+  }catch(e:any){
+    // 保持现状并在提示区显示错误
+    err.value = formatError(e, '集群列表加载失败')
+  }finally{
+    loadingSidebar.value = false
+  }
+}
+async function loadNodesFor(clusterName:string){
+  const g = groups.find(x=>x.name === clusterName)
+  if (!g) return
+  try{
+    const r = await api.get('/v1/nodes', { params: { cluster: clusterName }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    const nodes = Array.isArray(r.data?.nodes) ? r.data.nodes.map((x:any)=>String(x?.name||x)).filter(Boolean) : []
+    if (nodes.length) g.nodes = nodes
+    else if ((g.count||0) > 0) g.nodes = Array.from({length: g.count as number}, (_,i)=>`${clusterName}-${pad3(i+1)}`)
+  }catch(e:any){
+    if ((g.count||0) > 0 && g.nodes.length===0) g.nodes = Array.from({length: g.count as number}, (_,i)=>`${clusterName}-${pad3(i+1)}`)
+    // 不打断交互，错误显示在提示区
+    err.value = formatError(e, '节点列表加载失败')
+  }
+}
+async function toggleGroup(g:Group){
+  g.open = !g.open
+  if (g.open && g.nodes.length===0) await loadNodesFor(g.name)
+}
+async function loadFaultInfo(){
+  faultErr.value = ''
+  fault.value = null
+  const params:any = {}
+  if (selectedNode.value) params.node = selectedNode.value
+  else if (filters.cluster) params.cluster = filters.cluster
+  try{
+    const r = await api.get('/v1/faults/summary', { params, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    const d = r?.data?.fault || r?.data?.data || null
+    if (d) fault.value = { code: String(d.code||''), time: String(d.time||''), scope: String(d.scope||'') }
+  }catch(e:any){
+    faultErr.value = formatError(e, '故障信息加载失败')
+  }
+}
 function selectNode(n:string){ selectedNode.value = n }
 function statusDot(n:string){ return n.includes('003') ? 'status-dot--error' : n.includes('002') ? 'status-dot--warning' : 'status-dot--running' }
 const previewLogs = computed(() => {
@@ -255,8 +315,10 @@ async function generateReport(){
   inputMsg.value = inputMsg.value || `请根据当前节点${selectedNode.value || '（未选定）'}最近关键日志生成一份状态报告（包含症状、影响范围、根因假设与建议）。`
   await send()
 }
-onMounted(()=>{ loadHistory() })
+onMounted(async ()=>{ await loadClusters(); await loadHistory(); await loadFaultInfo() })
 watch(selectedNode, () => { loadHistory() })
+watch(selectedNode, () => { loadFaultInfo() })
+watch(() => filters.cluster, () => { loadFaultInfo() })
 function formatError(e:any, def:string){
   const r = e?.response
   const s = r?.status
@@ -278,12 +340,13 @@ function formatError(e:any, def:string){
 .diag-header{ display:flex; align-items:center; justify-content:space-between }
 .diag-title{ display:flex; align-items:center; gap:8px }
 .badge{ padding:2px 8px; border-radius:999px; background:#eef2ff; color:#374151; font-size:12px }
-.diag-layout{ display:grid; grid-template-columns: var(--diag-sidebar-width, 30%) 1fr var(--diag-assistant-width, 45%); gap:16px }
-.diag-sidebar{ background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; display:flex; flex-direction:column }
+.diag-layout{ display:grid; grid-template-columns: var(--diag-sidebar-width, 30%) 1fr var(--diag-assistant-width, 30%); gap:16px; align-items: stretch }
+.diag-sidebar{ background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; display:flex; flex-direction:column; overflow-x:hidden }
 .diag-filter{ padding-bottom:12px; border-bottom:1px solid #e5e7eb }
 .diag-filter-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:8px }
-.diag-filter-grid > div{ display:flex; flex-direction:column }
+.diag-filter-grid > div{ display:flex; flex-direction:column; min-width:0 }
 .diag-filter-grid label{ margin-bottom:4px }
+.diag-sidebar select{ width:100%; max-width:100%; box-sizing:border-box }
 .filter-actions{ display:flex; justify-content:flex-end; margin-top:8px }
 .diag-group{ margin-top:8px }
 .diag-group-toggle{ width:100%; display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:#374151 }
@@ -296,8 +359,8 @@ function formatError(e:any, def:string){
 .diag-node-item--active{ background:#eef2ff; border-color:#c7d2fe }
 .status-dot{ width:8px; height:8px; border-radius:50% }
 .status-dot--running{ background:#16a34a }
-.status-dot--warning{ background:#f59e0b }
-.status-dot--error{ background:#dc2626 }
+.status-dot--warning{ background:#16a34a }
+.status-dot--error{ background:#16a34a }
 .diag-tabs{ display:flex; gap:8px; margin-top:12px }
 .diag-tip{ margin-top:8px; color:#6b7280; font-size:12px }
 .fault-row{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #e5e7eb }
@@ -305,18 +368,26 @@ function formatError(e:any, def:string){
 .fault-key{ color:#6b7280; font-size:12px }
 .fault-val{ font-weight:600 }
 
-.diag-preview{ display:flex }
+.diag-preview{ display:flex; flex-direction:column; height:100% }
+.diag-preview .layout__card{ display:flex; flex-direction:column; height:100%; width:100% }
+.diag-preview .layout__card-body{ flex:1; overflow:auto }
 .preview-meta{ color:#6b7280; font-size:12px }
 .preview-placeholder{ color:#6b7280; font-size:14px }
-.preview-body{ height:677.6px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; margin-top:8px }
+.preview-body{ background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; margin-top:8px; flex:1 }
 
-.diag-assistant{ display:flex; flex-direction:column; margin-right: -16px }
+.diag-assistant{ display:flex; flex-direction:column; margin-right: 16px }
+.diag-assistant .layout__card{ display:flex; flex-direction:column; height:100% }
+.diag-assistant .layout__card-body{ flex:1; overflow:auto }
+.diag-assistant .layout__card-body:first-of-type{ flex:0; overflow:visible; padding-bottom:8px }
+.diag-assistant .layout__card-body:last-of-type{ flex:1; overflow:auto }
 .assist-row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px }
 .assist-field{ display:flex; flex-direction:column }
 .chat-history{ display:flex; flex-direction:column; gap:8px; max-height: 360px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px }
 .chat-item{ display:flex; gap:8px }
 .chat-role{ width:72px; color:#6b7280 }
-.chat-text{ flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px }
+.chat-text{ flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px; max-width:100%; overflow-x:hidden; word-break:break-word }
+.chat-text *{ word-break:break-word; overflow-wrap:anywhere }
+.chat-history{ overflow-x:hidden }
 .chat-item--assistant .chat-text{ background:#f9fafb }
 .chat-item--user .chat-text{ background:#eef2ff; border-color:#c7d2fe }
 .chat-input{ width:100%; min-height:80px; margin-top:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px }

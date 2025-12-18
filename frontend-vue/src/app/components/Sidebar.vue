@@ -41,8 +41,8 @@ function isActive(p: string) { return route.path === p }
 function can(roles: string[]) { return roles.includes(role.value || '') }
 const configOpen = ref(false)
 const permOpen = ref(false)
-function toggleConfig(){ closeAll(); configOpen.value = !configOpen.value }
-function togglePerm(){ closeAll(); permOpen.value = !permOpen.value }
+function toggleConfig(){ const next = !configOpen.value; closeAll(); configOpen.value = next }
+function togglePerm(){ const next = !permOpen.value; closeAll(); permOpen.value = next }
 function closeAll(){ configOpen.value = false; permOpen.value = false }
 function onDocClick(){ closeAll() }
 onMounted(()=>{ document.addEventListener('click', onDocClick) })
