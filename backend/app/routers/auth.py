@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, text
 from ..db import get_db
 from ..models.users import User
 from passlib.hash import bcrypt
@@ -21,6 +21,46 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
     fullName: str
+
+async def _get_user_id(db: AsyncSession, username: str) -> int | None:
+    res = await db.execute(text("SELECT id FROM users WHERE username=:u LIMIT 1"), {"u": username})
+    row = res.first()
+    return row[0] if row else None
+
+async def _get_role_id(db: AsyncSession, role_key: str) -> int | None:
+    res = await db.execute(text("SELECT id FROM roles WHERE role_key=:k LIMIT 1"), {"k": role_key})
+    row = res.first()
+    return row[0] if row else None
+
+async def _ensure_observer_role(db: AsyncSession) -> int:
+    rid = await _get_role_id(db, "observer")
+    if rid is not None:
+        return rid
+    await db.execute(
+        text(
+            "INSERT INTO roles(role_name, role_key, description, is_system_role, created_at, updated_at) VALUES(:rn, :rk, :desc, TRUE, NOW(), NOW())"
+        ),
+        {"rn": "观察员", "rk": "observer", "desc": "系统默认观察员角色"},
+    )
+    await db.commit()
+    rid2 = await _get_role_id(db, "observer")
+    if rid2 is None:
+        raise HTTPException(status_code=500, detail="role_init_failed")
+    return rid2
+
+async def _map_user_role(db: AsyncSession, username: str, role_key: str) -> None:
+    uid = await _get_user_id(db, username)
+    if uid is None:
+        raise HTTPException(status_code=500, detail="user_not_found_after_register")
+    rid = await _get_role_id(db, role_key)
+    if rid is None:
+        if role_key == "observer":
+            rid = await _ensure_observer_role(db)
+        else:
+            raise HTTPException(status_code=400, detail="role_not_exist")
+    await db.execute(text("DELETE FROM user_role_mapping WHERE user_id=:uid"), {"uid": uid})
+    await db.execute(text("INSERT INTO user_role_mapping(user_id, role_id) VALUES(:uid, :rid)"), {"uid": uid, "rid": rid})
+    await db.commit()
 
 @router.post("/user/login")
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
@@ -84,6 +124,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         db.add(user)
         await db.flush()
         await db.commit()
+        await _map_user_role(db, req.username, "observer")
         exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": user.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
         return {"ok": True, "username": user.username, "fullName": user.full_name, "token": token}

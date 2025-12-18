@@ -11,3 +11,5 @@ langchain-openai
 httpx
 paramiko
 pydantic-settings
+requests
+beautifulsoup4
