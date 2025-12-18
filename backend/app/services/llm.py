@@ -57,7 +57,7 @@ class LLMClient:
             "Content-Type": "application/json",
         }
 
-    def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None, stream: bool = False) -> Dict[str, Any]:
+    async def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None, stream: bool = False) -> Dict[str, Any]:
         if self.simulate or httpx is None:
             return {
                 "choices": [
@@ -74,7 +74,7 @@ class LLMClient:
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
-        with httpx.Client(timeout=self.timeout) as client:
-            resp = client.post(self.endpoint, headers=self._headers(), json=payload)
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.post(self.endpoint, headers=self._headers(), json=payload)
             resp.raise_for_status()
             return resp.json()

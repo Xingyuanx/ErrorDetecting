@@ -58,12 +58,14 @@ async def diagnose_repair(req: DiagnoseRepairReq, user=Depends(get_current_user)
 async def ai_chat(req: ChatReq, user=Depends(get_current_user)):
     try:
         llm = LLMClient()
-        resp = llm.chat(req.messages, tools=None, stream=False)
+        resp = await llm.chat(req.messages, tools=None, stream=False)
         choices = resp.get("choices") or []
         if not choices:
             raise HTTPException(status_code=502, detail="llm_unavailable")
         msg = choices[0].get("message") or {}
-        return {"reply": msg.get("content") or ""}
+        reply = msg.get("content") or ""
+        reasoning = msg.get("reasoning_content") or ""
+        return {"reply": reply, "reasoning": reasoning}
     except HTTPException:
         raise
     except Exception:

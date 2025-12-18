@@ -31,7 +31,7 @@ async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict
     residual_risk = "medium"
 
     for step in range(max_steps):
-        resp = llm.chat(messages, tools=tools, stream=False)
+        resp = await llm.chat(messages, tools=tools, stream=False)
         choice = (resp.get("choices") or [{}])[0]
         msg = choice.get("message", {})
         tool_calls = msg.get("tool_calls") or []
