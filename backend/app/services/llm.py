@@ -10,6 +10,20 @@ except Exception:  # pragma: no cover
 
 load_dotenv()
 
+_shared_async_client: Any = None
+
+def _get_async_client() -> Any:
+    global _shared_async_client
+    if httpx is None:
+        return None
+    if _shared_async_client is None:
+        _shared_async_client = httpx.AsyncClient(
+            headers={},
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+            http2=True,
+        )
+    return _shared_async_client
+
 _DEFAULT_ENDPOINTS: Dict[str, str] = {
     "openai": "https://api.openai.com/v1/chat/completions",
     "siliconflow": "https://api.siliconflow.cn/v1/chat/completions",
@@ -82,8 +96,8 @@ class LLMClient:
         
         if stream:
             async def _stream_gen():
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    async with client.stream("POST", self.endpoint, headers=self._headers(), json=payload) as resp:
+                client = _get_async_client()
+                async with client.stream("POST", self.endpoint, headers=self._headers(), json=payload, timeout=self.timeout) as resp:
                         resp.raise_for_status()
                         async for line in resp.aiter_lines():
                              if not line or not line.startswith("data: "):
@@ -97,7 +111,7 @@ class LLMClient:
                                  continue
             return _stream_gen()
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(self.endpoint, headers=self._headers(), json=payload)
-            resp.raise_for_status()
-            return resp.json()
+        client = _get_async_client()
+        resp = await client.post(self.endpoint, headers=self._headers(), json=payload, timeout=self.timeout)
+        resp.raise_for_status()
+        return resp.json()

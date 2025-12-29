@@ -21,7 +21,7 @@ async def main():
         print(f"Endpoint: {llm.endpoint}")
         print(f"Model: {llm.model}")
         
-        messages = [{"role": "user", "content": "你好，请简单介绍一下你自己。"}]
+        messages = [{"role": "user", "content": ""}]
         
         print("Sending streaming request...")
         stream_gen = await llm.chat(messages, stream=True)
