@@ -90,16 +90,18 @@ class SSHConnectionManager:
     def __init__(self):
         self.connections = {}
     
-    def get_connection(self, node_name: str) -> SSHClient:
+    def get_connection(self, node_name: str, ip: str = None, username: str = None, password: str = None) -> SSHClient:
         """Get or create SSH connection for a node"""
         if node_name not in self.connections:
-            # Get node configuration from static config instead of settings
-            if node_name not in STATIC_NODE_CONFIG:
-                raise ValueError(f"Node {node_name} not configured")
+            if not ip:
+                raise ValueError(f"IP address required for new connection to {node_name}")
             
-            ip, username, password = STATIC_NODE_CONFIG[node_name]
-            self.connections[node_name] = SSHClient(ip, username, password)
-        
+            _user = username or SSH_USER
+            _pass = password or SSH_PASSWORD
+            
+            client = SSHClient(ip, _user, _pass)
+            self.connections[node_name] = client
+            
         return self.connections[node_name]
     
     def close_all(self) -> None:

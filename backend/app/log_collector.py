@@ -122,7 +122,7 @@ class LogCollector:
         except Exception as e:
             print(f"Error saving log to database: {e}")
     
-    def _collect_logs(self, node_name: str, log_type: str):
+    def _collect_logs(self, node_name: str, log_type: str, ip: str):
         """Internal method to collect logs continuously"""
         print(f"Starting log collection for {node_name}_{log_type}")
         
@@ -136,13 +136,13 @@ class LogCollector:
                 time.sleep(self.collection_interval)
                 
                 # Check if log file still exists
-                if not log_reader.check_log_file_exists(node_name, log_type):
+                if not log_reader.check_log_file_exists(node_name, log_type, ip=ip):
                     print(f"Log file {node_name}_{log_type} no longer exists, stopping collection")
                     self.stop_collection(node_name, log_type)
                     break
                 
                 # Read current log content
-                current_log_content = log_reader.read_log(node_name, log_type)
+                current_log_content = log_reader.read_log(node_name, log_type, ip=ip)
                 current_file_size = len(current_log_content)
                 
                 # Check if log file has new content

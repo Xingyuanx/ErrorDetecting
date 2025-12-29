@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional
-from .config import LOG_DIR, HADOOP_NODES
+from .config import LOG_DIR
 from .ssh_utils import ssh_manager
 
 class LogReader:
@@ -24,24 +24,30 @@ class LogReader:
         # Generate full log file path
         return f"{self.log_dir}/{base_name}-{node_name.replace('_', '')}.log"
     
-    def read_log(self, node_name: str, log_type: str) -> str:
+    def read_log(self, node_name: str, log_type: str, ip: str) -> str:
         """Read log from a specific node"""
         # Get log file path
         log_file_path = self.get_log_file_path(node_name, log_type)
         
         # Get SSH connection
-        ssh_client = ssh_manager.get_connection(node_name)
+        ssh_client = ssh_manager.get_connection(node_name, ip=ip)
         
         # Read log file content
         return ssh_client.read_file(log_file_path)
     
-    def read_all_nodes_log(self, log_type: str) -> Dict[str, str]:
+    def read_all_nodes_log(self, nodes: List[Dict[str, str]], log_type: str) -> Dict[str, str]:
         """Read log from all nodes"""
         logs = {}
         
-        for node_name in HADOOP_NODES:
+        for node in nodes:
+            node_name = node['name']
+            ip = node.get('ip')
+            if not ip:
+                logs[node_name] = "Error: IP address not found"
+                continue
+                
             try:
-                logs[node_name] = self.read_log(node_name, log_type)
+                logs[node_name] = self.read_log(node_name, log_type, ip)
             except Exception as e:
                 logs[node_name] = f"Error reading log: {str(e)}"
         
