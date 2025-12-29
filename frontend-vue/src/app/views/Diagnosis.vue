@@ -690,7 +690,23 @@ function formatError(e: any, def: string) {
   const detail = typeof d?.detail === "string" ? d.detail : "";
   const errs = Array.isArray(d?.detail?.errors) ? d.detail.errors : [];
   const msgs: string[] = [];
-  if (s) msgs.push(`HTTP ${s}${st ? " " + st : ""}`);
+
+  if (s) {
+    let prefix = `HTTP ${s}`;
+    switch (s) {
+      case 400: prefix = "请求无效 (Bad Request)"; break;
+      case 401: prefix = "会话已过期，请重新登录"; break;
+      case 403: prefix = "无权访问该诊断资源"; break;
+      case 404: prefix = "诊断服务接口未找到"; break;
+      case 500: prefix = "诊断服务器内部故障"; break;
+      case 502: prefix = "网关响应异常，诊断后端可能已掉线"; break;
+      case 503: prefix = "诊断服务目前无法处理请求"; break;
+      case 504: prefix = "诊断请求处理超时"; break;
+      default: if (st) prefix += ` ${st}`;
+    }
+    msgs.push(prefix);
+  }
+
   if (detail) msgs.push(detail);
   if (errs.length)
     msgs.push(
@@ -699,8 +715,7 @@ function formatError(e: any, def: string) {
         .filter(Boolean)
         .join("；")
     );
-  if (!msgs.length) msgs.push(r ? def : "网络异常或后端不可用");
-  if (s === 401) msgs.push("Token 已过期或未登录，请重新登录");
+  if (!msgs.length) msgs.push(r ? def : "网络连接异常，请检查后端服务状态");
   return msgs.join(" | ");
 }
 </script>

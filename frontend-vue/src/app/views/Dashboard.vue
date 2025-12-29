@@ -83,7 +83,7 @@ import CpuChart from '../components/CpuChart.vue'
 import MemoryChart from '../components/MemoryChart.vue'
 const meta = reactive({ uuid: '未选择', host: '-', ip: '-' })
 const auth = useAuthStore()
-const nodes = reactive<Array<{ name:string; ip:string; status:'running'|'warning'|'error'; cpu:string; mem:string; updated:string }>>([])
+const nodes = reactive<Array<{ name:string; ip:string; status:'healthy'|'warning'|'error'; cpu:string; mem:string; updated:string }>>([])
 const updateTime = computed(() => {
   const d = new Date()
   const y = d.getFullYear()
@@ -92,7 +92,7 @@ const updateTime = computed(() => {
   return `${y}年${m}月${day}日`
 })
 const totalCount = computed(() => nodes.length)
-const healthyCount = computed(() => nodes.filter(n => n.status==='running').length)
+const healthyCount = computed(() => nodes.filter(n => n.status==='healthy').length)
 const warningCount = computed(() => nodes.filter(n => n.status==='warning').length)
 const errorCount = computed(() => nodes.filter(n => n.status==='error').length)
 onMounted(() => {
@@ -107,8 +107,8 @@ async function loadNodes(){
     nodes.splice(0, nodes.length, ...list.map((x:any)=>({ name:x.name, ip:x.ip, status:x.status, cpu:x.cpu, mem:x.mem, updated:x.updated })))
   }catch(e:any){ /* silent */ }
 }
-function statusText(s:'running'|'warning'|'error'){ return s==='running'?'运行中':s==='warning'?'警告':'异常' }
-function statusDotClass(s:'running'|'warning'|'error'){ return s==='running'?'status-dot--running':s==='warning'?'status-dot--warning':'status-dot--error' }
+function statusText(s:'healthy'|'warning'|'error'){ return s==='healthy'?'运行中':s==='warning'?'警告':'异常' }
+function statusDotClass(s:'healthy'|'warning'|'error'){ return s==='healthy'?'status-dot--healthy':s==='warning'?'status-dot--warning':'status-dot--error' }
 async function start(name:string){ try{ await api.post(`/v1/nodes/${encodeURIComponent(name)}/start`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await loadNodes() }catch(e:any){} }
 async function stop(name:string){ try{ await api.post(`/v1/nodes/${encodeURIComponent(name)}/stop`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await loadNodes() }catch(e:any){} }
 async function remove(name:string){ try{ await api.delete(`/v1/nodes/${encodeURIComponent(name)}`, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined }); await loadNodes() }catch(e:any){} }
@@ -127,8 +127,8 @@ async function detail(name:string){ try{ await api.get(`/v1/nodes/${encodeURICom
 .text-error{ color:#dc2626 }
 .status-indicator{ display:inline-flex; align-items:center; gap:6px }
 .status-dot{ width:8px; height:8px; border-radius:50% }
-.status-dot--running{ background:#16a34a }
-.status-dot--warning{ background:#16a34a }
-.status-dot--error{ background:#16a34a }
+.status-dot--healthy{ background:#16a34a }
+.status-dot--warning{ background:#f59e0b }
+.status-dot--error{ background:#dc2626 }
 .status-text{ font-size:12px }
 </style>

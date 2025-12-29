@@ -27,10 +27,10 @@
           <input v-model.number="node_count" type="number" min="1" placeholder="节点总数 (node_count)" class="header__search-input u-mr-1" @input="onCountChange" />
           <!-- 健康状态；对应 DB 中的 health_status -->
           <select v-model="health_status" class="header__search-input">
-            <option value="running">健康</option>
-            <option value="warning">警告</option>
-            <option value="error">异常</option>
-            <option value="unknown">未知</option>
+            <option value="healthy">healthy</option>
+            <option value="warning">warning</option>
+            <option value="error">error</option>
+            <option value="unknown">unknown</option>
           </select>
         </div>
 
@@ -42,7 +42,9 @@
           <!-- ResourceManager IP -->
           <input v-model.trim="rm_ip" placeholder="RM IP" class="header__search-input u-mr-1" />
           <!-- ResourceManager 密码 -->
-          <input v-model.trim="rm_psw" type="password" placeholder="RM 密码" class="header__search-input" />
+          <input v-model.trim="rm_psw" type="password" placeholder="RM 密码" class="header__search-input u-mr-1" />
+          <!-- 集群描述 -->
+          <input v-model.trim="description" placeholder="集群描述 (可选)" class="header__search-input" />
         </div>
 
         <h4 class="u-text-gray-900 u-font-bold u-mb-1 u-mt-2">2. 节点详细配置</h4>
@@ -58,9 +60,7 @@
           <!-- SSH 用户名；对应 DB 中的 ssh_user -->
           <input v-model.trim="node.ssh_user" placeholder="SSH 用户 (ssh_user)" class="header__search-input u-mr-1" />
           <!-- SSH 密码；对应 DB 中的 ssh_password -->
-          <input v-model.trim="node.ssh_password" type="password" placeholder="SSH 密码 (ssh_password)" class="header__search-input u-mr-1" />
-          <!-- 备注/描述 (可选) -->
-          <input v-model.trim="node.description" placeholder="描述 (可选)" class="header__search-input" />
+          <input v-model.trim="node.ssh_password" type="password" placeholder="SSH 密码 (ssh_password)" class="header__search-input" />
         </div>
 
         <div class="u-mt-2">
@@ -90,12 +90,12 @@
             <td class="dashboard__table-td"><span>{{ c.healthText }}</span></td>
             <td class="dashboard__table-td">
               <button class="btn u-text-sm" @click.stop="toDashboard(c)">进入详情</button>
-              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status==='running'" @click.stop="startCluster(c.uuid)">启动集群</button>
-              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status!=='running'" @click.stop="stopCluster(c.uuid)">关闭集群</button>
+              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status==='healthy'" @click.stop="startCluster(c.uuid)">启动集群</button>
+              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status!=='healthy'" @click.stop="stopCluster(c.uuid)">关闭集群</button>
               <button class="btn u-text-sm u-ml-1" @click.stop="unregister(c.uuid)">注销集群</button>
               <button class="btn u-text-sm u-ml-1" @click.stop="discover(c.uuid)">发现角色</button>
-              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status==='running'" @click.stop="startClusterNew(c.uuid)">按集群启动</button>
-              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status!=='running'" @click.stop="stopClusterNew(c.uuid)">按集群停止</button>
+              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status==='healthy'" @click.stop="startClusterNew(c.uuid)">按集群启动</button>
+              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status!=='healthy'" @click.stop="stopClusterNew(c.uuid)">按集群停止</button>
               <button class="btn u-text-sm u-ml-1" @click.stop="syncHosts(c.uuid)">同步 hosts</button>
             </td>
           </tr>
@@ -133,11 +133,12 @@ const namenode_ip = ref('') // NameNode IP
 const namenode_psw = ref('') // NameNode 密码
 const rm_ip = ref('') // RM IP
 const rm_psw = ref('') // RM 密码
+const description = ref('') // 集群描述 (description)
 
 // 节点列表：对应 DB 中的 nodes 表结构
 // 使用 ref 而不是 reactive 来存储数组，避免响应式丢失问题
-const nodes = ref<{hostname:string; ip_address:string; ssh_user:string; ssh_password:string; description:string}[]>([
-  { hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '', description: '' }
+const nodes = ref<{hostname:string; ip_address:string; ssh_user:string; ssh_password:string}[]>([
+  { hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '' }
 ])
 // 错误提示区（中文）；显示在表单下方
 const err = ref('') // 错误提示区（中文）
@@ -154,7 +155,7 @@ watch(node_count, (newVal) => {
   if (target > current) {
     // 追加节点项至目标数量
     for (let i = current; i < target; i++) {
-      nodes.value.push({ hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '', description: '' })
+      nodes.value.push({ hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '' })
     }
   } else if (target < current) {
     // 截断数组，仅保留前 target 项
@@ -178,12 +179,13 @@ function cancelRegister() {
   namenode_psw.value = ''
   rm_ip.value = ''
   rm_psw.value = ''
+  description.value = ''
   // 重置节点列表（恢复初始 1 项配置）
-  nodes.value = [{ hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '', description: '' }]
+  nodes.value = [{ hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '' }]
 }
 
 // 健康状态中文映射
-function healthTextOf(h:string){ return h==='running'?'健康':h==='warning'?'警告':h==='error'?'异常':'未知' }
+function healthTextOf(h:string){ return h==='healthy'?'健康':h==='warning'?'警告':h==='error'?'异常':'未知' }
 // 错误格式化（中文）：
 // - 兼容后端结构化错误 detail.errors（字段/步骤），拼接为多行提示
 // - 针对常见 HTTP 状态码提供中文语义
@@ -209,17 +211,17 @@ function formatError(e: any, defaultMsg: string = '操作失败'): string {
     // 常见状态码中文映射
     let prefix = ''
     switch(s) {
-      case 400: prefix = '请求参数错误'; break
-      case 401: prefix = '认证失效，请重新登录'; break
-      case 403: prefix = '权限不足'; break
-      case 404: prefix = '请求资源不存在'; break
-      case 409: prefix = '资源冲突'; break
-      case 422: prefix = '参数校验失败'; break
-      case 500: prefix = '服务器内部错误'; break
-      case 502: prefix = '网关错误 (后端服务不可达)'; break
-      case 503: prefix = '服务暂时不可用'; break
-      case 504: prefix = '网关超时'; break
-      default: prefix = `请求失败 (${s})`
+      case 400: prefix = '请求无效 (Bad Request)，请检查输入参数'; break
+      case 401: prefix = '认证已过期，请重新登录'; break
+      case 403: prefix = '权限受限，无法执行该操作'; break
+      case 404: prefix = '未找到请求的资源 (Not Found)'; break
+      case 409: prefix = '操作冲突，资源可能已存在'; break
+      case 422: prefix = '输入验证失败，请核对数据格式'; break
+      case 500: prefix = '服务器内部错误，请联系管理员或稍后重试'; break
+      case 502: prefix = '网关错误，后端服务可能未启动'; break
+      case 503: prefix = '服务暂时不可用，请稍后再试'; break
+      case 504: prefix = '网关超时，后端响应过慢'; break
+      default: prefix = `请求异常 (${s})`
     }
     
     return detail ? `${prefix}:\n${detail}` : prefix
@@ -269,7 +271,7 @@ async function onRegister() {
   if (!name.value || !node_count.value) { err.value = '请填写集群基本信息'; return }
   // 2）节点数组类型守护：确保为数组
   if (!Array.isArray(nodes.value)) {
-    nodes.value = [{ hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '', description: '' }]
+    nodes.value = [{ hostname: '', ip_address: '', ssh_user: 'hadoop', ssh_password: '' }]
   }
   // 3）逐节点必填校验
   for (let i = 0; i < nodes.value.length; i++) {
@@ -291,12 +293,12 @@ async function onRegister() {
       namenode_psw: namenode_psw.value,
       rm_ip: rm_ip.value,
       rm_psw: rm_psw.value,
+      description: description.value,
       nodes: nodes.value.map(n => ({
         hostname: n.hostname,
         ip_address: n.ip_address,
         ssh_user: n.ssh_user,
-        ssh_password: n.ssh_password,
-        description: n.description
+        ssh_password: n.ssh_password
       }))
     }
     // 5）提交注册
