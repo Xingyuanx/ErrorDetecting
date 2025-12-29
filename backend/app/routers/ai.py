@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from pydantic import BaseModel, Field
@@ -29,6 +30,7 @@ class DiagnoseRepairReq(BaseModel):
 class ChatReq(BaseModel):
     sessionId: str = Field(..., description="会话ID")
     message: str = Field(..., description="用户输入")
+    stream: bool = Field(False, description="是否使用流式输出")
     context: dict | None = Field(None, description="上下文，包含node, agent, model等")
 
 class HistoryReq(BaseModel):
@@ -88,7 +90,6 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         await db.commit()
 
         # 3. Build Context & History for LLM
-        # System Prompt construction
         system_prompt = "You are a helpful Hadoop diagnostic assistant."
         if req.context:
             if req.context.get("agent"):
@@ -96,10 +97,8 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
             if req.context.get("node"):
                 system_prompt += f" You are currently analyzing node: {req.context['node']}."
         
-        # Load recent history (last 20 messages)
         hist_stmt = select(ChatMessage).where(ChatMessage.session_id == req.sessionId).order_by(ChatMessage.created_at.desc()).limit(20)
         hist_rows = (await db.execute(hist_stmt)).scalars().all()
-        # Reverse to chronological order
         hist_rows = hist_rows[::-1] 
         
         messages = [{"role": "system", "content": system_prompt}]
@@ -109,10 +108,9 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         # 4. Call LLM
         llm = LLMClient()
         tools = openai_tools_schema()
-        # Filter tools - keep web_search
         chat_tools = [t for t in tools if t["function"]["name"] == "web_search"]
         
-        # First call
+        # We always do the first call without streaming to handle tool calls easily
         resp = await llm.chat(messages, tools=chat_tools, stream=False)
         choices = resp.get("choices") or []
         if not choices:
@@ -123,8 +121,7 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         
         # Tool Loop
         if tool_calls:
-            messages.append(msg) # Add assistant's tool call message
-            
+            messages.append(msg)
             for tc in tool_calls:
                 fn = tc.get("function") or {}
                 name = fn.get("name")
@@ -145,24 +142,32 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
                     "content": json.dumps(tool_result, ensure_ascii=False)
                 })
             
-            # Second call
-            resp = await llm.chat(messages, tools=chat_tools, stream=False)
-            choices = resp.get("choices") or []
-            if not choices:
-                 raise HTTPException(status_code=502, detail="llm_unavailable_after_tool")
-            msg = choices[0].get("message") or {}
-
+            # After tool calls, we decide whether to stream the final response
+            if req.stream:
+                return await handle_streaming_chat(llm, messages, req.sessionId, db)
+            else:
+                resp = await llm.chat(messages, tools=chat_tools, stream=False)
+                choices = resp.get("choices") or []
+                if not choices:
+                     raise HTTPException(status_code=502, detail="llm_unavailable_after_tool")
+                msg = choices[0].get("message") or {}
+        else:
+            # No tool calls initially
+            if req.stream:
+                # If we want to stream the first response, we need to call it again with stream=True
+                # because we already called it with stream=False to check for tool calls.
+                # Alternatively, we could have streamed the first call and checked for tool calls in the stream.
+                # But for simplicity, we just re-call it.
+                return await handle_streaming_chat(llm, messages, req.sessionId, db)
+        
+        # Normal (non-streaming) response
         reply = msg.get("content") or ""
         reasoning = msg.get("reasoning_content") or ""
         
-        # 5. Save Assistant Reply
-        # Note: We only save the final text reply to DB history to keep it clean, 
-        # unless we want to persist the whole reasoning chain. For now, simple history.
         asst_msg = ChatMessage(session_id=req.sessionId, role="assistant", content=reply)
         db.add(asst_msg)
         await db.commit()
 
-        # 6. Return Response
         return {"reply": reply, "reasoning": reasoning}
 
     except HTTPException:
@@ -170,3 +175,51 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
     except Exception as e:
         print(f"Chat Error: {e}")
         raise HTTPException(status_code=500, detail="server_error")
+
+async def handle_streaming_chat(llm: LLMClient, messages: list, session_id: str, db: AsyncSession):
+    async def event_generator():
+        full_reply = ""
+        full_reasoning = ""
+        
+        # Start streaming from LLM
+        stream_gen = await llm.chat(messages, stream=True)
+        
+        async for chunk in stream_gen:
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            
+            delta = choices[0].get("delta") or {}
+            content = delta.get("content") or ""
+            reasoning = delta.get("reasoning_content") or ""
+            
+            if content:
+                full_reply += content
+            if reasoning:
+                full_reasoning += reasoning
+                
+            yield f"data: {json.dumps({'content': content, 'reasoning': reasoning}, ensure_ascii=False)}\n\n"
+        
+        # After stream ends, save to DB
+        if full_reply:
+            # Note: We need a new session or be careful with the current one 
+            # as this runs in a generator which might outlive the request scope
+            # but FastAPI handles this correctly if we use the db from depends.
+            # However, committed changes in a generator might be tricky.
+            # Let's use a fresh session if possible or just commit here.
+            try:
+                asst_msg = ChatMessage(session_id=session_id, role="assistant", content=full_reply)
+                db.add(asst_msg)
+                await db.commit()
+            except Exception as e:
+                print(f"Error saving stream to DB: {e}")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )

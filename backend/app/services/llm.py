@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Any, Dict, Iterable, List, Optional
 from dotenv import load_dotenv
 
@@ -57,8 +58,12 @@ class LLMClient:
             "Content-Type": "application/json",
         }
 
-    async def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None, stream: bool = False) -> Dict[str, Any]:
+    async def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None, stream: bool = False) -> Any:
         if self.simulate or httpx is None:
+            if stream:
+                async def _sim_stream():
+                    yield {"choices": [{"delta": {"content": "模拟流式输出：检测到错误日志，建议重启或kill相关进程"}, "index": 0}]}
+                return _sim_stream()
             return {
                 "choices": [
                     {
@@ -70,10 +75,28 @@ class LLMClient:
                     }
                 ]
             }
-        payload: Dict[str, Any] = {"model": self.model, "messages": messages}
+        payload: Dict[str, Any] = {"model": self.model, "messages": messages, "stream": stream}
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
+        
+        if stream:
+            async def _stream_gen():
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    async with client.stream("POST", self.endpoint, headers=self._headers(), json=payload) as resp:
+                        resp.raise_for_status()
+                        async for line in resp.aiter_lines():
+                             if not line or not line.startswith("data: "):
+                                 continue
+                             data_str = line[6:].strip()
+                             if data_str == "[DONE]":
+                                 break
+                             try:
+                                 yield json.loads(data_str)
+                             except:
+                                 continue
+            return _stream_gen()
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(self.endpoint, headers=self._headers(), json=payload)
             resp.raise_for_status()
