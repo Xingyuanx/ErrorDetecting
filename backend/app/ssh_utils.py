@@ -1,3 +1,5 @@
+import os
+import socket
 import paramiko
 from typing import Optional, TextIO, Dict, Tuple
 from .config import SSH_PORT, SSH_TIMEOUT
@@ -27,13 +29,17 @@ class SSHClient:
         self.client = paramiko.SSHClient()
         # Automatically add host keys
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # Connect to the server
+        sock = None
+        socks5 = os.getenv("TS_SOCKS5_SERVER") or os.getenv("TAILSCALE_SOCKS5_SERVER")
+        if socks5:
+            sock = _socks5_connect(socks5, self.hostname, self.port, SSH_TIMEOUT)
         self.client.connect(
             hostname=self.hostname,
             username=self.username,
             password=self.password,
             port=self.port,
-            timeout=SSH_TIMEOUT
+            timeout=SSH_TIMEOUT,
+            sock=sock,
         )
     
     def execute_command(self, command: str) -> tuple:
@@ -120,3 +126,71 @@ class SSHConnectionManager:
 
 # Create a global SSH connection manager instance
 ssh_manager = SSHConnectionManager()
+
+
+def _parse_hostport(value: str, default_port: int) -> tuple[str, int]:
+    s = (value or "").strip()
+    if not s:
+        return ("127.0.0.1", default_port)
+    if s.startswith("http://"):
+        s = s[7:]
+    if s.startswith("socks5://"):
+        s = s[9:]
+    if "/" in s:
+        s = s.split("/", 1)[0]
+    if ":" in s:
+        host, port_s = s.rsplit(":", 1)
+        try:
+            return (host.strip() or "127.0.0.1", int(port_s.strip()))
+        except Exception:
+            return (host.strip() or "127.0.0.1", default_port)
+    return (s, default_port)
+
+
+def _socks5_connect(proxy: str, dest_host: str, dest_port: int, timeout: int) -> socket.socket:
+    proxy_host, proxy_port = _parse_hostport(proxy, 1080)
+    s = socket.create_connection((proxy_host, proxy_port), timeout=timeout)
+    s.settimeout(timeout)
+    s.sendall(b"\x05\x01\x00")
+    resp = s.recv(2)
+    if len(resp) != 2 or resp[0] != 0x05 or resp[1] != 0x00:
+        s.close()
+        raise RuntimeError("socks5_auth_failed")
+    atyp = 0x03
+    addr = dest_host.encode("utf-8")
+    try:
+        packed = socket.inet_pton(socket.AF_INET, dest_host)
+        atyp = 0x01
+        addr_field = packed
+    except Exception:
+        try:
+            packed6 = socket.inet_pton(socket.AF_INET6, dest_host)
+            atyp = 0x04
+            addr_field = packed6
+        except Exception:
+            if len(addr) > 255:
+                s.close()
+                raise RuntimeError("socks5_domain_too_long")
+            addr_field = bytes([len(addr)]) + addr
+    port_field = int(dest_port).to_bytes(2, "big", signed=False)
+    req = b"\x05\x01\x00" + bytes([atyp]) + addr_field + port_field
+    s.sendall(req)
+    head = s.recv(4)
+    if len(head) != 4 or head[0] != 0x05:
+        s.close()
+        raise RuntimeError("socks5_bad_reply")
+    rep = head[1]
+    if rep != 0x00:
+        s.close()
+        raise RuntimeError(f"socks5_connect_failed:{rep}")
+    bnd_atyp = head[3]
+    if bnd_atyp == 0x01:
+        s.recv(4)
+    elif bnd_atyp == 0x04:
+        s.recv(16)
+    elif bnd_atyp == 0x03:
+        ln = s.recv(1)
+        if ln:
+            s.recv(ln[0])
+    s.recv(2)
+    return s
