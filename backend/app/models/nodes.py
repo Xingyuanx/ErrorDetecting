@@ -13,7 +13,7 @@ class Node(Base):
     hostname: Mapped[str] = mapped_column(String(100))
     ip_address: Mapped[str] = mapped_column(INET)
     ssh_user: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    ssh_password: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    ssh_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # description: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="unknown")
     cpu_usage: Mapped[float | None] = mapped_column(Float, nullable=True)

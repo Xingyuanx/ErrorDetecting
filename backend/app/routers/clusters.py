@@ -28,6 +28,7 @@ class ClusterCreateRequest(BaseModel):
     type: str
     node_count: int
     health_status: str
+    description: str | None = None
     namenode_ip: str | None = None
     namenode_psw: str | None = None
     rm_ip: str | None = None
@@ -58,10 +59,11 @@ async def list_clusters(user=Depends(get_current_user), db: AsyncSession = Depen
                 "type": c.type,
                 "node_count": c.node_count,
                 "health_status": c.health_status,
-                "namenode_ip": c.namenode_ip,
+                "namenode_ip": (str(c.namenode_ip) if c.namenode_ip else None),
                 "namenode_psw": c.namenode_psw,
-                "rm_ip": c.rm_ip,
+                "rm_ip": (str(c.rm_ip) if c.rm_ip else None),
                 "rm_psw": c.rm_psw,
+                "description": c.description,
             })
         return {"clusters": data}
     except HTTPException:
@@ -77,6 +79,19 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
         name = _get_username(user)
         if name not in {"admin", "ops"}:
             raise HTTPException(status_code=403, detail="not_allowed")
+        
+        # 参数校验：类型与状态
+        valid_types = {"hadoop", "spark", "kubernetes"}
+        valid_health = {"healthy", "warning", "error", "unknown"}
+        errors: list[dict] = []
+        if req.type not in valid_types:
+            errors.append({"field": "type", "message": "类型不合法，应为 hadoop/spark/kubernetes", "step": "参数校验"})
+        if req.health_status not in valid_health:
+            errors.append({"field": "health_status", "message": "状态不合法，应为 healthy/warning/error/unknown", "step": "参数校验"})
+        if req.node_count is None or req.node_count < 0:
+            errors.append({"field": "node_count", "message": "节点总数必须为非负整数", "step": "参数校验"})
+        if errors:
+            raise HTTPException(status_code=400, detail={"errors": errors})
         
         # 检查集群名称是否已存在
         exists = await db.execute(select(Cluster.id).where(Cluster.name == req.name).limit(1))
@@ -96,7 +111,7 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
             namenode_psw=req.namenode_psw,
             rm_ip=req.rm_ip,
             rm_psw=req.rm_psw,
-            description=None,
+            description=req.description,
             config_info={}, # 保留为空字典或根据需要填充
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
@@ -114,7 +129,7 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
                 ip_address=n_req.ip_address,
                 ssh_user=n_req.ssh_user,
                 ssh_password=n_req.ssh_password,
-                description=n_req.description,
+                # description=n_req.description, # Database schema missing description column
                 status="unknown",
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
@@ -140,7 +155,8 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
     except HTTPException:
         raise
     except Exception as e:
-        # 这里可以记录日志
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="server_error")
 
 
