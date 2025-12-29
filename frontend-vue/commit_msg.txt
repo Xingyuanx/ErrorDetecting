@@ -1,0 +1,14 @@
+feat: 优化集群管理逻辑与状态显示
+
+git status
+   - 将 ClusterList.vue 中的健康状态选择器选项从中文改为英文（healthy/warning/error/unknown），以符合后端 API 校验要求。
+   - 同步更新 ClusterList.vue 和 Dashboard.vue 中的业务逻辑，统一使用新的 healthy 状态值。
+git status
+
+2. 集群描述字段优化：
+status .env.development .vite docs index.html node_modules package-lock.json package.json src tsconfig.json vite.config.ts 
+   - 更新前端 Payload 构造逻辑，确保 description 字段位于集群对象顶层并正确发送至后端。
+
+3. 错误提示与联调支持：
+git status Diagnosis.vue 的错误处理能力，针对常见的 HTTP 状态码（401, 403, 500等）提供详细的中文语义提示。
+   - 在 docs 目录下新增《集群描述后端联调指南.md》， description 字段的接口契约。
