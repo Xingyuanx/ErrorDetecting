@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
 from sqlalchemy import TIMESTAMP
 from . import Base
 
@@ -13,6 +13,10 @@ class Cluster(Base):
     type: Mapped[str] = mapped_column(String(50))
     node_count: Mapped[int] = mapped_column(Integer, default=0)
     health_status: Mapped[str] = mapped_column(String(20), default="unknown")
+    namenode_ip: Mapped[str | None] = mapped_column(INET, nullable=True)
+    namenode_psw: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    rm_ip: Mapped[str | None] = mapped_column(INET, nullable=True)
+    rm_psw: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     config_info: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[str] = mapped_column(TIMESTAMP(timezone=True))
@@ -27,6 +31,10 @@ class Cluster(Base):
             "type": self.type,
             "node_count": self.node_count,
             "health_status": self.health_status,
+            "namenode_ip": self.namenode_ip,
+            "namenode_psw": self.namenode_psw,
+            "rm_ip": self.rm_ip,
+            "rm_psw": self.rm_psw,
             "description": self.description,
             "config_info": self.config_info,
             "created_at": self.created_at.isoformat() if self.created_at else None,
