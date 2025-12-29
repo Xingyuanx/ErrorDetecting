@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func, text
 from ..db import get_db
 from ..models.clusters import Cluster
+from ..models.nodes import Node
 from ..deps.auth import get_current_user
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -11,45 +12,27 @@ import uuid as uuidlib
 router = APIRouter()
 
 
-def _health_to_contract(h: str) -> str:
-    if h == "healthy":
-        return "running"
-    return h or "unknown"
-
-
-def _health_from_contract(h: str) -> str:
-    if h == "running":
-        return "healthy"
-    return h if h in {"healthy", "warning", "error", "unknown"} else "unknown"
-
-
-def _pick_primary(ci: dict | None) -> tuple[str | None, str | None]:
-    if not isinstance(ci, dict):
-        return None, None
-    ph = ci.get("primary_host")
-    pi = ci.get("primary_ip")
-    if ph or pi:
-        return ph, pi
-    nodes = ci.get("nodes")
-    if isinstance(nodes, list) and nodes:
-        for n in nodes:
-            svcs = n.get("services") or []
-            if isinstance(svcs, list) and ("NameNode" in svcs or "ResourceManager" in svcs):
-                return n.get("hostname"), n.get("ip")
-        return nodes[0].get("hostname"), nodes[0].get("ip")
-    return None, None
-
-
 def _get_username(u) -> str:
     return getattr(u, "username", None) or (u.get("username") if isinstance(u, dict) else None)
 
 
+class NodeCreateItem(BaseModel):
+    hostname: str
+    ip_address: str
+    ssh_user: str
+    ssh_password: str
+    description: str | None = None
+
 class ClusterCreateRequest(BaseModel):
-    uuid: str
-    host: str
-    ip: str
-    count: int
-    health: str
+    name: str
+    type: str
+    node_count: int
+    health_status: str
+    namenode_ip: str | None = None
+    namenode_psw: str | None = None
+    rm_ip: str | None = None
+    rm_psw: str | None = None
+    nodes: list[NodeCreateItem]
 
 
 @router.get("/clusters")
@@ -69,13 +52,16 @@ async def list_clusters(user=Depends(get_current_user), db: AsyncSession = Depen
         rows = result.scalars().all()
         data = []
         for c in rows:
-            host, ip = _pick_primary(c.config_info)
             data.append({
                 "uuid": str(c.uuid),
-                "host": host or c.name,
-                "ip": ip or None,
-                "count": c.node_count,
-                "health": _health_to_contract(c.health_status),
+                "name": c.name,
+                "type": c.type,
+                "node_count": c.node_count,
+                "health_status": c.health_status,
+                "namenode_ip": c.namenode_ip,
+                "namenode_psw": c.namenode_psw,
+                "rm_ip": c.rm_ip,
+                "rm_psw": c.rm_psw,
             })
         return {"clusters": data}
     except HTTPException:
@@ -91,36 +77,51 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
         name = _get_username(user)
         if name not in {"admin", "ops"}:
             raise HTTPException(status_code=403, detail="not_allowed")
-        errors: list[dict] = []
-        try:
-            uuid_obj = uuidlib.UUID(req.uuid)
-        except Exception:
-            errors.append({"field": "uuid", "message": "UUID 格式不正确"})
-            uuid_obj = None
-        if not req.host:
-            errors.append({"field": "host", "message": "主机名不能为空"})
-        if not req.ip:
-            errors.append({"field": "ip", "message": "IP 不能为空"})
-        if req.count <= 0:
-            errors.append({"field": "count", "message": "节点数量必须为正数"})
-        if errors:
-            raise HTTPException(status_code=400, detail={"errors": errors})
-        exists = await db.execute(select(Cluster.id).where(Cluster.uuid == str(uuid_obj)).limit(1))
+        
+        # 检查集群名称是否已存在
+        exists = await db.execute(select(Cluster.id).where(Cluster.name == req.name).limit(1))
         if exists.scalars().first():
-            raise HTTPException(status_code=409, detail={"errors": [{"field": "uuid", "message": "UUID 已存在"}]})
+             # 使用指南建议的错误格式
+            raise HTTPException(status_code=400, detail={"errors": [{"field": "name", "message": "集群名称已存在"}]})
+
+        new_uuid = str(uuidlib.uuid4())
+        
         c = Cluster(
-            uuid=str(uuid_obj),
-            name=req.host,
-            type="Hadoop",
-            node_count=req.count,
-            health_status=_health_from_contract(req.health),
+            uuid=new_uuid,
+            name=req.name,
+            type=req.type,
+            node_count=req.node_count,
+            health_status=req.health_status,
+            namenode_ip=req.namenode_ip,
+            namenode_psw=req.namenode_psw,
+            rm_ip=req.rm_ip,
+            rm_psw=req.rm_psw,
             description=None,
-            config_info={"primary_host": req.host, "primary_ip": req.ip},
+            config_info={}, # 保留为空字典或根据需要填充
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
         )
         db.add(c)
-        await db.flush()
+        await db.flush() # 获取 c.id
+
+        # 插入节点
+        for n_req in req.nodes:
+            node_uuid = str(uuidlib.uuid4())
+            node = Node(
+                uuid=node_uuid,
+                cluster_id=c.id,
+                hostname=n_req.hostname,
+                ip_address=n_req.ip_address,
+                ssh_user=n_req.ssh_user,
+                ssh_password=n_req.ssh_password,
+                description=n_req.description,
+                status="unknown",
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+            )
+            db.add(node)
+
+        # 建立用户映射
         uid_res = await db.execute(text("SELECT id FROM users WHERE username=:un LIMIT 1"), {"un": name})
         uid_row = uid_res.first()
         role_key = "admin" if name == "admin" else "operator"
@@ -128,11 +129,18 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
         rid_row = rid_res.first()
         if uid_row and rid_row:
             await db.execute(text("INSERT INTO user_cluster_mapping(user_id, cluster_id, role_id) VALUES (:uid,:cid,:rid) ON CONFLICT (user_id, cluster_id) DO NOTHING"), {"uid": uid_row[0], "cid": c.id, "rid": rid_row[0]})
+        
         await db.commit()
-        return {"ok": True}
+        
+        return {
+            "status": "success",
+            "message": "集群注册成功",
+            "uuid": new_uuid
+        }
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        # 这里可以记录日志
         raise HTTPException(status_code=500, detail="server_error")
 
 
