@@ -5,6 +5,7 @@ from ..db import get_db
 from ..models.clusters import Cluster
 from ..models.nodes import Node
 from ..deps.auth import get_current_user
+from ..services.ssh_probe import check_ssh_connectivity
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import uuid as uuidlib
@@ -99,6 +100,25 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
              # 使用指南建议的错误格式
             raise HTTPException(status_code=400, detail={"errors": [{"field": "name", "message": "集群名称已存在"}]})
 
+        # SSH 连通性预检查
+        ssh_errors: list[dict] = []
+        for idx, n_req in enumerate(req.nodes):
+            ip = getattr(n_req, "ip_address", None) or getattr(n_req, "ip", None)
+            user_ = getattr(n_req, "ssh_user", None)
+            pwd_ = getattr(n_req, "ssh_password", None)
+            ok, err = check_ssh_connectivity(str(ip), str(user_ or ""), str(pwd_ or ""))
+            if not ok:
+                ssh_errors.append({
+                    "field": f"nodes[{idx}].ssh",
+                    "message": "注册失败：SSH不可连接",
+                    "step": "connect",
+                    "detail": err,
+                    "hostname": getattr(n_req, "hostname", None),
+                    "ip": str(ip) if ip is not None else None,
+                })
+        if ssh_errors:
+            raise HTTPException(status_code=400, detail={"errors": ssh_errors})
+        
         new_uuid = str(uuidlib.uuid4())
         
         c = Cluster(
