@@ -615,33 +615,77 @@ async function send() {
   err.value = "";
   const userMsg = { role: "user" as const, content: msg };
   messages.value.push(userMsg);
+  
+  // 添加一个空的助手消息占位，用于流式填充内容
+  const assistantMsg = reactive({ role: "assistant" as const, content: "", reasoning: "" });
+  messages.value.push(assistantMsg);
+  
   try {
-    const r = await api.post(
-      "/v1/ai/chat",
-      {
+    const response = await fetch("/api/v1/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
+      },
+      body: JSON.stringify({
         sessionId: sessionIdOf(),
         message: msg,
+        stream: true, // 开启流式模式
         context: {
           node: selectedNode.value || "",
           agent: agent.value,
           model: model.value,
           webSearch: useWebSearch.value,
         },
-      },
-      {
-        headers: auth.token
-          ? { Authorization: `Bearer ${auth.token}` }
-          : undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    
+    if (!reader) throw new Error("无法读取响应流");
+
+    inputMsg.value = ""; // 发送成功后清空输入框
+
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      // 最后一项可能是不完整的行，留到下一次处理
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+        
+        const jsonStr = trimmed.slice(6);
+        try {
+          const data = JSON.parse(jsonStr);
+          if (data.content) {
+            assistantMsg.content += data.content;
+          }
+          if (data.reasoning) {
+            assistantMsg.reasoning += data.reasoning;
+          }
+          // 实时滚动到底部
+          await nextTick();
+          scrollToLatest();
+        } catch (e) {
+          console.error("解析流数据失败", e, jsonStr);
+        }
       }
-    );
-    const reply = String(r.data?.reply || "");
-    const reasoning = r.data?.reasoning;
-    messages.value.push({ role: "assistant", content: reply, reasoning });
-    await nextTick();
-    scrollToLatest();
-    inputMsg.value = "";
+    }
   } catch (e: any) {
     err.value = formatError(e, "消息发送失败");
+    // 如果失败了，移除占位消息
+    messages.value.pop();
   } finally {
     sending.value = false;
   }
