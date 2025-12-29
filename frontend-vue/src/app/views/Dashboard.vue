@@ -26,9 +26,9 @@
       </div>
     </div>
     <div class="grid grid-cols-2 gap-4">
-      <div><CpuChart :cluster="meta.uuid" /></div>
-      <div><MemoryChart :cluster="meta.uuid" /></div>
-    </div>
+        <div><CpuChart :cluster="meta.uuid" /></div>
+        <div><MemoryChart :cluster="meta.uuid" /></div>
+      </div>
     <article class="layout__card u-mt-4">
       <div class="layout__card-header">
         <h3 class="layout__card-title">节点状态详情</h3>
@@ -102,6 +102,7 @@ onMounted(() => {
 })
 async function loadNodes(){
   try{
+    // 统一改用 meta.uuid 作为查询参数
     const r = await api.get('/v1/nodes', { params: { cluster: meta.uuid }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     const list = Array.isArray(r.data?.nodes) ? r.data.nodes : []
     nodes.splice(0, nodes.length, ...list.map((x:any)=>({ name:x.name, ip:x.ip, status:x.status, cpu:x.cpu, mem:x.mem, updated:x.updated })))

@@ -239,11 +239,11 @@
               >
                 <div class="chat-role">{{ roleLabel(m.role) }}</div>
                 <div class="chat-text">
-                  <div>{{ m.content }}</div>
-                  <details v-if="m.reasoning" class="u-mt-1">
+                  <details v-if="m.reasoning" class="u-mb-2">
                     <summary>推理过程</summary>
                     <pre style="white-space: pre-wrap">{{ m.reasoning }}</pre>
                   </details>
+                  <div>{{ m.content }}</div>
                 </div>
               </div>
             </div>
@@ -298,7 +298,15 @@
                 ></div>
               </div>
             </div>
-            <div class="u-text-sm u-text-gray-700 u-mt-1">{{ err }}</div>
+            <!-- 新增：显眼的错误信息提示区域 -->
+            <div v-if="err" class="chat-error-alert">
+              <span class="chat-error-icon">⚠️</span>
+              <div class="chat-error-content">
+                <div class="chat-error-title">诊断助手提示</div>
+                <div class="chat-error-msg">{{ err }}</div>
+              </div>
+              <button class="btn-close" @click="err = ''">×</button>
+            </div>
           </div>
         </article>
       </aside>
@@ -331,6 +339,7 @@ const filters = reactive<{
 });
 type Group = {
   id: string;
+  uuid: string;
   name: string;
   open: boolean;
   nodes: Array<{ name: string; status: string }>;
@@ -393,6 +402,7 @@ async function loadClusters() {
     const mapped: Group[] = list
       .map((x: any) => ({
         id: String(x.uuid || x.id || x.host || x.name || ""),
+        uuid: String(x.uuid || x.id || ""),
         name: String(x.host || x.name || x.uuid || ""),
         open: false,
         nodes: [],
@@ -407,12 +417,13 @@ async function loadClusters() {
     loadingSidebar.value = false;
   }
 }
-async function loadNodesFor(clusterName: string) {
-  const g = groups.find((x) => x.name === clusterName);
+async function loadNodesFor(clusterUuid: string) {
+  const g = groups.find((x) => x.uuid === clusterUuid);
   if (!g) return;
+  const clusterName = g.name;
   try {
     const r = await api.get("/v1/nodes", {
-      params: { cluster: clusterName },
+      params: { cluster: clusterUuid },
       headers: auth.token
         ? { Authorization: `Bearer ${auth.token}` }
         : undefined,
@@ -443,14 +454,17 @@ async function loadNodesFor(clusterName: string) {
 }
 async function toggleGroup(g: Group) {
   g.open = !g.open;
-  if (g.open && g.nodes.length === 0) await loadNodesFor(g.name);
+  if (g.open && g.nodes.length === 0) await loadNodesFor(g.uuid);
 }
 async function loadFaultInfo() {
   faultErr.value = "";
   fault.value = null;
   const params: any = {};
   if (selectedNode.value) params.node = selectedNode.value;
-  else if (filters.cluster) params.cluster = filters.cluster;
+  else if (filters.cluster) {
+    const g = groups.find(x => x.name === filters.cluster);
+    params.cluster = g ? g.uuid : filters.cluster;
+  }
   try {
     const r = await api.get("/v1/faults/summary", {
       params,
@@ -625,6 +639,7 @@ async function send() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "text/event-stream",
         ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
       },
       body: JSON.stringify({
@@ -632,10 +647,10 @@ async function send() {
         message: msg,
         stream: true, // 开启流式模式
         context: {
-          node: selectedNode.value || "",
-          agent: agent.value,
-          model: model.value,
           webSearch: useWebSearch.value,
+          agent: agent.value,
+          node: selectedNode.value || "",
+          model: model.value,
         },
       }),
     });
@@ -652,6 +667,7 @@ async function send() {
     inputMsg.value = ""; // 发送成功后清空输入框
 
     let buffer = "";
+    let hasReceivedContent = false;
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -670,9 +686,11 @@ async function send() {
           const data = JSON.parse(jsonStr);
           if (data.content) {
             assistantMsg.content += data.content;
+            hasReceivedContent = true;
           }
           if (data.reasoning) {
             assistantMsg.reasoning += data.reasoning;
+            hasReceivedContent = true;
           }
           // 实时滚动到底部
           await nextTick();
@@ -681,6 +699,12 @@ async function send() {
           console.error("解析流数据失败", e, jsonStr);
         }
       }
+    }
+
+    // 如果流结束了但没有收到任何内容，说明后端可能没有返回有效回复
+    if (!hasReceivedContent) {
+      err.value = "后端已响应但未返回任何有效诊断内容。可能原因：模型处理超时、当前上下文无相关日志、或后端逻辑异常。";
+      messages.value.pop(); // 移除空的占位消息
     }
   } catch (e: any) {
     err.value = formatError(e, "消息发送失败");
@@ -1163,5 +1187,53 @@ function formatError(e: any, def: string) {
   .chat-role {
     width: 56px;
   }
+}
+
+/* 新增：聊天错误提示框样式 */
+.chat-error-alert {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  animation: slideIn 0.3s ease-out;
+}
+.chat-error-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.chat-error-content {
+  flex: 1;
+}
+.chat-error-title {
+  font-weight: 600;
+  color: #991b1b;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.chat-error-msg {
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.btn-close {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.btn-close:hover {
+  color: #b91c1c;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
