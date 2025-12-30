@@ -153,12 +153,35 @@ const summary = computed(() => {
 </script>
 
 <style scoped>
-.layout__card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 8px 24px rgba(16,24,40,0.06) }
-.layout__card-header { padding: 12px 16px; border-bottom: 1px solid #e5e7eb }
-.layout__card-title { font-size: 14px; font-weight: 600 }
+.layout__card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(16,24,40,0.06) }
+.layout__card-header { padding: 12px 16px; border-bottom: 1px solid var(--border) }
+.layout__card-title { font-size: 14px; font-weight: 600; color: var(--text-primary) }
 .layout__card-body { padding: 16px }
 .layout__grid { display: grid; gap: 16px }
 .layout__grid--3 { grid-template-columns: 1fr 1fr 1fr }
-.btn-link { background: transparent; border-color: transparent; color: #2563eb }
+.btn-link { background: transparent; border-color: transparent; color: var(--accent) }
 .filter-actions { display: flex; justify-content: flex-end; align-items: center; }
+</style>
+
+<style>
+/* 夜间模式特定样式：黑底白字 */
+.dark-mode .layout__card {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #334155;
+}
+.dark-mode .layout__card-header {
+  border-bottom-color: #334155;
+}
+.dark-mode .layout__card-title {
+  color: #ffffff !important;
+}
+.dark-mode select.u-border {
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #334155;
+}
+.dark-mode #log-filter-summary {
+  color: #cccccc !important;
+}
 </style>
