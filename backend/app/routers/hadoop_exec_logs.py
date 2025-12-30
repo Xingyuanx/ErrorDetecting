@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
 from ..db import get_db
 from ..models.hadoop_exec_logs import HadoopExecLog
+from ..models.users import User
 from ..deps.auth import get_current_user
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -42,10 +43,25 @@ def _parse_time(s: str | None) -> datetime | None:
 @router.get("/exec-logs")
 async def list_exec_logs(user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        result = await db.execute(select(HadoopExecLog).order_by(HadoopExecLog.start_time.desc()))
-        rows = result.scalars().all()
-        return {"items": [r.to_dict() for r in rows]}
-    except Exception:
+        stmt = (
+            select(HadoopExecLog, User.username)
+            .join(User, HadoopExecLog.from_user_id == User.id)
+            .order_by(HadoopExecLog.start_time.desc())
+        )
+        result = await db.execute(stmt)
+        rows = result.all()
+        
+        items = []
+        for log, username in rows:
+            d = log.to_dict()
+            d["username"] = username
+            if "from_user_id" in d:
+                del d["from_user_id"]
+            items.append(d)
+            
+        return {"items": items}
+    except Exception as e:
+        print(f"Error listing exec logs: {e}")
         raise HTTPException(status_code=500, detail="server_error")
 
 
