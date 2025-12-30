@@ -38,7 +38,10 @@
           </div>
           <div>
             <label class="u-text-sm u-font-medium u-text-gray-700">来源：</label>
-            <input v-model.trim="q.source" id="source-id" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="如：alice、ops 等" />
+            <select v-model="q.source" id="source-id" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
+              <option value="">全部来源</option>
+              <option v-for="s in sourcesOpts" :key="s" :value="s">{{ s }}</option>
+            </select>
           </div>
           <div>
             <label class="u-text-sm u-font-medium u-text-gray-700">时间范围</label>
@@ -95,6 +98,7 @@ const q = reactive({ level:'', cluster:'', node:'', op:'', source:'', timeRange:
 const clustersOpts = ref<string[]>([])
 const nodesOpts = ref<string[]>([])
 const opsOpts = ref<string[]>([])
+const sourcesOpts = ref<string[]>([])
 function rangeFromNow(r:string){
   const now = Date.now()
   const span = r==='1h'?60*60*1000:r==='6h'?6*60*60*1000:r==='24h'?24*60*60*1000:r==='7d'?7*24*60*60*1000:0
@@ -119,6 +123,7 @@ async function load(){
     if (!clustersOpts.value.length) clustersOpts.value = Array.from(new Set(items.map((d:any)=>d.cluster).filter(Boolean)))
     if (!nodesOpts.value.length) nodesOpts.value = Array.from(new Set(items.map((d:any)=>d.node).filter(Boolean)))
     if (!opsOpts.value.length) opsOpts.value = Array.from(new Set(items.map((d:any)=>d.op).filter(Boolean)))
+    if (!sourcesOpts.value.length) sourcesOpts.value = Array.from(new Set(normalized.map((d:any)=>d.source).filter(Boolean)))
   }catch(e:any){ err.value = e?.response?.data?.detail || '加载失败' }
   finally{ loading.value = false }
 }
