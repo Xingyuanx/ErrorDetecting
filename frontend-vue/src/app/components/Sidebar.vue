@@ -119,8 +119,8 @@
           <RouterLink
             v-if="can([Roles.admin])"
             class="sidebar__item sidebar__item--sub"
-            to="/audit-logs"
-            :class="{ 'is-active': isActive('/audit-logs') }"
+            to="/operation-logs"
+            :class="{ 'is-active': isActive('/operation-logs') }"
             title="操作日志"
           >
             <i class="fas fa-history sidebar__icon"></i>
