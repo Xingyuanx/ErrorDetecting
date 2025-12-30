@@ -118,21 +118,48 @@
             role="menuitem"
             >账号管理</RouterLink
           >
-          <!-- From Uiverse.io by vinodjangid07 -->
-          <button class="Btn logout-btn" @click.prevent="onLogout">
-            <div class="sign">
-              <svg viewBox="0 0 512 512">
-                <path
-                  d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"
-                ></path>
-              </svg>
-            </div>
-            <div class="text">退出登录</div>
-          </button>
+          <a
+            class="header__user-dropdown-item"
+            href="javascript:;"
+            role="menuitem"
+            @click.prevent="showLockModal = true"
+            >锁定屏幕</a
+          >
+          <a
+            class="header__user-dropdown-item"
+            href="javascript:;"
+            role="menuitem"
+            @click.prevent="onLogout"
+            >退出登录</a
+          >
         </div>
       </div>
     </div>
   </header>
+
+  <!-- 锁屏密码设置弹窗 -->
+  <Transition name="fade">
+    <div v-if="showLockModal" class="modal-overlay" @click.self="showLockModal = false">
+      <div class="modal-content">
+        <h3 class="modal-title">设置锁屏密码</h3>
+        <input
+          v-model="lockPasswordInput"
+          type="password"
+          class="modal-input"
+          placeholder="请输入锁屏密码"
+          @keyup.enter="handleLock"
+        />
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn--secondary" @click="showLockModal = false">
+            取消
+          </button>
+          <button class="modal-btn modal-btn--primary" @click="handleLock">
+            锁定
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -159,6 +186,17 @@ function onLogout() {
   router.replace({ name: "login" });
 }
 const ui = useUIStore();
+const showLockModal = ref(false);
+const lockPasswordInput = ref('');
+
+function handleLock() {
+  if (lockPasswordInput.value) {
+    ui.lock(lockPasswordInput.value);
+    showLockModal.value = false;
+    lockPasswordInput.value = '';
+  }
+}
+
 function toggleSidebar() {
   ui.toggleSidebar();
 }
@@ -531,82 +569,94 @@ function closeAll() {}
   background: var(--hover);
 }
 
-/* From Uiverse.io by kennyotsu-monochromia */
-.logout-btn {
-  margin: 8px 12px; /* 增加一些外边距以适应菜单 */
-}
-.Btn {
-  --black: #000000;
-  --ch-black: #141414;
-  --eer-black: #1b1b1b;
-  --night-rider: #2e2e2e;
-  --white: #ffffff;
-  --af-white: #f3f3f3;
-  --ch-white: #e1e1e1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 45px;
-  height: 45px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition-duration: 0.3s;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.199);
-  background-color: var(--af-white);
-}
-
-/* plus sign */
-.sign {
-  width: 100%;
-  transition-duration: 0.3s;
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2000;
 }
 
-.sign svg {
-  width: 17px;
+.modal-content {
+  background: var(--surface, #fff);
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.sign svg path {
-  fill: var(--night-rider);
-}
-/* text */
-.text {
-  position: absolute;
-  right: 0%;
-  width: 0%;
-  opacity: 0;
-  color: var(--night-rider);
-  font-size: 1.2em;
+.modal-title {
+  font-size: 18px;
   font-weight: 600;
-  transition-duration: 0.3s;
-  white-space: nowrap;
-}
-/* hover effect on button width */
-.Btn:hover {
-  width: 125px;
-  border-radius: 5px;
-  transition-duration: 0.3s;
+  margin-bottom: 20px;
+  color: var(--text-primary);
 }
 
-.Btn:hover .sign {
-  width: 30%;
-  transition-duration: 0.3s;
-  padding-left: 20px;
+.modal-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--bg-light, #f9fafb);
+  margin-bottom: 24px;
+  outline: none;
+  transition: all 0.2s;
 }
-/* hover effect button's text */
-.Btn:hover .text {
-  opacity: 1;
-  width: 70%;
-  transition-duration: 0.3s;
-  padding-right: 10px;
+
+.modal-input:focus {
+  border-color: var(--accent, #58bc82);
+  box-shadow: 0 0 0 3px rgba(88, 188, 130, 0.1);
 }
-/* button click effect*/
-.Btn:active {
-  transform: translate(2px, 2px);
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.modal-btn--secondary {
+  background: var(--bg-light, #f3f4f6);
+  color: var(--text-secondary, #4b5563);
+}
+
+.modal-btn--secondary:hover {
+  background: var(--hover, #e5e7eb);
+}
+
+.modal-btn--primary {
+  background: var(--accent, #58bc82);
+  color: white;
+}
+
+.modal-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

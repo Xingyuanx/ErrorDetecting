@@ -5,78 +5,80 @@
         <h2 class="layout__page-title">故障诊断</h2>
       </div>
     </div>
-    <div class="diag-layout">
-      <aside class="diag-sidebar">
-        <div class="diag-filter">
-          <form class="diag-filter-grid">
-            <div>
-              <label class="u-text-sm u-font-medium u-text-gray-700"
-                >日志级别</label
-              >
-              <select
-                v-model="filters.level"
-                class="u-w-full u-p-2 u-border u-rounded u-mt-1"
-              >
-                <option value="">全部级别</option>
-                <option value="debug">DEBUG</option>
-                <option value="info">INFO</option>
-                <option value="warn">WARN</option>
-                <option value="error">ERROR</option>
-              </select>
-            </div>
-            <div>
-              <label class="u-text-sm u-font-medium u-text-gray-700"
-                >来源集群</label
-              >
-              <select
-                v-model="filters.cluster"
-                class="u-w-full u-p-2 u-border u-rounded u-mt-1"
-              >
-                <option value="">全部集群</option>
-                <option v-for="c in clusterOptions" :key="c" :value="c">
-                  {{ c }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="u-text-sm u-font-medium u-text-gray-700"
-                >来源节点</label
-              >
-              <select
-                v-model="filters.node"
-                class="u-w-full u-p-2 u-border u-rounded u-mt-1"
-              >
-                <option value="">全部节点</option>
-                <option v-for="n in nodesOptions" :key="n" :value="n">
-                  {{ n }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="u-text-sm u-font-medium u-text-gray-700"
-                >时间范围</label
-              >
-              <select
-                v-model="filters.timeRange"
-                class="u-w-full u-p-2 u-border u-rounded u-mt-1"
-              >
-                <option value="">全部时间</option>
-                <option value="1h">最近1小时</option>
-                <option value="6h">最近6小时</option>
-                <option value="24h">最近24小时</option>
-                <option value="7d">最近7天</option>
-              </select>
-            </div>
-            <div class="filter-actions">
-              <button type="button" class="btn btn-link" @click="clearFilters">
-                清除筛选
-              </button>
-            </div>
-          </form>
-          <div class="u-text-sm u-text-gray-700 u-mt-2">
-            {{ filterSummary }}
+
+    <!-- 筛选与资源导航：调整为上方全宽显示 -->
+    <aside class="diag-sidebar u-mb-4">
+      <div class="diag-filter">
+        <form class="diag-filter-grid">
+          <div>
+            <label class="u-text-sm u-font-medium u-text-gray-700"
+              >日志级别</label
+            >
+            <select
+              v-model="filters.level"
+              class="u-w-full u-p-2 u-border u-rounded u-mt-1"
+            >
+              <option value="">全部级别</option>
+              <option value="debug">DEBUG</option>
+              <option value="info">INFO</option>
+              <option value="warn">WARN</option>
+              <option value="error">ERROR</option>
+            </select>
           </div>
+          <div>
+            <label class="u-text-sm u-font-medium u-text-gray-700"
+              >来源集群</label
+            >
+            <select
+              v-model="filters.cluster"
+              class="u-w-full u-p-2 u-border u-rounded u-mt-1"
+            >
+              <option value="">全部集群</option>
+              <option v-for="c in clusterOptions" :key="c" :value="c">
+                {{ c }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="u-text-sm u-font-medium u-text-gray-700"
+              >来源节点</label
+            >
+            <select
+              v-model="filters.node"
+              class="u-w-full u-p-2 u-border u-rounded u-mt-1"
+            >
+              <option value="">全部节点</option>
+              <option v-for="n in nodesOptions" :key="n" :value="n">
+                {{ n }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="u-text-sm u-font-medium u-text-gray-700"
+              >时间范围</label
+            >
+            <select
+              v-model="filters.timeRange"
+              class="u-w-full u-p-2 u-border u-rounded u-mt-1"
+            >
+              <option value="">全部时间</option>
+              <option value="1h">最近1小时</option>
+              <option value="6h">最近6小时</option>
+              <option value="24h">最近24小时</option>
+              <option value="7d">最近7天</option>
+            </select>
+          </div>
+          <div class="filter-actions">
+            <button type="button" class="btn btn-link" @click="clearFilters">
+              清除筛选
+            </button>
+          </div>
+        </form>
+        <div class="u-text-sm u-text-gray-700 u-mt-2">
+          {{ filterSummary }}
         </div>
+      </div>
+      <div class="diag-resources-row">
         <div class="diag-group" v-for="g in filteredGroups" :key="g.id">
           <button
             class="diag-group-toggle"
@@ -103,47 +105,27 @@
             </li>
           </ul>
         </div>
-        <div class="diag-tabs">
-          <button
-            :class="['btn', tab === 'live' ? 'btn--primary' : '']"
-            type="button"
-            @click="tab = 'live'"
-          >
-            实时日志
-          </button>
-          <button
-            :class="['btn', tab === 'auto' ? 'btn--primary' : '']"
-            type="button"
-            @click="tab = 'auto'"
-          >
-            自动刷新中
-          </button>
-        </div>
-        <div class="diag-tip">请选择集群或节点以显示相关日志</div>
-        <article class="layout__card u-mt-2">
-          <div class="layout__card-header">
-            <h3 class="layout__card-title">故障信息</h3>
-          </div>
-          <div class="layout__card-body">
-            <div class="fault-row">
-              <span class="fault-key">故障代码</span
-              ><span class="fault-val">{{ fault?.code || "—" }}</span>
-            </div>
-            <div class="fault-row">
-              <span class="fault-key">发生时间</span
-              ><span class="fault-val">{{ fault?.time || "—" }}</span>
-            </div>
-            <div class="fault-row">
-              <span class="fault-key">影响范围</span
-              ><span class="fault-val">{{ fault?.scope || "—" }}</span>
-            </div>
-            <div class="u-text-sm u-text-error u-mt-1" v-if="faultErr">
-              {{ faultErr }}
-            </div>
-          </div>
-        </article>
-      </aside>
+      </div>
+      <div class="diag-tabs">
+        <button
+          :class="['btn', tab === 'live' ? 'btn--primary' : '']"
+          type="button"
+          @click="tab = 'live'"
+        >
+          实时日志
+        </button>
+        <button
+          :class="['btn', tab === 'auto' ? 'btn--primary' : '']"
+          type="button"
+          @click="tab = 'auto'"
+        >
+          自动刷新中
+        </button>
+      </div>
+      <div class="diag-tip">请选择集群或节点以显示相关日志</div>
+    </aside>
 
+    <div class="diag-layout">
       <aside class="diag-preview">
         <article class="layout__card">
           <div class="layout__card-header">
@@ -157,7 +139,7 @@
               <div class="preview-meta">
                 当前节点：<strong>{{ selectedNode }}</strong>
               </div>
-              <div class="u-overflow-x-auto u-mt-2">
+              <div class="u-mt-2 table-container">
                 <table class="dashboard__table">
                   <thead class="dashboard__table-head">
                     <tr>
@@ -243,7 +225,7 @@
                     <summary>推理过程</summary>
                     <pre style="white-space: pre-wrap">{{ m.reasoning }}</pre>
                   </details>
-                  <div>{{ m.content }}</div>
+                  <div style="white-space: pre-wrap">{{ m.content }}</div>
                 </div>
               </div>
             </div>
@@ -347,9 +329,6 @@ type Group = {
 };
 const groups = reactive<Group[]>([]);
 const loadingSidebar = ref(false);
-type FaultInfo = { code: string; time: string; scope: string };
-const fault = ref<FaultInfo | null>(null);
-const faultErr = ref("");
 const selectedNode = ref("");
 const clusterOptions = computed(() => groups.map((g) => g.name));
 const nodesOptions = computed(() => {
@@ -456,33 +435,6 @@ async function toggleGroup(g: Group) {
   g.open = !g.open;
   if (g.open && g.nodes.length === 0) await loadNodesFor(g.uuid);
 }
-async function loadFaultInfo() {
-  faultErr.value = "";
-  fault.value = null;
-  const params: any = {};
-  if (selectedNode.value) params.node = selectedNode.value;
-  else if (filters.cluster) {
-    const g = groups.find(x => x.name === filters.cluster);
-    params.cluster = g ? g.uuid : filters.cluster;
-  }
-  try {
-    const r = await api.get("/v1/faults/summary", {
-      params,
-      headers: auth.token
-        ? { Authorization: `Bearer ${auth.token}` }
-        : undefined,
-    });
-    const d = r?.data?.fault || r?.data?.data || null;
-    if (d)
-      fault.value = {
-        code: String(d.code || ""),
-        time: String(d.time || ""),
-        scope: String(d.scope || ""),
-      };
-  } catch (e: any) {
-    faultErr.value = formatError(e, "故障信息加载失败");
-  }
-}
 function selectNode(n: string) {
   selectedNode.value = n;
 }
@@ -541,11 +493,11 @@ async function loadPreviewLogs() {
       ? r.data.logs
       : [];
     previewLogs.value = items.map((d: any, i: number) => ({
-      id: d.id || i,
-      time: d.time || new Date().toISOString(),
+      id: d.log_id || d.id || i,
+      time: d.log_time || d.time || d.timestamp || new Date().toISOString(),
       level: String(d.level || "info").toLowerCase(),
-      source: String(d.source || d.node || ""),
-      message: d.message || "",
+      source: String(d.title || d.source || d.node_host || d.node || d.host || ""),
+      message: d.info || d.message || "",
     }));
   } catch (e: any) {
     previewLogs.value = [];
@@ -725,11 +677,9 @@ async function generateReport() {
 onMounted(async () => {
   await loadClusters();
   await loadHistory();
-  await loadFaultInfo();
 });
 watch(selectedNode, () => {
   loadHistory();
-  loadFaultInfo();
   loadPreviewLogs();
 });
 watch(
@@ -747,7 +697,7 @@ watch(
 watch(
   () => filters.cluster,
   () => {
-    loadFaultInfo();
+    // 集群变更逻辑
   }
 );
 function formatError(e: any, def: string) {
@@ -808,21 +758,21 @@ function formatError(e: any, def: string) {
 }
 .diag-layout {
   display: grid;
-  grid-template-columns: var(--diag-sidebar-width, 30%) 1fr var(
-      --diag-assistant-width,
-      30%
-    );
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
+}
+.diag-preview, .diag-assistant {
+  min-width: 0;
 }
 .diag-sidebar {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  margin-bottom: 16px;
 }
 .diag-filter {
   padding-bottom: 12px;
@@ -830,8 +780,8 @@ function formatError(e: any, def: string) {
 }
 .diag-filter-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
   margin-top: 8px;
 }
 .diag-filter-grid > div {
@@ -852,8 +802,18 @@ function formatError(e: any, def: string) {
   justify-content: flex-end;
   margin-top: 8px;
 }
+.dashboard__table th { white-space: nowrap; }
+.diag-resources-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
 .diag-group {
-  margin-top: 8px;
+  flex: 0 0 auto;
+  min-width: 200px;
 }
 .diag-group-toggle {
   width: 100%;
@@ -926,22 +886,6 @@ function formatError(e: any, def: string) {
   color: var(--text-muted);
   font-size: 12px;
 }
-.fault-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px dashed var(--border);
-}
-.fault-row:last-child {
-  border-bottom: none;
-}
-.fault-key {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.fault-val {
-  font-weight: 600;
-}
 
 .diag-preview {
   display: flex;
@@ -966,6 +910,19 @@ function formatError(e: any, def: string) {
   color: var(--text-muted);
   font-size: 14px;
 }
+.table-container {
+  max-height: 580px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.dashboard__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--active);
+  box-shadow: 0 1px 0 var(--border);
+}
 .preview-body {
   background: var(--hover);
   border: 1px solid var(--border);
@@ -977,7 +934,6 @@ function formatError(e: any, def: string) {
 .diag-assistant {
   display: flex;
   flex-direction: column;
-  margin-right: 16px;
 }
 .diag-assistant .layout__card {
   display: flex;
@@ -999,7 +955,7 @@ function formatError(e: any, def: string) {
 }
 .assist-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .assist-field {

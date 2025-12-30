@@ -1,6 +1,6 @@
 <template>
   <section class="layout__section">
-    <div class="layout__page-header"><h2 class="layout__page-title">日志查询</h2></div>
+    <div class="layout__page-header"><h2 class="layout__page-title">集群日志</h2></div>
     <article class="layout__card">
       <div class="layout__card-header"><h3 class="layout__card-title">搜索条件</h3></div>
       <div class="layout__card-body">
@@ -74,11 +74,16 @@
         </tr>
       </tbody>
     </table>
-    <div class="u-mt-2">
-      <button id="log-prev" class="btn" @click="prev">上一页</button>
-      <button id="log-next" class="btn u-ml-1" @click="next">下一页</button>
-      <select id="log-page-size" v-model.number="size" class="header__search-input u-ml-1"><option :value="10">10</option><option :value="20">20</option><option :value="50">50</option></select>
-      <span id="log-page-info" class="u-ml-1">第 {{ page }} 页</span>
+    <div class="u-mt-2 pagination-bar">
+      <button id="log-prev" class="btn" :disabled="page <= 1" @click="prev">上一页</button>
+      <input type="number" v-model.number="page" min="1" :max="maxPage" class="header__search-input u-ml-1" style="width: 80px; text-align: center;" />
+      <button id="log-next" class="btn u-ml-1" :disabled="page >= maxPage" @click="next">下一页</button>
+      <select id="log-page-size" v-model.number="size" class="header__search-input u-ml-1">
+        <option :value="10">10条/页</option>
+        <option :value="20">20条/页</option>
+        <option :value="50">50条/页</option>
+      </select>
+      <span id="log-page-info" class="u-ml-1">共 {{ maxPage }} 页</span>
     </div>
   </section>
 </template>
@@ -117,7 +122,16 @@ async function load(){
     if (q.timeRange) params.time_from = rangeFromNow(q.timeRange)
     const r = await api.get('/v1/logs', { params, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     const items = Array.isArray(r.data?.items) ? r.data.items : (Array.isArray(r.data?.logs)? r.data.logs : [])
-    const normalized = items.map((d:any)=>({ ...d, source: String((d?.source ?? d?.user ?? '') || '') }))
+    const normalized = items.map((d:any)=>({
+      id: d.log_id || d.id,
+      time: d.log_time || d.timestamp || '',
+      level: d.level || 'info',
+      cluster: d.cluster_name || d.cluster || '',
+      node: d.node_host || d.node || d.host || '',
+      op: d.op || '',
+      source: d.title || d.source || d.service || '',
+      message: d.info || d.message || ''
+    }))
     data.value = normalized
     total.value = Number(r.data?.total ?? items.length)
     if (!clustersOpts.value.length) clustersOpts.value = Array.from(new Set(items.map((d:any)=>d.cluster).filter(Boolean)))
@@ -129,16 +143,29 @@ async function load(){
 }
 function apply(manual=false) { page.value = 1 }
 function clear() { q.level=''; q.cluster=''; q.node=''; q.op=''; q.source=''; q.timeRange=''; page.value=1 }
-function prev() { if (page.value>1) { page.value-=1; load() } }
-function next() { const max = Math.max(1, Math.ceil(total.value/size.value)); if (page.value<max) { page.value+=1; load() } }
+const maxPage = computed(() => Math.max(1, Math.ceil(total.value / size.value)))
+function prev() { if (page.value > 1) page.value -= 1 }
+function next() { if (page.value < maxPage.value) page.value += 1 }
 const pageData = computed(() => {
   const s = q.source.trim().toLowerCase()
   let list = data.value
   if (s) list = list.filter(d => String(d.source || '').toLowerCase().includes(s))
   return list
 })
-watch(() => ({...q}), () => { apply(); load() }, { deep: true })
-watch(size, () => { page.value = 1; load() })
+watch(() => ({...q}), () => { 
+  if (page.value === 1) load()
+  else page.value = 1 
+}, { deep: true })
+watch(page, (val) => {
+  if (typeof val !== 'number' || isNaN(val)) return
+  if (val < 1) { page.value = 1; return }
+  if (val > maxPage.value) { page.value = maxPage.value; return }
+  load()
+})
+watch(size, () => { 
+  if (page.value === 1) load()
+  else page.value = 1 
+})
 onMounted(()=>{ load() })
 const summary = computed(() => {
   const parts = [] as string[]
@@ -153,35 +180,14 @@ const summary = computed(() => {
 </script>
 
 <style scoped>
-.layout__card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(16,24,40,0.06) }
-.layout__card-header { padding: 12px 16px; border-bottom: 1px solid var(--border) }
-.layout__card-title { font-size: 14px; font-weight: 600; color: var(--text-primary) }
+.layout__card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 8px 24px rgba(16,24,40,0.06) }
+.layout__card-header { padding: 12px 16px; border-bottom: 1px solid #e5e7eb }
+.layout__card-title { font-size: 14px; font-weight: 600 }
 .layout__card-body { padding: 16px }
 .layout__grid { display: grid; gap: 16px }
 .layout__grid--3 { grid-template-columns: 1fr 1fr 1fr }
-.btn-link { background: transparent; border-color: transparent; color: var(--accent) }
+.btn-link { background: transparent; border-color: transparent; color: #2563eb }
 .filter-actions { display: flex; justify-content: flex-end; align-items: center; }
-</style>
-
-<style>
-/* 夜间模式特定样式：黑底白字 */
-.dark-mode .layout__card {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-color: #334155;
-}
-.dark-mode .layout__card-header {
-  border-bottom-color: #334155;
-}
-.dark-mode .layout__card-title {
-  color: #ffffff !important;
-}
-.dark-mode select.u-border {
-  background: #1a1a1a;
-  color: #ffffff;
-  border-color: #334155;
-}
-.dark-mode #log-filter-summary {
-  color: #cccccc !important;
-}
+.pagination-bar { display: flex; justify-content: center; align-items: center; }
+.dashboard__table th { white-space: nowrap; }
 </style>

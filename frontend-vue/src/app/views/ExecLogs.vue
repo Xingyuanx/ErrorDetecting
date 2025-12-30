@@ -2,14 +2,14 @@
   <section class="layout__section">
     <div class="layout__page-header exec-header">
       <div>
-        <h2 class="layout__page-title">执行日志</h2>
+        <h2 class="layout__page-title">集群操作日志</h2>
         <div class="layout__page-subtitle">查看与管理修复执行记录，支持完整后端同步</div>
       </div>
       <div class="header-actions">
         <button class="btn" type="button" @click="refresh">刷新</button>
         <button class="btn btn--primary u-ml-1" type="button" @click="openCreate=true">新增记录</button>
-        <button class="btn u-ml-1" type="button" :disabled="!selected" @click="openEdit()">编辑记录</button>
-        <button class="btn u-ml-1" type="button" :disabled="!selected" @click="delSelected()">删除记录</button>
+        <button class="btn u-ml-1" type="button" :disabled="selected === null" @click="openEdit()">编辑记录</button>
+        <button class="btn u-ml-1" type="button" :disabled="selected === null" @click="delSelected()">删除记录</button>
       </div>
     </div>
 
@@ -25,13 +25,12 @@
       <div class="layout__card-body">
         <form @submit.prevent="save">
           <div class="form-grid">
-            <input v-model.trim="form.id" placeholder="执行ID" class="header__search-input" />
-            <input v-model.trim="form.faultId" placeholder="故障ID" class="header__search-input" />
-            <select v-model="form.cmdType" class="header__search-input"><option>shell</option><option>hdfs</option><option>yarn</option></select>
+            <input v-model.trim="form.clusterName" placeholder="集群名称" class="header__search-input" />
+            <input v-model.trim="form.username" placeholder="用户" class="header__search-input" />
+            <input v-model.trim="form.description" placeholder="描述" class="header__search-input" />
             <select v-model="form.status" class="header__search-input"><option>running</option><option>success</option><option>failed</option></select>
             <input v-model.trim="form.start" placeholder="开始时间 如 2025-11-07 10:20:03" class="header__search-input" />
             <input v-model.trim="form.end" placeholder="结束时间 如 2025-11-07 10:22:35 或留空" class="header__search-input" />
-            <input v-model.number="form.code" placeholder="退出码 如 0 或留空" class="header__search-input" />
           </div>
           <div class="u-mt-2">
             <button class="btn btn--primary" type="submit">保存</button>
@@ -49,74 +48,60 @@ import { reactive, ref, onMounted } from 'vue'
 import api from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import ExecLogsTable from '../components/ExecLogsTable.vue'
-type RecordItem = { id:string; faultId:string; cmdType:string; status:'running'|'success'|'failed'; start:string; end:string|''; code:number|null }
+type RecordItem = { id:number; clusterName:string; username:string; description:string; faultId:string; cmdType:string; status:'running'|'success'|'failed'; start:string; end:string|''; code:number|null }
 const auth = useAuthStore()
 const records = reactive<RecordItem[]>([])
-const selected = ref('')
+const selected = ref<number|null>(null)
 const openCreate = ref(false)
 const openEditForm = ref(false)
 const err = ref('')
 const loading = ref(false)
-const form = reactive<RecordItem>({ id:'', faultId:'', cmdType:'shell', status:'running', start:'', end:'', code:null })
+const form = reactive<RecordItem>({ id:0, clusterName:'', username:'', description:'', faultId:'', cmdType:'shell', status:'running', start:'', end:'', code:null })
 
 function select(r: RecordItem){ selected.value = r.id }
 function editRow(r: RecordItem){ selected.value = r.id; openCreate.value=false; openEditForm.value=true; Object.assign(form, r) }
 function openEdit(){ const r = records.find(x=>x.id===selected.value); if (r) editRow(r) }
-function delSelected(){ if (selected.value) del(selected.value) }
+function delSelected(){ if (selected.value !== null) del(selected.value) }
 
-async function del(id:string){
+async function del(id:number){
   try{
-    await api.delete(`/v1/exec-logs/${encodeURIComponent(id)}`, { 
+    await api.delete(`/v1/exec-logs/${id}`, { 
       headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined 
     })
     const i = records.findIndex(x=>x.id===id)
     if (i>=0) { 
       records.splice(i,1)
-      if (selected.value===id) selected.value='' 
+      if (selected.value===id) selected.value=null 
     }
   }catch(e:any){ 
     err.value = '删除失败：' + (e.response?.data?.detail || e.message || '网络错误')
   }
 }
 
-function cancelForm(){ openCreate.value=false; openEditForm.value=false; err.value='' }
+function cancelForm(){ openCreate.value=false; openEditForm.value=false; err.value=''; Object.assign(form, { id:0, clusterName:'', username:'', description:'', faultId:'', cmdType:'shell', status:'running', start:'', end:'', code:null }) }
 
 async function save(){
   err.value=''
-  if (!form.id || !form.faultId || !form.cmdType || !form.status || !form.start) { err.value='请完整填写信息'; return }
-  const exists = records.find(x=>x.id===form.id)
+  if (!form.clusterName || !form.start) { err.value='请完整填写信息'; return }
+  
   const payload = { 
-    id: form.id, 
-    faultId: form.faultId, 
-    cmdType: form.cmdType, 
-    status: form.status, 
-    start: form.start, 
-    end: form.end, 
-    code: form.code 
+    from_user_id: auth.user?.id || 0,
+    cluster_name: form.clusterName,
+    description: form.description,
+    fault_id: form.faultId, 
+    command_type: form.cmdType, 
+    execution_status: form.status, 
+    start_time: form.start.replace(' ', 'T'), 
+    end_time: form.end ? form.end.replace(' ', 'T') : null, 
+    exit_code: form.code 
   }
   
   try{
     if (openCreate.value) {
-      if (exists) { err.value='执行ID已存在'; return }
-      await api.post('/v1/exec-logs', {
-        exec_id: payload.id,
-        fault_id: payload.faultId,
-        command_type: payload.cmdType,
-        execution_status: payload.status,
-        start_time: payload.start,
-        end_time: payload.end || null,
-        exit_code: payload.code
-      }, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+      await api.post('/v1/exec-logs', payload, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     } else if (openEditForm.value) {
-      if (!exists) { err.value='目标记录不存在'; return }
-      await api.put(`/v1/exec-logs/${encodeURIComponent(form.id)}`, {
-        fault_id: payload.faultId,
-        command_type: payload.cmdType,
-        execution_status: payload.status,
-        start_time: payload.start,
-        end_time: payload.end || null,
-        exit_code: payload.code
-      }, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+      if (selected.value === null) { err.value='目标记录不存在'; return }
+      await api.put(`/v1/exec-logs/${selected.value}`, payload, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     }
     await load()
     cancelForm()
@@ -136,17 +121,20 @@ async function load(){
     })
     const items = Array.isArray(r.data?.items) ? r.data.items : (Array.isArray(r.data?.exec_logs) ? r.data.exec_logs : [])
     const normalized: RecordItem[] = items.map((d:any)=>({
-      id: d.exec_id || d.id,
-      faultId: d.fault_id,
-      cmdType: d.command_type || d.cmdType,
-      status: d.execution_status || d.status,
-      start: (d.start_time || d.start || '').replace('T',' ').slice(0,19),
+      id: d.id,
+      clusterName: d.cluster_name || '',
+      username: d.username || d.user_name || d.user?.username || '',
+      description: d.description || '',
+      faultId: d.fault_id || '',
+      cmdType: d.command_type || '',
+      status: d.execution_status || 'running',
+      start: (d.start_time || '').replace('T',' ').slice(0,19),
       end: d.end_time ? String(d.end_time).replace('T',' ').slice(0,19) : '',
       code: d.exit_code ?? null
     }))
     records.splice(0, records.length, ...normalized)
   }catch(e:any){
-    err.value = '加载执行日志失败：' + (e.response?.data?.detail || e.message || '网络错误')
+    err.value = '加载集群操作日志失败：' + (e.response?.data?.detail || e.message || '网络错误')
     records.splice(0, records.length)
   } finally { 
     loading.value = false 

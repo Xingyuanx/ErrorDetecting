@@ -93,10 +93,6 @@
               <button class="btn u-text-sm u-ml-1" :disabled="c.health_status==='healthy'" @click.stop="startCluster(c.uuid)">启动集群</button>
               <button class="btn u-text-sm u-ml-1" :disabled="c.health_status!=='healthy'" @click.stop="stopCluster(c.uuid)">关闭集群</button>
               <button class="btn u-text-sm u-ml-1" @click.stop="unregister(c.uuid)">注销集群</button>
-              <button class="btn u-text-sm u-ml-1" @click.stop="discover(c.uuid)">发现角色</button>
-              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status==='healthy'" @click.stop="startClusterNew(c.uuid)">按集群启动</button>
-              <button class="btn u-text-sm u-ml-1" :disabled="c.health_status!=='healthy'" @click.stop="stopClusterNew(c.uuid)">按集群停止</button>
-              <button class="btn u-text-sm u-ml-1" @click.stop="syncHosts(c.uuid)">同步 hosts</button>
             </td>
           </tr>
         </tbody>
@@ -319,18 +315,18 @@ async function unregister(id: string) {
   }
   catch(e:any){ err.value = formatError(e, '注销失败') }
 }
-// 启动（旧接口）：POST /api/v1/clusters/{id}/start
+// 启动：POST /api/v1/ops/clusters/{id}/start
 async function startCluster(id: string) {
   try{
-    await api.post(`/v1/clusters/${encodeURIComponent(id)}/start`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    await api.post(`/v1/ops/clusters/${encodeURIComponent(id)}/start`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     await load()
   }
   catch(e:any){ err.value = formatError(e, '启动失败') }
 }
-// 停止（旧接口）：POST /api/v1/clusters/{id}/stop
+// 停止：POST /api/v1/ops/clusters/{id}/stop
 async function stopCluster(id: string) {
   try{
-    await api.post(`/v1/clusters/${encodeURIComponent(id)}/stop`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
+    await api.post(`/v1/ops/clusters/${encodeURIComponent(id)}/stop`, {}, { headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
     await load()
   }
   catch(e:any){ err.value = formatError(e, '关闭失败') }
@@ -342,46 +338,4 @@ function toDashboard(c: any) {
   router.push({ name: 'dashboard' })
 }
 onMounted(()=>{ load() })
-// Hadoop 扩展接口：发现角色/按集群启动/按集群停止/同步 hosts
-// 接口采用统一的返回结构（summary + warnings），失败时尽量拼接详细信息提升可读性
-async function discover(id:string){
-  try{
-    const r = await api.post('/v1/hadoop/cluster/discover', {}, { params: { cluster: id }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const warnings: string[] = Array.isArray(r.data?.warnings) ? r.data.warnings : []
-    err.value = (r.data?.summary || '') + (warnings.length? ' | '+warnings.join('；') : '')
-  }catch(e:any){
-    const d = e?.response?.data; const w = Array.isArray(d?.warnings)? d.warnings : []
-    err.value = (d?.summary || d?.detail || '发现失败') + (w.length? ' | '+w.join('；') : '')
-  }
-}
-async function startClusterNew(id:string){
-  try{
-    const r = await api.post('/v1/hadoop/cluster/start', {}, { params: { cluster: id }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const warnings: string[] = Array.isArray(r.data?.warnings) ? r.data.warnings : []
-    err.value = (r.data?.summary || '启动完成') + (warnings.length? ' | '+warnings.join('；') : '')
-  }catch(e:any){
-    const d = e?.response?.data; const w = Array.isArray(d?.warnings)? d.warnings : []
-    err.value = (d?.summary || d?.detail || '启动失败') + (w.length? ' | '+w.join('；') : '')
-  } finally { await load() }
-}
-async function stopClusterNew(id:string){
-  try{
-    const r = await api.post('/v1/hadoop/cluster/stop', {}, { params: { cluster: id }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const warnings: string[] = Array.isArray(r.data?.warnings) ? r.data.warnings : []
-    err.value = (r.data?.summary || '停止完成') + (warnings.length? ' | '+warnings.join('；') : '')
-  }catch(e:any){
-    const d = e?.response?.data; const w = Array.isArray(d?.warnings)? d.warnings : []
-    err.value = (d?.summary || d?.detail || '停止失败') + (w.length? ' | '+w.join('；') : '')
-  } finally { await load() }
-}
-async function syncHosts(id:string){
-  try{
-    const r = await api.post('/v1/hadoop/cluster/sync-hosts', {}, { params: { cluster: id }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const warnings: string[] = Array.isArray(r.data?.warnings) ? r.data.warnings : []
-    err.value = (r.data?.summary || '同步完成') + (warnings.length? ' | '+warnings.join('；') : '')
-  }catch(e:any){
-    const d = e?.response?.data; const w = Array.isArray(d?.warnings)? d.warnings : []
-    err.value = (d?.summary || d?.detail || '同步失败') + (w.length? ' | '+w.join('；') : '')
-  }
-}
 </script>

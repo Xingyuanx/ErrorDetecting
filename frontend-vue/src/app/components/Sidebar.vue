@@ -14,6 +14,17 @@
         </span>
       </div>
       <RouterLink
+        v-if="can([Roles.admin, Roles.operator])"
+        class="sidebar__item"
+        to="/diagnosis"
+        :class="{ 'is-active': isActive('/diagnosis') }"
+        title="故障诊断"
+      >
+        <i class="fas fa-microscope sidebar__icon"></i>
+        <span class="sidebar__text">故障诊断</span>
+      </RouterLink>
+
+      <RouterLink
         class="sidebar__item"
         to="/cluster-list"
         :class="{ 'is-active': isActive('/cluster-list') }"
@@ -30,61 +41,18 @@
         title="故障日志"
       >
         <i class="fas fa-clipboard-list sidebar__icon"></i>
-        <span class="sidebar__text">故障日志</span>
+        <span class="sidebar__text">集群日志</span>
       </RouterLink>
 
       <RouterLink
         class="sidebar__item"
-        to="/exec-logs"
-        :class="{ 'is-active': isActive('/exec-logs') }"
-        title="执行日志"
+        to="/hadoop-exec-logs"
+        :class="{ 'is-active': isActive('/hadoop-exec-logs') }"
+        title="集群操作日志"
       >
         <i class="fas fa-terminal sidebar__icon"></i>
-        <span class="sidebar__text">执行日志</span>
+        <span class="sidebar__text">集群操作日志</span>
       </RouterLink>
-
-      <RouterLink
-        v-if="can([Roles.admin, Roles.operator])"
-        class="sidebar__item"
-        to="/diagnosis"
-        :class="{ 'is-active': isActive('/diagnosis') }"
-        title="故障诊断"
-      >
-        <i class="fas fa-microscope sidebar__icon"></i>
-        <span class="sidebar__text">故障诊断</span>
-      </RouterLink>
-
-      <!-- 系统配置 (子菜单) -->
-      <div
-        v-if="can([Roles.admin, Roles.operator])"
-        class="sidebar__sub-menu"
-        :class="{ 'is-opened': isOpened('1') && !ui.sidebarHidden }"
-      >
-        <div
-          class="sidebar__sub-menu-title"
-          @click="toggleMenu('1')"
-          title="系统配置"
-        >
-          <i class="fas fa-sliders-h sidebar__icon"></i>
-          <span class="sidebar__text">系统配置</span>
-          <i
-            v-if="!ui.sidebarHidden"
-            class="fas fa-chevron-down sidebar__arrow"
-            :class="{ 'is-rotated': isOpened('1') }"
-          ></i>
-        </div>
-        <div class="sidebar__sub-menu-content">
-          <RouterLink
-            class="sidebar__item sidebar__item--sub"
-            to="/alert-config"
-            :class="{ 'is-active': isActive('/alert-config') }"
-            title="告警配置"
-          >
-            <i class="fas fa-bell sidebar__icon"></i>
-            <span class="sidebar__text">告警配置</span>
-          </RouterLink>
-        </div>
-      </div>
 
       <!-- 角色权限控制 (子菜单) -->
       <div
@@ -121,10 +89,10 @@
             class="sidebar__item sidebar__item--sub"
             to="/operation-logs"
             :class="{ 'is-active': isActive('/operation-logs') }"
-            title="操作日志"
+            title="系统操作日志"
           >
             <i class="fas fa-history sidebar__icon"></i>
-            <span class="sidebar__text">操作日志</span>
+            <span class="sidebar__text">系统操作日志</span>
           </RouterLink>
         </div>
       </div>

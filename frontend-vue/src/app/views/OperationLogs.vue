@@ -2,7 +2,7 @@
   <section class="layout__section" aria-labelledby="operation-logs-title">
     <header class="layout__page-header">
       <div>
-        <h2 id="operation-logs-title" class="layout__page-title">操作日志</h2>
+        <h2 id="operation-logs-title" class="layout__page-title">系统操作日志</h2>
         <p class="layout__page-subtitle">记录用户操作与系统事件</p>
       </div>
       <div class="layout__page-actions">
@@ -24,7 +24,6 @@
               <tr>
                 <th class="dashboard__table-th" scope="col">时间</th>
                 <th class="dashboard__table-th" scope="col">用户</th>
-                <th class="dashboard__table-th" scope="col">动作</th>
                 <th class="dashboard__table-th" scope="col">详情</th>
               </tr>
             </thead>
@@ -32,11 +31,10 @@
               <tr v-for="log in logs" :key="log.id" class="dashboard__table-row">
                 <td class="dashboard__table-td"><time :datetime="log.timestamp">{{ formatTime(log.timestamp) }}</time></td>
                 <td class="dashboard__table-td">{{ log.user }}</td>
-                <td class="dashboard__table-td">{{ log.action }}</td>
                 <td class="dashboard__table-td">{{ log.detail }}</td>
               </tr>
               <tr v-if="logs.length === 0" class="dashboard__table-row">
-                <td colspan="4" class="dashboard__table-td u-text-center">暂无操作记录</td>
+                <td colspan="3" class="dashboard__table-td u-text-center">暂无操作记录</td>
               </tr>
             </tbody>
           </table>
@@ -55,7 +53,6 @@ interface OperationLogItem {
   id: string
   timestamp: string
   user: string
-  action: string
   detail: string
 }
 
@@ -77,18 +74,17 @@ async function loadLogs() {
   loading.value = true
   err.value = ''
   try {
-    const r = await api.get('/v1/operation-logs', {
+    const r = await api.get('/v1/sys-exec-logs', {
       headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined
     })
     
-    // 适配可能的不同数据结构
+    // 适配新的数据结构
     const items = Array.isArray(r.data?.items) ? r.data.items : (Array.isArray(r.data?.operation_logs) ? r.data.operation_logs : [])
     
     const normalized: OperationLogItem[] = items.map((d: any) => ({
-      id: d.id || d.operation_id,
-      timestamp: d.timestamp || d.created_at || d.time,
-      user: d.user || d.username || d.operator,
-      action: d.action || d.operation,
+      id: d.operation_id || d.id,
+      timestamp: d.operation_time || d.timestamp || d.created_at || d.time,
+      user: d.user || d.username || d.operator || `User ${d.user_id}`,
       detail: d.detail || d.description || d.content
     }))
     

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '../lib/api'
 
-type User = { username: string; role: 'admin'|'operator'|'observer' }
+type User = { id: number; username: string; role: 'admin'|'operator'|'observer' }
 
 function makeDemoToken() {
   const payload = { sub: 'demo-admin', role: 'admin', iat: Date.now(), exp: Date.now() + 12 * 60 * 60 * 1000 }
@@ -25,8 +25,7 @@ export const useAuthStore = defineStore('auth', {
     role: (s) => s.user?.role || null,
     defaultPage: (s) => {
       const r = s.user?.role
-      if (r === 'admin') return 'cluster-list'
-      if (r === 'operator') return 'cluster-list'
+      if (r === 'admin' || r === 'operator') return 'diagnosis'
       if (r === 'observer') return 'cluster-list'
       return 'login'
     }
@@ -55,7 +54,7 @@ export const useAuthStore = defineStore('auth', {
       if (username === '123' && password === '123') {
         const role: 'admin' = 'admin'
         const token = makeDemoToken()
-        this.user = { username: 'demo-admin', role }
+        this.user = { id: 1, username: 'demo-admin', role }
         this.token = token
         this.persist()
         return { ok: true, role }
@@ -63,13 +62,15 @@ export const useAuthStore = defineStore('auth', {
       try {
         const r = await api.post('/v1/user/login', { username, password })
         const token = r?.data?.token
-        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || '') as string
+        const userId = r?.data?.user?.id || r?.data?.id || 0
+        const backendRoles = (r?.data?.roles || []) as string[]
+        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || r?.data?.role_key || (backendRoles.length > 0 ? backendRoles[0] : '')) as string
         const backendRole = normalizeRole(backendRoleRaw)
-        const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer')
+        const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' || username === 'administrator' ? 'admin' : (username === 'ops' || username === 'operator') ? 'operator' : 'observer')
         if (!token) {
           return { ok: false, message: '登录失败' }
         }
-        this.user = { username, role }
+        this.user = { id: userId, username, role }
         this.token = token
         this.persist()
         return { ok: true, role }
@@ -85,10 +86,12 @@ export const useAuthStore = defineStore('auth', {
     async register(username: string, email: string, password: string, fullName: string) {
       try {
         const r = await api.post('/v1/user/register', { username, email, password, fullName })
-        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || '') as string
+        const userId = r?.data?.user?.id || r?.data?.id || 0
+        const backendRoles = (r?.data?.roles || []) as string[]
+        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || r?.data?.role_key || (backendRoles.length > 0 ? backendRoles[0] : '')) as string
         const backendRole = normalizeRole(backendRoleRaw)
-        const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' ? 'admin' : username === 'ops' ? 'operator' : username === 'obs' ? 'observer' : 'observer')
-        this.user = { username, role }
+        const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' || username === 'administrator' ? 'admin' : (username === 'ops' || username === 'operator') ? 'operator' : 'observer')
+        this.user = { id: userId, username, role }
         this.token = r?.data?.token || null
         this.persist()
         return { ok: true, role }

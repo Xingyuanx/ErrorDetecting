@@ -2,10 +2,10 @@
   <section class="layout__section">
     <div class="layout__page-header exec-header">
       <div>
-        <h2 class="layout__page-title">账号管理（原型）</h2>
+        <h2 class="layout__page-title">账号管理</h2>
         <div class="layout__page-subtitle">修改密码、设置双因素认证等</div>
       </div>
-      <div class="layout__page-actions"><button class="btn btn--primary" type="button" @click="save">保存设置</button></div>
+      <div class="layout__page-actions"><button class="btn btn--primary" :disabled="loading" type="button" @click="save">保存设置</button></div>
     </div>
 
     <article class="layout__card u-mt-2">
@@ -33,14 +33,46 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import api from '../lib/api'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
 const form = reactive({ current:'', next:'', confirm:'' })
 const err = ref('')
-function save(){
+const loading = ref(false)
+
+async function save(){
   err.value = ''
   if (!form.current || !form.next || !form.confirm) { err.value = '请填写完整密码信息'; return }
   if (form.next.length < 8) { err.value = '新密码至少8位'; return }
   if (form.next !== form.confirm) { err.value = '两次输入的新密码不一致'; return }
-  err.value = '已保存（示例界面，未接入后端）'
+  
+  loading.value = true
+  try {
+    const r = await api.patch('/v1/user/password', {
+      currentPassword: form.current,
+      newPassword: form.next
+    }, {
+      headers: { Authorization: `Bearer ${auth.token}` }
+    })
+    
+    if (r.data?.ok) {
+      err.value = '密码修改成功'
+      form.current = ''
+      form.next = ''
+      form.confirm = ''
+    } else {
+      err.value = r.data?.detail || '修改失败'
+    }
+  } catch (e: any) {
+    const detail = e.response?.data?.detail
+    if (detail === 'invalid_current_password') err.value = '当前密码错误'
+    else if (detail === 'weak_new_password') err.value = '新密码太弱（需包含大小写字母和数字）'
+    else if (detail === 'demo_user_cannot_change_password') err.value = '演示账号不允许修改密码'
+    else err.value = '服务器错误，请稍后再试'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

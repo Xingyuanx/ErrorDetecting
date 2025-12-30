@@ -19,6 +19,9 @@
       </main>
     </div>
 
+    <!-- 锁屏组件 -->
+    <LockScreen />
+
     <!-- 侧边栏遮罩层：移动端使用 -->
     <div
       class="layout__sidebar-overlay"
@@ -33,6 +36,8 @@
 import HeaderNav from "./components/HeaderNav.vue";
 // 引入侧边栏组件
 import Sidebar from "./components/Sidebar.vue";
+// 引入锁屏组件
+import LockScreen from "./components/LockScreen.vue";
 // 引入全局 UI Store，用于管理侧边栏显示状态
 import { useUIStore } from "./stores/ui";
 // 引入路由钩子以获取当前路由对象

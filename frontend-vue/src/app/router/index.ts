@@ -3,15 +3,14 @@ import { useAuthStore } from '../stores/auth'
 import { Roles, AllRoles } from '../constants/roles'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/cluster-list' },
+  { path: '/', redirect: '/diagnosis' },
   { path: '/login', name: 'login', component: () => import('../views/Login.vue'), meta: { requiresAuth: false, hideSidebar: true } },
   { path: '/register', name: 'register', component: () => import('../views/Register.vue'), meta: { requiresAuth: false, hideSidebar: true } },
   { path: '/cluster-list', name: 'cluster-list', component: () => import('../views/ClusterList.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/logs', name: 'logs', component: () => import('../views/Logs.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/diagnosis', name: 'diagnosis', component: () => import('../views/Diagnosis.vue'), meta: { requiresAuth: true, roles: [Roles.admin, Roles.operator] } },
-  { path: '/exec-logs', name: 'exec-logs', component: () => import('../views/ExecLogs.vue'), meta: { requiresAuth: true, roles: AllRoles } },
-  { path: '/alert-config', name: 'alert-config', component: () => import('../views/AlertConfig.vue'), meta: { requiresAuth: true, roles: [Roles.admin, Roles.operator] } },
+  { path: '/hadoop-exec-logs', name: 'hadoop-exec-logs', component: () => import('../views/ExecLogs.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/account', name: 'account', component: () => import('../views/Account.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/user-management', name: 'user-management', component: () => import('../views/UserManagement.vue'), meta: { requiresAuth: true, roles: [Roles.admin] } },
