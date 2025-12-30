@@ -40,12 +40,12 @@ app/
 | nodes | /api/v1 | 节点管理 |
 | metrics | /api/v1 | 指标监控 |
 | users | /api/v1 | 用户管理 |
-| logs | /api/v1 | 日志管理 |
+| hadoop_logs | /api/v1 | Hadoop日志管理 |
 | faults | /api/v1 | 故障检测 |
-| exec_logs | /api/v1 | 执行日志 |
+| hadoop_exec_logs | /api/v1 | Hadoop执行日志 |
 | ops | /api/v1 | 操作管理 |
 | ai | /api/v1 | AI智能分析 |
-| hadoop_logs | /api/v1 | Hadoop日志分析 |
+| sys_exec_logs | /api/v1 | 系统操作日志 |
 
 ## 详细API文档
 
@@ -613,109 +613,7 @@ Authorization: Bearer {token}
 }
 ```
 
-### 6. 日志管理 (logs.py)
-
-#### 接口列表
-
-| 方法 | 路径 | 功能描述 | 认证要求 |
-|------|------|----------|----------|
-| GET | /logs | 获取日志列表，支持多种筛选条件 | 是 |
-| GET | /logs/meta | 获取日志元数据（集群、节点、服务列表） | 是 |
-
-#### 详细接口说明
-
-##### GET /logs
-
-**功能描述**：
-获取日志列表，支持多种筛选条件。
-
-**请求参数**：
-- level: 日志级别（可选）
-- cluster: 集群UUID（可选）
-- node: 节点名称（可选）
-- op: 服务名称（可选）
-- source: 日志来源（可选）
-- time_from: 开始时间（ISO格式，可选）
-- page: 页码（默认1）
-- size: 每页条数（默认10，1-100）
-
-**请求头**：
-```
-Authorization: Bearer {token}
-```
-
-**响应格式**：
-```json
-{
-  "items": [
-    {
-      "id": 0,
-      "time": "string",
-      "level": "string",
-      "cluster": "string",
-      "node": "string",
-      "op": "string",
-      "user": "string",
-      "source": "string",
-      "message": "string"
-    }
-  ],
-  "total": 0
-}
-```
-
-**响应示例**：
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "time": "2025-12-18T00:00:00+00:00",
-      "level": "info",
-      "cluster": "123e4567-e89b-12d3-a456-426614174000",
-      "node": "hadoop-master",
-      "op": "NameNode",
-      "user": "system",
-      "source": "hadoop",
-      "message": "NameNode started successfully"
-    }
-  ],
-  "total": 1
-}
-```
-
-##### GET /logs/meta
-
-**功能描述**：
-获取日志元数据，包括有日志的集群、节点和服务列表。
-
-**请求参数**：
-无
-
-**请求头**：
-```
-Authorization: Bearer {token}
-```
-
-**响应格式**：
-```json
-{
-  "clusters": ["string"],
-  "nodes": ["string"],
-  "ops": ["string"]
-}
-```
-
-**响应示例**：
-```json
-{
-  "clusters": ["123e4567-e89b-12d3-a456-426614174000"],
-  "nodes": ["hadoop-master", "hadoop-node1"],
-  "ops": ["NameNode", "DataNode", "ResourceManager"]
-}
-```
-
-### 7. 故障检测 (faults.py)
+### 6. 故障检测 (faults.py)
 
 #### 接口列表
 
@@ -905,26 +803,23 @@ Authorization: Bearer {token}
 }
 ```
 
-### 8. 执行日志 (exec_logs.py)
+### 7. Hadoop执行日志 (hadoop_exec_logs.py)
 
 #### 接口列表
 
 | 方法 | 路径 | 功能描述 | 认证要求 |
 |------|------|----------|----------|
-| GET | /exec-logs | 获取执行日志列表 | 是 |
-| POST | /exec-logs | 创建新执行日志 | 是 |
-| PUT | /exec-logs/{exec_id} | 更新执行日志 | 是 |
-| DELETE | /exec-logs/{exec_id} | 删除执行日志 | 是 |
+| GET | /exec-logs | 获取所有执行日志 | 是 |
+| POST | /exec-logs | 创建新的执行日志 | 是 |
+| PUT | /exec-logs/{log_id} | 更新执行日志 | 是 |
+| DELETE | /exec-logs/{log_id} | 删除执行日志 | 是 |
 
 #### 详细接口说明
 
 ##### GET /exec-logs
 
 **功能描述**：
-获取执行日志列表，按开始时间倒序排列。
-
-**请求参数**：
-无
+获取所有执行日志，按开始时间倒序排列。
 
 **请求头**：
 ```
@@ -936,40 +831,12 @@ Authorization: Bearer {token}
 {
   "items": [
     {
-      "exec_id": "string",
-      "fault_id": "string",
-      "command_type": "string",
-      "command_content": "string",
-      "execution_status": "string",
+      "id": 0,
+      "from_user_id": 0,
+      "cluster_name": "string",
+      "description": "string",
       "start_time": "string",
-      "end_time": "string",
-      "duration": 0,
-      "exit_code": 0,
-      "operator": "string",
-      "created_at": "string",
-      "updated_at": "string"
-    }
-  ]
-}
-```
-
-**响应示例**：
-```json
-{
-  "items": [
-    {
-      "exec_id": "exec-123",
-      "fault_id": "fault-123",
-      "command_type": "repair",
-      "command_content": "[auto]",
-      "execution_status": "completed",
-      "start_time": "2025-12-18T00:00:00+00:00",
-      "end_time": "2025-12-18T00:01:00+00:00",
-      "duration": 60,
-      "exit_code": 0,
-      "operator": "admin",
-      "created_at": "2025-12-18T00:00:00+00:00",
-      "updated_at": "2025-12-18T00:01:00+00:00"
+      "end_time": "string"
     }
   ]
 }
@@ -978,83 +845,37 @@ Authorization: Bearer {token}
 ##### POST /exec-logs
 
 **功能描述**：
-创建新执行日志。
-
-**请求头**：
-```
-Authorization: Bearer {token}
-```
-
-**请求体**：
-```json
-{
-  "exec_id": "string",
-  "fault_id": "string",
-  "command_type": "string",
-  "execution_status": "string",
-  "start_time": "string",
-  "end_time": "string",
-  "exit_code": 0
-}
-```
-
-**请求示例**：
-```json
-{
-  "exec_id": "exec-123",
-  "fault_id": "fault-123",
-  "command_type": "repair",
-  "execution_status": "completed",
-  "start_time": "2025-12-18T00:00:00+00:00",
-  "end_time": "2025-12-18T00:01:00+00:00",
-  "exit_code": 0
-}
-```
-
-**响应格式**：
-```json
-{
-  "ok": true
-}
-```
-
-**错误示例**：
-```json
-{
-  "detail": "server_error"
-}
-```
-
-##### PUT /exec-logs/{exec_id}
-
-**功能描述**：
-更新执行日志信息。
+创建新的执行日志。
 
 **请求参数**：
-- exec_id: 执行日志ID（路径参数，必填）
+- from_user_id: 用户ID (必填)
+- cluster_name: 集群名称 (必填)
+- description: 描述 (可选)
+- start_time: 开始时间 (ISO格式，可选)
+- end_time: 结束时间 (ISO格式，可选)
 
-**请求头**：
+**响应示例**：
+```json
+{
+  "ok": true,
+  "id": 1
+}
 ```
-Authorization: Bearer {token}
-```
+
+##### PUT /exec-logs/{log_id}
+
+**功能描述**：
+更新指定的执行日志信息。
+
+**请求参数**：
+- log_id: 执行日志ID (路径参数，必填)
 
 **请求体**：
 ```json
 {
-  "fault_id": "string",
-  "command_type": "string",
-  "execution_status": "string",
+  "description": "string",
   "start_time": "string",
-  "end_time": "string",
-  "exit_code": 0
-}
-```
-
-**请求示例**：
-```json
-{
-  "execution_status": "failed",
-  "exit_code": 1
+  "end_time": "string"
 }
 ```
 
@@ -1065,25 +886,13 @@ Authorization: Bearer {token}
 }
 ```
 
-**错误示例**：
-```json
-{
-  "detail": "server_error"
-}
-```
-
-##### DELETE /exec-logs/{exec_id}
+##### DELETE /exec-logs/{log_id}
 
 **功能描述**：
 删除指定的执行日志。
 
 **请求参数**：
-- exec_id: 执行日志ID（路径参数，必填）
-
-**请求头**：
-```
-Authorization: Bearer {token}
-```
+- log_id: 执行日志ID (路径参数，必填)
 
 **响应格式**：
 ```json
@@ -1092,14 +901,7 @@ Authorization: Bearer {token}
 }
 ```
 
-**错误示例**：
-```json
-{
-  "detail": "server_error"
-}
-```
-
-### 9. 操作管理 (ops.py)
+### 8. 操作管理 (ops.py)
 
 #### 接口列表
 
@@ -1178,7 +980,7 @@ Authorization: Bearer {token}
 }
 ```
 
-### 10. AI智能分析 (ai.py)
+### 9. AI智能分析 (ai.py)
 
 #### 接口列表
 
@@ -1338,12 +1140,13 @@ Authorization: Bearer {token}
 }
 ```
 
-### 11. Hadoop日志分析 (hadoop_logs.py)
+### 10. Hadoop日志管理 (hadoop_logs.py)
 
 #### 接口列表
 
 | 方法 | 路径 | 功能描述 | 认证要求 |
 |------|------|----------|----------|
+| GET | /logs | 获取Hadoop聚合日志列表 | 是 |
 | GET | /hadoop/nodes/ | 获取所有Hadoop节点列表 | 是 |
 | GET | /hadoop/logs/{node_name}/{log_type}/ | 获取特定Hadoop节点的日志 | 是 |
 | GET | /hadoop/logs/all/{log_type}/ | 获取所有Hadoop节点的日志 | 是 |
@@ -1717,7 +1520,7 @@ Authorization: Bearer {token}
 }
 ```
 
-### 12. 用户管理 (users.py)
+### 11. 用户管理 (users.py)
 
 #### 接口列表
 
@@ -1915,9 +1718,62 @@ Authorization: Bearer {token}
 }
 ```
 
-### 13. 安全相关 (secure.py)
+### 12. 安全相关 (secure.py)
 
 **说明**：安全相关模块当前只包含一个获取当前用户信息的接口，该接口已在身份认证模块中详细描述。
+
+### 13. 系统操作日志 (sys_exec_logs.py)
+
+#### 接口列表
+
+| 方法 | 路径 | 功能描述 | 认证要求 |
+|------|------|----------|----------|
+| GET | /sys-exec-logs | 获取系统操作日志列表 | 是 |
+| POST | /sys-exec-logs | 创建系统操作日志 | 是 |
+| DELETE | /sys-exec-logs/{operation_id} | 删除系统操作日志 | 是 |
+
+#### 详细接口说明
+
+##### GET /sys-exec-logs
+
+**功能描述**：
+获取系统操作日志列表，支持分页。
+
+**请求参数**：
+- page: 页码 (默认1)
+- size: 每页数量 (默认10)
+
+**响应格式**：
+```json
+{
+  "items": [
+    {
+      "operation_id": "string",
+      "user_id": 0,
+      "description": "string",
+      "operation_time": "string"
+    }
+  ],
+  "total": 0
+}
+```
+
+##### POST /sys-exec-logs
+
+**功能描述**：
+创建系统操作日志。
+
+**请求参数**：
+- user_id: 用户ID (必填)
+- description: 操作描述 (必填)
+
+**响应示例**：
+```json
+{
+  "ok": true,
+  "operation_id": "uuid-string"
+}
+```
 
 ## 数据模型
 
@@ -1967,47 +1823,36 @@ Authorization: Bearer {token}
 | created_at | datetime | 创建时间 |
 | updated_at | datetime | 更新时间 |
 
-### 系统日志模型 (SystemLog)
+### Hadoop日志模型 (HadoopLog)
 
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| id | int | 日志ID |
-| log_id | str | 日志标识 |
-| fault_id | str | 关联故障ID |
-| cluster_id | int | 所属集群ID |
-| timestamp | datetime | 日志时间 |
-| host | str | 主机名 |
-| service | str | 服务名称 |
-| source | str | 日志来源 |
-| log_level | str | 日志级别 |
-| message | str | 日志内容 |
-| exception | str | 异常信息 |
-| raw_log | str | 原始日志 |
-| processed | bool | 是否已处理 |
-| created_at | datetime | 创建时间 |
+| log_id | int | 日志ID (主键, 自增) |
+| cluster_name | str | 集群名称 |
+| node_host | str | 节点主机名 |
+| title | str | 日志标题 |
+| info | str | 日志详细信息 |
+| log_time | datetime | 日志时间 |
 
-### 执行日志模型 (ExecLog)
+### Hadoop执行日志模型 (HadoopExecLog)
 
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| id | int | 执行日志ID |
-| exec_id | str | 执行ID |
-| fault_id | str | 关联故障ID |
-| command_type | str | 命令类型 |
-| script_path | str | 脚本路径 |
-| command_content | str | 命令内容 |
-| target_nodes | JSON | 目标节点 |
-| risk_level | str | 风险级别 |
-| execution_status | str | 执行状态 |
+| id | int | 执行日志ID (主键, 自增) |
+| from_user_id | int | 操作用户ID |
+| cluster_name | str | 集群名称 |
+| description | str | 执行描述 |
 | start_time | datetime | 开始时间 |
 | end_time | datetime | 结束时间 |
-| duration | int | 执行时长（秒） |
-| stdout_log | str | 标准输出日志 |
-| stderr_log | str | 标准错误日志 |
-| exit_code | int | 退出码 |
-| operator | str | 操作员 |
-| created_at | datetime | 创建时间 |
-| updated_at | datetime | 更新时间 |
+
+### 系统操作日志模型 (SysExecLog)
+
+| 字段名 | 类型 | 描述 |
+|--------|------|------|
+| operation_id | UUID | 操作ID (主键, UUID) |
+| user_id | int | 用户ID |
+| description | str | 操作描述 |
+| operation_time | datetime | 操作时间 |
 
 ## 认证与授权
 

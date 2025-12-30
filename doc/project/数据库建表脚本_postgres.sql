@@ -1,65 +1,69 @@
--- ============================================================
--- PostgreSQL 数据库结构导出脚本
+-- ==================================================
+-- 数据库建表脚本 (PostgreSQL)
 -- 生成日期: 2025-12-30
--- ============================================================
+-- 数据库: hadoop_fault_db
+-- ==================================================
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-
--- ------------------------------------------------------------
--- 1. 架构与扩展定义
--- ------------------------------------------------------------
+-- --------------------------------------------------
+-- 1. 架构与扩展
+-- --------------------------------------------------
 --
--- Name: metric_helpers; Type: SCHEMA; Schema: -; Owner: -
+-- Name: metric_helpers; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
-CREATE SCHEMA metric_helpers;
+CREATE SCHEMA metric_helpers;;
 --
--- Name: public; Type: SCHEMA; Schema: -; Owner: -
---
-
--- *not* creating schema, since initdb creates it
---
--- Name: user_management; Type: SCHEMA; Schema: -; Owner: -
+-- Name: user_management; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
-CREATE SCHEMA user_management;
+CREATE SCHEMA user_management;;
 --
 -- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;;
+--
+-- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics of all SQL statements executed';;
 --
 -- Name: pg_stat_kcache; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS pg_stat_kcache WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pg_stat_kcache WITH SCHEMA public;;
+--
+-- Name: EXTENSION pg_stat_kcache; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_stat_kcache IS 'Kernel statistics gathering';;
 --
 -- Name: set_user; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS set_user WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS set_user WITH SCHEMA public;;
+--
+-- Name: EXTENSION set_user; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION set_user IS 'similar to SET ROLE but with added logging';;
 --
 -- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
-
-
--- ------------------------------------------------------------
--- 2. 自定义函数
--- ------------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;;
 --
--- Name: get_btree_bloat_approx(); Type: FUNCTION; Schema: metric_helpers; Owner: -
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';;
+
+
+-- --------------------------------------------------
+-- 2. 自定义函数
+-- --------------------------------------------------
+--
+-- Name: get_btree_bloat_approx(); Type: FUNCTION; Schema: metric_helpers; Owner: postgres
 --
 
 CREATE FUNCTION metric_helpers.get_btree_bloat_approx(OUT i_database name, OUT i_schema_name name, OUT i_table_name name, OUT i_index_name name, OUT i_real_size numeric, OUT i_extra_size numeric, OUT i_extra_ratio double precision, OUT i_fill_factor integer, OUT i_bloat_size double precision, OUT i_bloat_ratio double precision, OUT i_is_na boolean) RETURNS SETOF record
@@ -149,10 +153,9 @@ FROM (
           GROUP BY 1,2,3,4,5,6,7,8,9,10
       ) AS rows_data_stats
   ) AS rows_hdr_pdg_stats
-) AS relation_stats;
-$$;
+) AS relation_stats;;
 --
--- Name: get_nearly_exhausted_sequences(double precision); Type: FUNCTION; Schema: metric_helpers; Owner: -
+-- Name: get_nearly_exhausted_sequences(double precision); Type: FUNCTION; Schema: metric_helpers; Owner: postgres
 --
 
 CREATE FUNCTION metric_helpers.get_nearly_exhausted_sequences(threshold double precision, OUT schemaname name, OUT sequencename name, OUT seq_percent_used numeric) RETURNS SETOF record
@@ -176,10 +179,9 @@ FROM (
   FROM pg_sequences
   WHERE NOT CYCLE AND last_value IS NOT NULL
 ) AS s
-WHERE seq_percent_used >= threshold;
-$$;
+WHERE seq_percent_used >= threshold;;
 --
--- Name: get_table_bloat_approx(); Type: FUNCTION; Schema: metric_helpers; Owner: -
+-- Name: get_table_bloat_approx(); Type: FUNCTION; Schema: metric_helpers; Owner: postgres
 --
 
 CREATE FUNCTION metric_helpers.get_table_bloat_approx(OUT t_database name, OUT t_schema_name name, OUT t_table_name name, OUT t_real_size numeric, OUT t_extra_size double precision, OUT t_extra_ratio double precision, OUT t_fill_factor integer, OUT t_bloat_size double precision, OUT t_bloat_ratio double precision, OUT t_is_na boolean) RETURNS SETOF record
@@ -247,19 +249,17 @@ FROM (
       ORDER BY 2,3
     ) AS s
   ) AS s2
-) AS s3 WHERE schemaname NOT LIKE 'information_schema';
-$$;
+) AS s3 WHERE schemaname NOT LIKE 'information_schema';;
 --
--- Name: pg_stat_statements(boolean); Type: FUNCTION; Schema: metric_helpers; Owner: -
+-- Name: pg_stat_statements(boolean); Type: FUNCTION; Schema: metric_helpers; Owner: postgres
 --
 
 CREATE FUNCTION metric_helpers.pg_stat_statements(showtext boolean) RETURNS SETOF public.pg_stat_statements
     LANGUAGE sql IMMUTABLE STRICT SECURITY DEFINER
     AS $$
-  SELECT * FROM public.pg_stat_statements(showtext);
-$$;
+  SELECT * FROM public.pg_stat_statements(showtext);;
 --
--- Name: update_cluster_node_count(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: update_cluster_node_count(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
 CREATE FUNCTION public.update_cluster_node_count() RETURNS trigger
@@ -272,23 +272,9 @@ BEGIN
         SET 
             node_count = (SELECT COUNT(*) FROM nodes WHERE nodes.cluster_id = NEW.cluster_id),
             updated_at = NOW()
-        WHERE clusters.id = NEW.cluster_id;
-    END IF;
-
-    -- 处理 DELETE 操作（OLD 代表被删除的数据）
-    IF TG_OP = 'DELETE' THEN
-        UPDATE clusters
-        SET 
-            node_count = (SELECT COUNT(*) FROM nodes WHERE nodes.cluster_id = OLD.cluster_id),
-            updated_at = NOW()
-        WHERE clusters.id = OLD.cluster_id;
-    END IF;
-
-    RETURN NULL;  -- AFTER触发器返回值无意义，固定返回NULL
-END;
-$$;
+        WHERE clusters.id = NEW.cluster_id;;
 --
--- Name: create_application_user(text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: create_application_user(text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.create_application_user(username text) RETURNS text
@@ -296,15 +282,9 @@ CREATE FUNCTION user_management.create_application_user(username text) RETURNS t
     SET search_path TO 'pg_catalog'
     AS $_$
 DECLARE
-    pw text;
-BEGIN
-    SELECT user_management.random_password(20) INTO pw;
-    EXECUTE format($$ CREATE USER %I WITH PASSWORD %L $$, username, pw);
-    RETURN pw;
-END
-$_$;
+    pw text;;
 --
--- Name: create_application_user_or_change_password(text, text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: create_application_user_or_change_password(text, text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.create_application_user_or_change_password(username text, password text) RETURNS void
@@ -312,18 +292,9 @@ CREATE FUNCTION user_management.create_application_user_or_change_password(usern
     SET search_path TO 'pg_catalog'
     AS $_$
 BEGIN
-    PERFORM 1 FROM pg_roles WHERE rolname = username;
-
-    IF FOUND
-    THEN
-        EXECUTE format($$ ALTER ROLE %I WITH PASSWORD %L $$, username, password);
-    ELSE
-        EXECUTE format($$ CREATE USER %I WITH PASSWORD %L $$, username, password);
-    END IF;
-END
-$_$;
+    PERFORM 1 FROM pg_roles WHERE rolname = username;;
 --
--- Name: create_role(text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: create_role(text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.create_role(rolename text) RETURNS void
@@ -332,11 +303,9 @@ CREATE FUNCTION user_management.create_role(rolename text) RETURNS void
     AS $_$
 BEGIN
     -- set ADMIN to the admin user, so every member of admin can GRANT these roles to each other
-    EXECUTE format($$ CREATE ROLE %I WITH ADMIN admin $$, rolename);
-END;
-$_$;
+    EXECUTE format($$ CREATE ROLE %I WITH ADMIN admin $$, rolename);;
 --
--- Name: create_user(text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: create_user(text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.create_user(username text) RETURNS void
@@ -344,22 +313,18 @@ CREATE FUNCTION user_management.create_user(username text) RETURNS void
     SET search_path TO 'pg_catalog'
     AS $_$
 BEGIN
-    EXECUTE format($$ CREATE USER %I IN ROLE zalandos, admin $$, username);
-    EXECUTE format($$ ALTER ROLE %I SET log_statement TO 'all' $$, username);
-END;
-$_$;
+    EXECUTE format($$ CREATE USER %I IN ROLE zalandos, admin $$, username);;
 --
--- Name: drop_role(text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: drop_role(text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.drop_role(username text) RETURNS void
     LANGUAGE sql SECURITY DEFINER
     SET search_path TO 'pg_catalog'
     AS $$
-SELECT user_management.drop_user(username);
-$$;
+SELECT user_management.drop_user(username);;
 --
--- Name: drop_user(text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: drop_user(text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.drop_user(username text) RETURNS void
@@ -367,11 +332,9 @@ CREATE FUNCTION user_management.drop_user(username text) RETURNS void
     SET search_path TO 'pg_catalog'
     AS $_$
 BEGIN
-    EXECUTE format($$ DROP ROLE %I $$, username);
-END
-$_$;
+    EXECUTE format($$ DROP ROLE %I $$, username);;
 --
--- Name: random_password(integer); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: random_password(integer); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.random_password(length integer) RETURNS text
@@ -392,10 +355,9 @@ bricks (b) AS (
     -- and shuffle it
     SELECT c FROM chars, generate_series(1, length) ORDER BY random()
 )
-SELECT substr(string_agg(b, ''), 1, length) FROM bricks;
-$$;
+SELECT substr(string_agg(b, ''), 1, length) FROM bricks;;
 --
--- Name: revoke_admin(text); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: revoke_admin(text); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.revoke_admin(username text) RETURNS void
@@ -403,30 +365,30 @@ CREATE FUNCTION user_management.revoke_admin(username text) RETURNS void
     SET search_path TO 'pg_catalog'
     AS $_$
 BEGIN
-    EXECUTE format($$ REVOKE admin FROM %I $$, username);
-END
-$_$;
+    EXECUTE format($$ REVOKE admin FROM %I $$, username);;
 --
--- Name: terminate_backend(integer); Type: FUNCTION; Schema: user_management; Owner: -
+-- Name: terminate_backend(integer); Type: FUNCTION; Schema: user_management; Owner: postgres
 --
 
 CREATE FUNCTION user_management.terminate_backend(pid integer) RETURNS boolean
     LANGUAGE sql SECURITY DEFINER
     SET search_path TO 'pg_catalog'
     AS $$
-SELECT pg_terminate_backend(pid);
-$$;
+SELECT pg_terminate_backend(pid);;
 
 
--- ------------------------------------------------------------
--- 3. 数据表定义 (按表聚合结构、约束、索引与注释)
--- ------------------------------------------------------------
+-- --------------------------------------------------
+-- 3. 数据表定义 (字段/约束/索引/注释)
+-- --------------------------------------------------
 
 -- ==================================================
 -- 表名: app_configurations
--- 说明: 应用统一配置表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: app_configurations; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.app_configurations (
     id bigint NOT NULL,
     config_type character varying(20) NOT NULL,
@@ -440,92 +402,69 @@ CREATE TABLE public.app_configurations (
 );;
 
 -- [约束] 主键
+--
+-- Name: app_configurations app_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.app_configurations
     ADD CONSTRAINT app_configurations_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: app_configurations uk_app_config; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.app_configurations
     ADD CONSTRAINT uk_app_config UNIQUE (config_type, config_key);;
 
 -- [索引] 索引定义
+--
+-- Name: idx_app_config_enabled; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX idx_app_config_enabled ON public.app_configurations USING btree (is_enabled);;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN app_configurations.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.id IS '主键ID';;
+--
+-- Name: COLUMN app_configurations.config_type; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.config_type IS '配置类型(system/alert_rule/notification/llm)';;
+--
+-- Name: COLUMN app_configurations.config_key; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.config_key IS '配置键';;
+--
+-- Name: COLUMN app_configurations.config_value; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.config_value IS '配置值(JSONB)';;
+--
+-- Name: COLUMN app_configurations.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.description IS '配置描述';;
+--
+-- Name: COLUMN app_configurations.is_enabled; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.is_enabled IS '是否启用';;
+--
+-- Name: COLUMN app_configurations.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.created_at IS '创建时间';;
+--
+-- Name: COLUMN app_configurations.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.app_configurations.updated_at IS '更新时间';;
-
-
-
--- ==================================================
--- 表名: audit_logs
--- 说明: 操作审计表
--- ==================================================
--- [结构] 创建表
-CREATE TABLE public.audit_logs (
-    id bigint NOT NULL,
-    user_id bigint,
-    cluster_id bigint,
-    role_id bigint,
-    username character varying(50) NOT NULL,
-    action character varying(100) NOT NULL,
-    resource_type character varying(50) NOT NULL,
-    resource_id character varying(100),
-    ip_address inet NOT NULL,
-    request_data jsonb,
-    response_status integer,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);;
-
--- [约束] 主键
-ALTER TABLE ONLY public.audit_logs
-    ADD CONSTRAINT audit_logs_pkey PRIMARY KEY (id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_audit_logs_action ON public.audit_logs USING btree (action);;
-
--- [索引] 索引定义
-CREATE INDEX idx_audit_logs_cluster_id ON public.audit_logs USING btree (cluster_id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_audit_logs_created_at ON public.audit_logs USING btree (created_at);;
-
--- [索引] 索引定义
-CREATE INDEX idx_audit_logs_role_id ON public.audit_logs USING btree (role_id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id);;
-
--- [约束] 外键关联
-ALTER TABLE ONLY public.audit_logs
-    ADD CONSTRAINT audit_logs_cluster_id_fkey FOREIGN KEY (cluster_id) REFERENCES public.clusters(id) ON UPDATE CASCADE ON DELETE SET NULL;;
-
--- [约束] 外键关联
-ALTER TABLE ONLY public.audit_logs
-    ADD CONSTRAINT audit_logs_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON UPDATE CASCADE ON DELETE SET NULL;;
-
--- [约束] 外键关联
-ALTER TABLE ONLY public.audit_logs
-    ADD CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE SET NULL;;
-
--- [注释] 字段说明
-COMMENT ON COLUMN public.audit_logs.id IS '主键ID';;
-COMMENT ON COLUMN public.audit_logs.user_id IS '用户ID';;
-COMMENT ON COLUMN public.audit_logs.cluster_id IS '集群ID';;
-COMMENT ON COLUMN public.audit_logs.role_id IS '角色ID';;
-COMMENT ON COLUMN public.audit_logs.username IS '用户名';;
-COMMENT ON COLUMN public.audit_logs.action IS '操作动作';;
-COMMENT ON COLUMN public.audit_logs.resource_type IS '资源类型';;
-COMMENT ON COLUMN public.audit_logs.resource_id IS '资源ID';;
-COMMENT ON COLUMN public.audit_logs.ip_address IS '请求来源IP(INET, 兼容IPv4/IPv6)';;
-COMMENT ON COLUMN public.audit_logs.request_data IS '请求数据(JSONB)';;
-COMMENT ON COLUMN public.audit_logs.response_status IS '响应状态码';;
-COMMENT ON COLUMN public.audit_logs.created_at IS '创建时间';;
 
 
 
@@ -533,6 +472,10 @@ COMMENT ON COLUMN public.audit_logs.created_at IS '创建时间';;
 -- 表名: chat_messages
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: chat_messages; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.chat_messages (
     id integer NOT NULL,
     session_id character varying NOT NULL,
@@ -544,13 +487,25 @@ CREATE TABLE public.chat_messages (
 );;
 
 -- [约束] 主键
+--
+-- Name: chat_messages chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.chat_messages
     ADD CONSTRAINT chat_messages_pkey PRIMARY KEY (id);;
 
 -- [索引] 索引定义
+--
+-- Name: ix_chat_messages_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX ix_chat_messages_id ON public.chat_messages USING btree (id);;
 
 -- [约束] 外键关联
+--
+-- Name: chat_messages chat_messages_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.chat_messages
     ADD CONSTRAINT chat_messages_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.chat_sessions(id);;
 
@@ -560,6 +515,10 @@ ALTER TABLE ONLY public.chat_messages
 -- 表名: chat_sessions
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: chat_sessions; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.chat_sessions (
     id character varying NOT NULL,
     user_id integer,
@@ -569,13 +528,23 @@ CREATE TABLE public.chat_sessions (
 );;
 
 -- [约束] 主键
+--
+-- Name: chat_sessions chat_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.chat_sessions
     ADD CONSTRAINT chat_sessions_pkey PRIMARY KEY (id);;
 
 -- [索引] 索引定义
-CREATE INDEX ix_chat_sessions_id ON public.chat_sessions USING btree (id);;
+--
+-- Name: ix_chat_sessions_id; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
+CREATE INDEX ix_chat_sessions_id ON public.chat_sessions USING btree (id);;
+--
+-- Name: ix_chat_sessions_user_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX ix_chat_sessions_user_id ON public.chat_sessions USING btree (user_id);;
 
 
@@ -584,6 +553,10 @@ CREATE INDEX ix_chat_sessions_user_id ON public.chat_sessions USING btree (user_
 -- 表名: cluster_metrics
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: cluster_metrics; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.cluster_metrics (
     id integer NOT NULL,
     cluster_id integer NOT NULL,
@@ -594,22 +567,35 @@ CREATE TABLE public.cluster_metrics (
 );;
 
 -- [约束] 主键
+--
+-- Name: cluster_metrics cluster_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.cluster_metrics
     ADD CONSTRAINT cluster_metrics_pkey PRIMARY KEY (id);;
 
 -- [索引] 索引定义
-CREATE INDEX ix_cluster_metrics_cluster_id ON public.cluster_metrics USING btree (cluster_id);;
+--
+-- Name: ix_cluster_metrics_cluster_id; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
+CREATE INDEX ix_cluster_metrics_cluster_id ON public.cluster_metrics USING btree (cluster_id);;
+--
+-- Name: ix_cluster_metrics_timestamp; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX ix_cluster_metrics_timestamp ON public.cluster_metrics USING btree ("timestamp");;
 
 
 
 -- ==================================================
 -- 表名: clusters
--- 说明: 集群信息表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: clusters; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.clusters (
     id bigint NOT NULL,
     uuid uuid NOT NULL,
@@ -629,99 +615,139 @@ CREATE TABLE public.clusters (
 );;
 
 -- [约束] 主键
+--
+-- Name: clusters clusters_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.clusters
     ADD CONSTRAINT clusters_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: clusters clusters_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.clusters
     ADD CONSTRAINT clusters_name_key UNIQUE (name);;
+--
+-- Name: clusters clusters_uuid_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 其他约束
 ALTER TABLE ONLY public.clusters
     ADD CONSTRAINT clusters_uuid_key UNIQUE (uuid);;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN clusters.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.id IS '主键ID';;
+--
+-- Name: COLUMN clusters.uuid; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.uuid IS '集群唯一标识(UUID)';;
+--
+-- Name: COLUMN clusters.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.name IS '集群名称';;
+--
+-- Name: COLUMN clusters.type; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.type IS '集群类型';;
+--
+-- Name: COLUMN clusters.node_count; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.node_count IS '集群节点数量';;
+--
+-- Name: COLUMN clusters.health_status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.health_status IS '集群健康状态(healthy/warning/error/unknown)';;
+--
+-- Name: COLUMN clusters.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.description IS '集群描述';;
+--
+-- Name: COLUMN clusters.config_info; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.config_info IS '集群配置信息(JSONB)';;
+--
+-- Name: COLUMN clusters.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.created_at IS '创建时间';;
+--
+-- Name: COLUMN clusters.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.clusters.updated_at IS '更新时间';;
 
 
 
 -- ==================================================
--- 表名: exec_logs
--- 说明: 执行日志表
+-- 表名: hadoop_exec_logs
 -- ==================================================
 -- [结构] 创建表
-CREATE TABLE public.exec_logs (
-    id bigint NOT NULL,
-    exec_id character varying(32) NOT NULL,
-    fault_id character varying(32) NOT NULL,
-    command_type character varying(50) NOT NULL,
-    script_path character varying(255),
-    command_content text NOT NULL,
-    target_nodes jsonb,
-    risk_level character varying(20) DEFAULT 'medium'::character varying NOT NULL,
-    execution_status character varying(20) DEFAULT 'pending'::character varying NOT NULL,
+--
+-- Name: hadoop_exec_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.hadoop_exec_logs (
+    id integer NOT NULL,
+    from_user_id integer NOT NULL,
+    cluster_name character varying(255) NOT NULL,
+    description text,
     start_time timestamp with time zone,
-    end_time timestamp with time zone,
-    duration integer,
-    stdout_log text,
-    stderr_log text,
-    exit_code integer,
-    operator character varying(50) DEFAULT 'system'::character varying NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT exec_logs_duration_chk CHECK (((duration IS NULL) OR (duration >= 0))),
-    CONSTRAINT exec_logs_risk_chk CHECK (((risk_level)::text = ANY (ARRAY[('low'::character varying)::text, ('medium'::character varying)::text, ('high'::character varying)::text]))),
-    CONSTRAINT exec_logs_status_chk CHECK (((execution_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('success'::character varying)::text, ('failed'::character varying)::text, ('timeout'::character varying)::text])))
+    end_time timestamp with time zone
 );;
 
 -- [约束] 主键
-ALTER TABLE ONLY public.exec_logs
-    ADD CONSTRAINT exec_logs_pkey PRIMARY KEY (id);;
+--
+-- Name: hadoop_exec_logs hadoop_exec_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 其他约束
-ALTER TABLE ONLY public.exec_logs
-    ADD CONSTRAINT exec_logs_exec_id_key UNIQUE (exec_id);;
+ALTER TABLE ONLY public.hadoop_exec_logs
+    ADD CONSTRAINT hadoop_exec_logs_pkey PRIMARY KEY (id);;
+
+
+
+-- ==================================================
+-- 表名: hadoop_logs
+-- ==================================================
+-- [结构] 创建表
+--
+-- Name: hadoop_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.hadoop_logs (
+    log_id integer NOT NULL,
+    cluster_name character varying(255) NOT NULL,
+    node_host character varying(100) NOT NULL,
+    title character varying(255),
+    info text,
+    log_time timestamp with time zone NOT NULL
+);;
+
+-- [约束] 主键
+--
+-- Name: hadoop_logs hadoop_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.hadoop_logs
+    ADD CONSTRAINT hadoop_logs_pkey PRIMARY KEY (log_id);;
 
 -- [索引] 索引定义
-CREATE INDEX idx_exec_logs_end_time ON public.exec_logs USING btree (end_time);;
+--
+-- Name: idx_hadoop_logs_cluster_name; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
-CREATE INDEX idx_exec_logs_fault_id ON public.exec_logs USING btree (fault_id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_exec_logs_start_time ON public.exec_logs USING btree (start_time);;
-
--- [索引] 索引定义
-CREATE INDEX idx_exec_logs_status ON public.exec_logs USING btree (execution_status);;
-
--- [注释] 字段说明
-COMMENT ON COLUMN public.exec_logs.id IS '主键ID';;
-COMMENT ON COLUMN public.exec_logs.exec_id IS '执行唯一标识';;
-COMMENT ON COLUMN public.exec_logs.fault_id IS '关联故障标识(无外键)';;
-COMMENT ON COLUMN public.exec_logs.command_type IS '命令类型';;
-COMMENT ON COLUMN public.exec_logs.script_path IS '脚本路径';;
-COMMENT ON COLUMN public.exec_logs.command_content IS '执行的命令内容';;
-COMMENT ON COLUMN public.exec_logs.target_nodes IS '目标执行节点(JSONB)';;
-COMMENT ON COLUMN public.exec_logs.risk_level IS '风险级别(low/medium/high)';;
-COMMENT ON COLUMN public.exec_logs.execution_status IS '执行状态(pending/running/success/failed/timeout)';;
-COMMENT ON COLUMN public.exec_logs.start_time IS '开始执行时间';;
-COMMENT ON COLUMN public.exec_logs.end_time IS '结束执行时间';;
-COMMENT ON COLUMN public.exec_logs.duration IS '执行时长(秒)';;
-COMMENT ON COLUMN public.exec_logs.stdout_log IS '标准输出日志';;
-COMMENT ON COLUMN public.exec_logs.stderr_log IS '错误输出日志';;
-COMMENT ON COLUMN public.exec_logs.exit_code IS '退出码';;
-COMMENT ON COLUMN public.exec_logs.operator IS '操作人';;
-COMMENT ON COLUMN public.exec_logs.created_at IS '创建时间';;
-COMMENT ON COLUMN public.exec_logs.updated_at IS '更新时间';;
+CREATE INDEX idx_hadoop_logs_cluster_name ON public.hadoop_logs USING btree (cluster_name);;
 
 
 
@@ -729,6 +755,10 @@ COMMENT ON COLUMN public.exec_logs.updated_at IS '更新时间';;
 -- 表名: node_metrics
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: node_metrics; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.node_metrics (
     id integer NOT NULL,
     cluster_id integer,
@@ -740,22 +770,35 @@ CREATE TABLE public.node_metrics (
 );;
 
 -- [约束] 主键
+--
+-- Name: node_metrics node_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.node_metrics
     ADD CONSTRAINT node_metrics_pkey PRIMARY KEY (id);;
 
 -- [索引] 索引定义
-CREATE INDEX ix_node_metrics_node_name ON public.node_metrics USING btree (node_name);;
+--
+-- Name: ix_node_metrics_node_name; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
+CREATE INDEX ix_node_metrics_node_name ON public.node_metrics USING btree (node_name);;
+--
+-- Name: ix_node_metrics_timestamp; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX ix_node_metrics_timestamp ON public.node_metrics USING btree ("timestamp");;
 
 
 
 -- ==================================================
 -- 表名: nodes
--- 说明: 节点信息表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: nodes; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.nodes (
     id bigint NOT NULL,
     uuid uuid NOT NULL,
@@ -778,53 +821,128 @@ CREATE TABLE public.nodes (
 );;
 
 -- [约束] 主键
+--
+-- Name: nodes nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.nodes
     ADD CONSTRAINT nodes_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: nodes nodes_uuid_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.nodes
     ADD CONSTRAINT nodes_uuid_key UNIQUE (uuid);;
 
 -- [索引] 索引定义
+--
+-- Name: idx_nodes_cluster_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX idx_nodes_cluster_id ON public.nodes USING btree (cluster_id);;
+--
+-- Name: idx_nodes_ip_address; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
 CREATE INDEX idx_nodes_ip_address ON public.nodes USING btree (ip_address);;
+--
+-- Name: idx_nodes_last_heartbeat; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
 CREATE INDEX idx_nodes_last_heartbeat ON public.nodes USING btree (last_heartbeat);;
+--
+-- Name: idx_nodes_status; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
 CREATE INDEX idx_nodes_status ON public.nodes USING btree (status);;
+--
+-- Name: uk_cluster_hostname; Type: INDEX; Schema: public; Owner: postgres
+--
 
--- [索引] 索引定义
 CREATE UNIQUE INDEX uk_cluster_hostname ON public.nodes USING btree (cluster_id, hostname);;
 
 -- [约束] 外键关联
+--
+-- Name: nodes nodes_cluster_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.nodes
     ADD CONSTRAINT nodes_cluster_id_fkey FOREIGN KEY (cluster_id) REFERENCES public.clusters(id) ON UPDATE CASCADE ON DELETE CASCADE;;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN nodes.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.id IS '主键ID';;
+--
+-- Name: COLUMN nodes.uuid; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.uuid IS '节点唯一标识(UUID)';;
+--
+-- Name: COLUMN nodes.cluster_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.cluster_id IS '所属集群ID';;
+--
+-- Name: COLUMN nodes.hostname; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.hostname IS '节点主机名';;
+--
+-- Name: COLUMN nodes.ip_address; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.ip_address IS '节点IP地址(INET, 兼容IPv4/IPv6)';;
+--
+-- Name: COLUMN nodes.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.status IS '节点健康状态(healthy/unhealthy/warning/unknown)';;
+--
+-- Name: COLUMN nodes.cpu_usage; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.cpu_usage IS 'CPU使用率(%)';;
+--
+-- Name: COLUMN nodes.memory_usage; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.memory_usage IS '内存使用率(%)';;
+--
+-- Name: COLUMN nodes.disk_usage; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.disk_usage IS '磁盘使用率(%)';;
+--
+-- Name: COLUMN nodes.last_heartbeat; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.last_heartbeat IS '最后心跳时间';;
+--
+-- Name: COLUMN nodes.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.created_at IS '创建时间';;
+--
+-- Name: COLUMN nodes.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.nodes.updated_at IS '更新时间';;
 
 
 
 -- ==================================================
 -- 表名: permissions
--- 说明: 权限表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: permissions; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.permissions (
     id bigint NOT NULL,
     permission_name character varying(100) NOT NULL,
@@ -834,27 +952,58 @@ CREATE TABLE public.permissions (
 );;
 
 -- [约束] 主键
+--
+-- Name: permissions permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.permissions
     ADD CONSTRAINT permissions_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: permissions permissions_permission_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.permissions
     ADD CONSTRAINT permissions_permission_key_key UNIQUE (permission_key);;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN permissions.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.permissions.id IS '主键ID';;
+--
+-- Name: COLUMN permissions.permission_name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.permissions.permission_name IS '权限名称';;
+--
+-- Name: COLUMN permissions.permission_key; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.permissions.permission_key IS '权限唯一标识';;
+--
+-- Name: COLUMN permissions.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.permissions.description IS '权限描述';;
+--
+-- Name: COLUMN permissions.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.permissions.created_at IS '创建时间';;
 
 
 
 -- ==================================================
 -- 表名: repair_templates
--- 说明: 修复脚本模板表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: repair_templates; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.repair_templates (
     id bigint NOT NULL,
     template_name character varying(100) NOT NULL,
@@ -870,63 +1019,139 @@ CREATE TABLE public.repair_templates (
 );;
 
 -- [约束] 主键
+--
+-- Name: repair_templates repair_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.repair_templates
     ADD CONSTRAINT repair_templates_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: repair_templates repair_templates_template_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.repair_templates
     ADD CONSTRAINT repair_templates_template_name_key UNIQUE (template_name);;
 
 -- [索引] 索引定义
+--
+-- Name: idx_repair_templates_fault_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
 CREATE INDEX idx_repair_templates_fault_type ON public.repair_templates USING btree (fault_type);;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN repair_templates.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.id IS '主键ID';;
+--
+-- Name: COLUMN repair_templates.template_name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.template_name IS '模板名称';;
+--
+-- Name: COLUMN repair_templates.fault_type; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.fault_type IS '适用故障类型';;
+--
+-- Name: COLUMN repair_templates.script_content; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.script_content IS '脚本内容';;
+--
+-- Name: COLUMN repair_templates.risk_level; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.risk_level IS '风险级别(low/medium/high)';;
+--
+-- Name: COLUMN repair_templates.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.description IS '模板描述';;
+--
+-- Name: COLUMN repair_templates.parameters; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.parameters IS '模板参数定义(JSONB)';;
+--
+-- Name: COLUMN repair_templates.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.created_by IS '创建人';;
+--
+-- Name: COLUMN repair_templates.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.created_at IS '创建时间';;
+--
+-- Name: COLUMN repair_templates.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.repair_templates.updated_at IS '更新时间';;
 
 
 
 -- ==================================================
 -- 表名: role_permission_mapping
--- 说明: 角色-权限映射表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: role_permission_mapping; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.role_permission_mapping (
     role_id bigint NOT NULL,
     permission_id bigint NOT NULL
 );;
 
 -- [约束] 主键
+--
+-- Name: role_permission_mapping role_permission_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.role_permission_mapping
     ADD CONSTRAINT role_permission_mapping_pkey PRIMARY KEY (role_id, permission_id);;
 
 -- [约束] 外键关联
+--
+-- Name: role_permission_mapping role_permission_mapping_permission_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.role_permission_mapping
     ADD CONSTRAINT role_permission_mapping_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES public.permissions(id) ON UPDATE CASCADE ON DELETE CASCADE;;
+--
+-- Name: role_permission_mapping role_permission_mapping_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 外键关联
 ALTER TABLE ONLY public.role_permission_mapping
     ADD CONSTRAINT role_permission_mapping_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON UPDATE CASCADE ON DELETE CASCADE;;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN role_permission_mapping.role_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.role_permission_mapping.role_id IS '角色ID';;
+--
+-- Name: COLUMN role_permission_mapping.permission_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.role_permission_mapping.permission_id IS '权限ID';;
 
 
 
 -- ==================================================
 -- 表名: roles
--- 说明: 角色表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.roles (
     id bigint NOT NULL,
     role_name character varying(50) NOT NULL,
@@ -938,97 +1163,101 @@ CREATE TABLE public.roles (
 );;
 
 -- [约束] 主键
+--
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.roles
     ADD CONSTRAINT roles_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: roles roles_role_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.roles
     ADD CONSTRAINT roles_role_key_key UNIQUE (role_key);;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN roles.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.id IS '主键ID';;
+--
+-- Name: COLUMN roles.role_name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.role_name IS '角色名称';;
+--
+-- Name: COLUMN roles.role_key; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.role_key IS '角色唯一标识';;
+--
+-- Name: COLUMN roles.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.description IS '角色描述';;
+--
+-- Name: COLUMN roles.is_system_role; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.is_system_role IS '是否为系统内置角色';;
+--
+-- Name: COLUMN roles.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.created_at IS '创建时间';;
+--
+-- Name: COLUMN roles.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.roles.updated_at IS '更新时间';;
 
 
 
 -- ==================================================
--- 表名: system_logs
--- 说明: 系统日志表
+-- 表名: sys_exec_logs
 -- ==================================================
 -- [结构] 创建表
-CREATE TABLE public.system_logs (
-    id bigint NOT NULL,
-    log_id character varying(32) NOT NULL,
-    fault_id character varying(32),
-    cluster_id bigint,
-    "timestamp" timestamp with time zone NOT NULL,
-    host character varying(100) NOT NULL,
-    service character varying(50) NOT NULL,
-    source character varying(50),
-    log_level character varying(10) NOT NULL,
-    message text NOT NULL,
-    exception text,
-    raw_log text,
-    processed boolean DEFAULT false NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT system_logs_level_chk CHECK (((log_level)::text = ANY (ARRAY[('DEBUG'::character varying)::text, ('INFO'::character varying)::text, ('WARN'::character varying)::text, ('ERROR'::character varying)::text, ('FATAL'::character varying)::text])))
+--
+-- Name: sys_exec_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sys_exec_logs (
+    operation_id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    user_id integer NOT NULL,
+    description text NOT NULL,
+    operation_time timestamp with time zone DEFAULT now() NOT NULL
 );;
 
 -- [约束] 主键
-ALTER TABLE ONLY public.system_logs
-    ADD CONSTRAINT system_logs_pkey PRIMARY KEY (id);;
+--
+-- Name: sys_exec_logs sys_exec_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 其他约束
-ALTER TABLE ONLY public.system_logs
-    ADD CONSTRAINT system_logs_log_id_key UNIQUE (log_id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_system_logs_cluster_id ON public.system_logs USING btree (cluster_id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_system_logs_fault_id ON public.system_logs USING btree (fault_id);;
-
--- [索引] 索引定义
-CREATE INDEX idx_system_logs_level ON public.system_logs USING btree (log_level);;
-
--- [索引] 索引定义
-CREATE INDEX idx_system_logs_processed ON public.system_logs USING btree (processed);;
-
--- [索引] 索引定义
-CREATE INDEX idx_system_logs_timestamp ON public.system_logs USING btree ("timestamp");;
+ALTER TABLE ONLY public.sys_exec_logs
+    ADD CONSTRAINT sys_exec_logs_pkey PRIMARY KEY (operation_id);;
 
 -- [约束] 外键关联
-ALTER TABLE ONLY public.system_logs
-    ADD CONSTRAINT system_logs_cluster_id_fkey FOREIGN KEY (cluster_id) REFERENCES public.clusters(id) ON UPDATE CASCADE ON DELETE SET NULL;;
+--
+-- Name: sys_exec_logs fk_sys_exec_logs_user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [注释] 字段说明
-COMMENT ON COLUMN public.system_logs.id IS '主键ID';;
-COMMENT ON COLUMN public.system_logs.log_id IS '日志唯一标识';;
-COMMENT ON COLUMN public.system_logs.fault_id IS '关联故障标识(无外键)';;
-COMMENT ON COLUMN public.system_logs.cluster_id IS '关联集群ID';;
-COMMENT ON COLUMN public.system_logs."timestamp" IS '日志时间戳';;
-COMMENT ON COLUMN public.system_logs.host IS '主机名';;
-COMMENT ON COLUMN public.system_logs.service IS '服务名';;
-COMMENT ON COLUMN public.system_logs.source IS '来源';;
-COMMENT ON COLUMN public.system_logs.log_level IS '日志级别(DEBUG/INFO/WARN/ERROR/FATAL)';;
-COMMENT ON COLUMN public.system_logs.message IS '日志消息';;
-COMMENT ON COLUMN public.system_logs.exception IS '异常堆栈';;
-COMMENT ON COLUMN public.system_logs.raw_log IS '原始日志内容';;
-COMMENT ON COLUMN public.system_logs.processed IS '是否已处理';;
-COMMENT ON COLUMN public.system_logs.created_at IS '创建时间';;
+ALTER TABLE ONLY public.sys_exec_logs
+    ADD CONSTRAINT fk_sys_exec_logs_user_id FOREIGN KEY (user_id) REFERENCES public.users(id);;
 
 
 
 -- ==================================================
 -- 表名: user_cluster_mapping
--- 说明: 用户与集群映射表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: user_cluster_mapping; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.user_cluster_mapping (
     id bigint NOT NULL,
     user_id bigint NOT NULL,
@@ -1038,74 +1267,127 @@ CREATE TABLE public.user_cluster_mapping (
 );;
 
 -- [约束] 主键
+--
+-- Name: user_cluster_mapping user_cluster_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.user_cluster_mapping
     ADD CONSTRAINT user_cluster_mapping_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: user_cluster_mapping uk_user_cluster; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.user_cluster_mapping
     ADD CONSTRAINT uk_user_cluster UNIQUE (user_id, cluster_id);;
 
 -- [约束] 外键关联
+--
+-- Name: user_cluster_mapping user_cluster_mapping_cluster_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.user_cluster_mapping
     ADD CONSTRAINT user_cluster_mapping_cluster_id_fkey FOREIGN KEY (cluster_id) REFERENCES public.clusters(id) ON UPDATE CASCADE ON DELETE CASCADE;;
+--
+-- Name: user_cluster_mapping user_cluster_mapping_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 外键关联
 ALTER TABLE ONLY public.user_cluster_mapping
     ADD CONSTRAINT user_cluster_mapping_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON UPDATE CASCADE ON DELETE CASCADE;;
+--
+-- Name: user_cluster_mapping user_cluster_mapping_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 外键关联
 ALTER TABLE ONLY public.user_cluster_mapping
     ADD CONSTRAINT user_cluster_mapping_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN user_cluster_mapping.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_cluster_mapping.id IS '主键ID';;
+--
+-- Name: COLUMN user_cluster_mapping.user_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_cluster_mapping.user_id IS '用户ID';;
+--
+-- Name: COLUMN user_cluster_mapping.cluster_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_cluster_mapping.cluster_id IS '集群ID';;
+--
+-- Name: COLUMN user_cluster_mapping.role_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_cluster_mapping.role_id IS '角色ID';;
+--
+-- Name: COLUMN user_cluster_mapping.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_cluster_mapping.created_at IS '创建时间';;
 
 
 
 -- ==================================================
 -- 表名: user_role_mapping
--- 说明: 用户-角色映射表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: user_role_mapping; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.user_role_mapping (
     user_id bigint NOT NULL,
     role_id bigint NOT NULL
 );;
 
 -- [约束] 主键
+--
+-- Name: user_role_mapping user_role_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.user_role_mapping
     ADD CONSTRAINT user_role_mapping_pkey PRIMARY KEY (user_id, role_id);;
 
 -- [约束] 外键关联
+--
+-- Name: user_role_mapping user_role_mapping_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.user_role_mapping
     ADD CONSTRAINT user_role_mapping_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON UPDATE CASCADE ON DELETE CASCADE;;
+--
+-- Name: user_role_mapping user_role_mapping_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 外键关联
 ALTER TABLE ONLY public.user_role_mapping
-    ADD CONSTRAINT user_role_mapping_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- PostgreSQL database dump complete
---
-
-\unrestrict VkQDdIRnFc68eR2aCRmlQaOUEcnquZrdoDhA8XTRvvakPgHSyqtnAEmHxHh8Thn;
+    ADD CONSTRAINT user_role_mapping_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN user_role_mapping.user_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_role_mapping.user_id IS '用户ID';;
+--
+-- Name: COLUMN user_role_mapping.role_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.user_role_mapping.role_id IS '角色ID';;
 
 
 
 -- ==================================================
 -- 表名: users
--- 说明: 用户表
 -- ==================================================
 -- [结构] 创建表
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
+--
+
 CREATE TABLE public.users (
     id bigint NOT NULL,
     username character varying(50) NOT NULL,
@@ -1119,33 +1401,82 @@ CREATE TABLE public.users (
 );;
 
 -- [约束] 主键
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);;
 
 -- [约束] 其他约束
+--
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_email_key UNIQUE (email);;
+--
+-- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
 
--- [约束] 其他约束
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_username_key UNIQUE (username);;
 
 -- [注释] 字段说明
+--
+-- Name: COLUMN users.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.id IS '主键ID';;
+--
+-- Name: COLUMN users.username; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.username IS '用户名';;
+--
+-- Name: COLUMN users.email; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.email IS '邮箱';;
+--
+-- Name: COLUMN users.password_hash; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.password_hash IS '密码哈希';;
+--
+-- Name: COLUMN users.full_name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.full_name IS '姓名';;
+--
+-- Name: COLUMN users.is_active; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.is_active IS '是否激活';;
+--
+-- Name: COLUMN users.last_login; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.last_login IS '最后登录时间';;
+--
+-- Name: COLUMN users.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.created_at IS '创建时间';;
+--
+-- Name: COLUMN users.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
 COMMENT ON COLUMN public.users.updated_at IS '更新时间';;
 
 
-
--- ------------------------------------------------------------
+-- --------------------------------------------------
 -- 4. 视图定义
--- ------------------------------------------------------------
+-- --------------------------------------------------
+--
+-- Name: index_bloat; Type: VIEW; Schema: metric_helpers; Owner: postgres
+--
+
 CREATE VIEW metric_helpers.index_bloat AS
  SELECT get_btree_bloat_approx.i_database,
     get_btree_bloat_approx.i_schema_name,
@@ -1159,12 +1490,18 @@ CREATE VIEW metric_helpers.index_bloat AS
     get_btree_bloat_approx.i_bloat_ratio,
     get_btree_bloat_approx.i_is_na
    FROM metric_helpers.get_btree_bloat_approx() get_btree_bloat_approx(i_database, i_schema_name, i_table_name, i_index_name, i_real_size, i_extra_size, i_extra_ratio, i_fill_factor, i_bloat_size, i_bloat_ratio, i_is_na);;
+--
+-- Name: nearly_exhausted_sequences; Type: VIEW; Schema: metric_helpers; Owner: postgres
+--
 
 CREATE VIEW metric_helpers.nearly_exhausted_sequences AS
  SELECT get_nearly_exhausted_sequences.schemaname,
     get_nearly_exhausted_sequences.sequencename,
     get_nearly_exhausted_sequences.seq_percent_used
    FROM metric_helpers.get_nearly_exhausted_sequences((0.8)::double precision) get_nearly_exhausted_sequences(schemaname, sequencename, seq_percent_used);;
+--
+-- Name: pg_stat_statements; Type: VIEW; Schema: metric_helpers; Owner: postgres
+--
 
 CREATE VIEW metric_helpers.pg_stat_statements AS
  SELECT pg_stat_statements.userid,
@@ -1201,6 +1538,9 @@ CREATE VIEW metric_helpers.pg_stat_statements AS
     pg_stat_statements.wal_fpi,
     pg_stat_statements.wal_bytes
    FROM metric_helpers.pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, wal_records, wal_fpi, wal_bytes);;
+--
+-- Name: table_bloat; Type: VIEW; Schema: metric_helpers; Owner: postgres
+--
 
 CREATE VIEW metric_helpers.table_bloat AS
  SELECT get_table_bloat_approx.t_database,
@@ -1213,18 +1553,84 @@ CREATE VIEW metric_helpers.table_bloat AS
     get_table_bloat_approx.t_bloat_size,
     get_table_bloat_approx.t_bloat_ratio,
     get_table_bloat_approx.t_is_na
-   FROM metric_helpers.get_table_bloat_approx() get_table_bloat_approx(t_database, t_schema_name, t_table_name, t_real_size, t_extra_size, t_extra_ratio, t_fill_factor, t_bloat_size, t_bloat_ratio, t_is_na);
+   FROM metric_helpers.get_table_bloat_approx() get_table_bloat_approx(t_database, t_schema_name, t_table_name, t_real_size, t_extra_size, t_extra_ratio, t_fill_factor, t_bloat_size, t_bloat_ratio, t_is_na);;
 
 
-SET default_tablespace = '';
+-- --------------------------------------------------
+-- 5. 其他逻辑 (触发器等)
+-- --------------------------------------------------
+--
+-- Name: nodes trigger_sync_node_count; Type: TRIGGER; Schema: public; Owner: postgres
+--
 
-SET default_table_access_method = heap;;
+CREATE TRIGGER trigger_sync_node_count AFTER INSERT OR DELETE OR UPDATE ON public.nodes FOR EACH ROW EXECUTE FUNCTION public.update_cluster_node_count();;
+ALTER SCHEMA metric_helpers OWNER TO postgres;;
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
 
 
+ALTER SCHEMA public OWNER TO postgres;;
+ALTER SCHEMA user_management OWNER TO postgres;;
+$$;;
+ALTER FUNCTION metric_helpers.get_btree_bloat_approx(OUT i_database name, OUT i_schema_name name, OUT i_table_name name, OUT i_index_name name, OUT i_real_size numeric, OUT i_extra_size numeric, OUT i_extra_ratio double precision, OUT i_fill_factor integer, OUT i_bloat_size double precision, OUT i_bloat_ratio double precision, OUT i_is_na boolean) OWNER TO postgres;;
+$$;;
+ALTER FUNCTION metric_helpers.get_nearly_exhausted_sequences(threshold double precision, OUT schemaname name, OUT sequencename name, OUT seq_percent_used numeric) OWNER TO postgres;;
+$$;;
+ALTER FUNCTION metric_helpers.get_table_bloat_approx(OUT t_database name, OUT t_schema_name name, OUT t_table_name name, OUT t_real_size numeric, OUT t_extra_size double precision, OUT t_extra_ratio double precision, OUT t_fill_factor integer, OUT t_bloat_size double precision, OUT t_bloat_ratio double precision, OUT t_is_na boolean) OWNER TO postgres;;
+$$;;
+ALTER FUNCTION metric_helpers.pg_stat_statements(showtext boolean) OWNER TO postgres;;
+END IF;;
+END IF;;
+RETURN NULL;  -- AFTER触发器返回值无意义，固定返回NULL
+END;;
+$$;;
+ALTER FUNCTION public.update_cluster_node_count() OWNER TO postgres;;
+BEGIN
+    SELECT user_management.random_password(20) INTO pw;;
+EXECUTE format($$ CREATE USER %I WITH PASSWORD %L $$, username, pw);;
+RETURN pw;;
+END
+$_$;;
+ALTER FUNCTION user_management.create_application_user(username text) OWNER TO postgres;;
+IF FOUND
+    THEN
+        EXECUTE format($$ ALTER ROLE %I WITH PASSWORD %L $$, username, password);;
+ELSE
+        EXECUTE format($$ CREATE USER %I WITH PASSWORD %L $$, username, password);;
+END IF;;
+END
+$_$;;
+ALTER FUNCTION user_management.create_application_user_or_change_password(username text, password text) OWNER TO postgres;;
+END;;
+$_$;;
+ALTER FUNCTION user_management.create_role(rolename text) OWNER TO postgres;;
+END;;
+$_$;;
+ALTER FUNCTION user_management.create_user(username text) OWNER TO postgres;;
+$$;;
+ALTER FUNCTION user_management.drop_role(username text) OWNER TO postgres;;
+END
+$_$;;
+ALTER FUNCTION user_management.drop_user(username text) OWNER TO postgres;;
+$$;;
+ALTER FUNCTION user_management.random_password(length integer) OWNER TO postgres;;
+END
+$_$;;
+ALTER FUNCTION user_management.revoke_admin(username text) OWNER TO postgres;;
+$$;;
+ALTER FUNCTION user_management.terminate_backend(pid integer) OWNER TO postgres;;
+ALTER TABLE metric_helpers.index_bloat OWNER TO postgres;;
+ALTER TABLE metric_helpers.nearly_exhausted_sequences OWNER TO postgres;;
+ALTER TABLE metric_helpers.pg_stat_statements OWNER TO postgres;;
+ALTER TABLE metric_helpers.table_bloat OWNER TO postgres;;
+ALTER TABLE public.app_configurations OWNER TO postgres;;
+--
+-- Name: app_configurations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
--- ------------------------------------------------------------
--- 5. 触发器、序列及其他
--- ------------------------------------------------------------
 ALTER TABLE public.app_configurations ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.app_configurations_id_seq
     START WITH 1
@@ -1233,15 +1639,10 @@ ALTER TABLE public.app_configurations ALTER COLUMN id ADD GENERATED ALWAYS AS ID
     NO MAXVALUE
     CACHE 1
 );;
-
-ALTER TABLE public.audit_logs ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.audit_logs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);;
+ALTER TABLE public.chat_messages OWNER TO postgres;;
+--
+-- Name: chat_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 CREATE SEQUENCE public.chat_messages_id_seq
     AS integer
@@ -1250,6 +1651,17 @@ CREATE SEQUENCE public.chat_messages_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;;
+ALTER TABLE public.chat_messages_id_seq OWNER TO postgres;;
+--
+-- Name: chat_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.chat_messages_id_seq OWNED BY public.chat_messages.id;;
+ALTER TABLE public.chat_sessions OWNER TO postgres;;
+ALTER TABLE public.cluster_metrics OWNER TO postgres;;
+--
+-- Name: cluster_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 CREATE SEQUENCE public.cluster_metrics_id_seq
     AS integer
@@ -1258,6 +1670,16 @@ CREATE SEQUENCE public.cluster_metrics_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;;
+ALTER TABLE public.cluster_metrics_id_seq OWNER TO postgres;;
+--
+-- Name: cluster_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.cluster_metrics_id_seq OWNED BY public.cluster_metrics.id;;
+ALTER TABLE public.clusters OWNER TO postgres;;
+--
+-- Name: clusters_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.clusters ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.clusters_id_seq
@@ -1267,15 +1689,46 @@ ALTER TABLE public.clusters ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );;
+ALTER TABLE public.hadoop_exec_logs OWNER TO postgres;;
+--
+-- Name: hadoop_exec_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
-ALTER TABLE public.exec_logs ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.exec_logs_id_seq
+CREATE SEQUENCE public.hadoop_exec_logs_id_seq
+    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
-    CACHE 1
-);;
+    CACHE 1;;
+ALTER TABLE public.hadoop_exec_logs_id_seq OWNER TO postgres;;
+--
+-- Name: hadoop_exec_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.hadoop_exec_logs_id_seq OWNED BY public.hadoop_exec_logs.id;;
+ALTER TABLE public.hadoop_logs OWNER TO postgres;;
+--
+-- Name: hadoop_logs_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.hadoop_logs_log_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;;
+ALTER TABLE public.hadoop_logs_log_id_seq OWNER TO postgres;;
+--
+-- Name: hadoop_logs_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.hadoop_logs_log_id_seq OWNED BY public.hadoop_logs.log_id;;
+ALTER TABLE public.node_metrics OWNER TO postgres;;
+--
+-- Name: node_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 CREATE SEQUENCE public.node_metrics_id_seq
     AS integer
@@ -1284,6 +1737,16 @@ CREATE SEQUENCE public.node_metrics_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;;
+ALTER TABLE public.node_metrics_id_seq OWNER TO postgres;;
+--
+-- Name: node_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.node_metrics_id_seq OWNED BY public.node_metrics.id;;
+ALTER TABLE public.nodes OWNER TO postgres;;
+--
+-- Name: nodes_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.nodes ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.nodes_id_seq
@@ -1293,6 +1756,10 @@ ALTER TABLE public.nodes ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );;
+ALTER TABLE public.permissions OWNER TO postgres;;
+--
+-- Name: permissions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.permissions ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.permissions_id_seq
@@ -1302,6 +1769,10 @@ ALTER TABLE public.permissions ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY 
     NO MAXVALUE
     CACHE 1
 );;
+ALTER TABLE public.repair_templates OWNER TO postgres;;
+--
+-- Name: repair_templates_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.repair_templates ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.repair_templates_id_seq
@@ -1311,6 +1782,11 @@ ALTER TABLE public.repair_templates ALTER COLUMN id ADD GENERATED ALWAYS AS IDEN
     NO MAXVALUE
     CACHE 1
 );;
+ALTER TABLE public.role_permission_mapping OWNER TO postgres;;
+ALTER TABLE public.roles OWNER TO postgres;;
+--
+-- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.roles ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.roles_id_seq
@@ -1320,15 +1796,11 @@ ALTER TABLE public.roles ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );;
-
-ALTER TABLE public.system_logs ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.system_logs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);;
+ALTER TABLE public.sys_exec_logs OWNER TO postgres;;
+ALTER TABLE public.user_cluster_mapping OWNER TO postgres;;
+--
+-- Name: user_cluster_mapping_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.user_cluster_mapping ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.user_cluster_mapping_id_seq
@@ -1338,6 +1810,11 @@ ALTER TABLE public.user_cluster_mapping ALTER COLUMN id ADD GENERATED ALWAYS AS 
     NO MAXVALUE
     CACHE 1
 );;
+ALTER TABLE public.user_role_mapping OWNER TO postgres;;
+ALTER TABLE public.users OWNER TO postgres;;
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
 
 ALTER TABLE public.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.users_id_seq
@@ -1347,42 +1824,326 @@ ALTER TABLE public.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );;
+--
+-- Name: SCHEMA metric_helpers; Type: ACL; Schema: -; Owner: postgres
+--
 
-CREATE TRIGGER trigger_sync_node_count AFTER INSERT OR DELETE OR UPDATE ON public.nodes FOR EACH ROW EXECUTE FUNCTION public.update_cluster_node_count();;
+GRANT USAGE ON SCHEMA metric_helpers TO admin;;
+GRANT USAGE ON SCHEMA metric_helpers TO robot_zmon;;
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
 
-COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics of all SQL statements executed';;
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;;
+GRANT ALL ON SCHEMA public TO PUBLIC;;
+GRANT USAGE ON SCHEMA public TO echo;;
+--
+-- Name: SCHEMA user_management; Type: ACL; Schema: -; Owner: postgres
+--
 
-COMMENT ON EXTENSION pg_stat_kcache IS 'Kernel statistics gathering';;
+GRANT USAGE ON SCHEMA user_management TO admin;;
+--
+-- Name: FUNCTION get_btree_bloat_approx(OUT i_database name, OUT i_schema_name name, OUT i_table_name name, OUT i_index_name name, OUT i_real_size numeric, OUT i_extra_size numeric, OUT i_extra_ratio double precision, OUT i_fill_factor integer, OUT i_bloat_size double precision, OUT i_bloat_ratio double precision, OUT i_is_na boolean); Type: ACL; Schema: metric_helpers; Owner: postgres
+--
 
-COMMENT ON EXTENSION set_user IS 'similar to SET ROLE but with added logging';;
+REVOKE ALL ON FUNCTION metric_helpers.get_btree_bloat_approx(OUT i_database name, OUT i_schema_name name, OUT i_table_name name, OUT i_index_name name, OUT i_real_size numeric, OUT i_extra_size numeric, OUT i_extra_ratio double precision, OUT i_fill_factor integer, OUT i_bloat_size double precision, OUT i_bloat_ratio double precision, OUT i_is_na boolean) FROM PUBLIC;;
+GRANT ALL ON FUNCTION metric_helpers.get_btree_bloat_approx(OUT i_database name, OUT i_schema_name name, OUT i_table_name name, OUT i_index_name name, OUT i_real_size numeric, OUT i_extra_size numeric, OUT i_extra_ratio double precision, OUT i_fill_factor integer, OUT i_bloat_size double precision, OUT i_bloat_ratio double precision, OUT i_is_na boolean) TO admin;;
+GRANT ALL ON FUNCTION metric_helpers.get_btree_bloat_approx(OUT i_database name, OUT i_schema_name name, OUT i_table_name name, OUT i_index_name name, OUT i_real_size numeric, OUT i_extra_size numeric, OUT i_extra_ratio double precision, OUT i_fill_factor integer, OUT i_bloat_size double precision, OUT i_bloat_ratio double precision, OUT i_is_na boolean) TO robot_zmon;;
+--
+-- Name: FUNCTION get_nearly_exhausted_sequences(threshold double precision, OUT schemaname name, OUT sequencename name, OUT seq_percent_used numeric); Type: ACL; Schema: metric_helpers; Owner: postgres
+--
 
-COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';;
+REVOKE ALL ON FUNCTION metric_helpers.get_nearly_exhausted_sequences(threshold double precision, OUT schemaname name, OUT sequencename name, OUT seq_percent_used numeric) FROM PUBLIC;;
+GRANT ALL ON FUNCTION metric_helpers.get_nearly_exhausted_sequences(threshold double precision, OUT schemaname name, OUT sequencename name, OUT seq_percent_used numeric) TO admin;;
+GRANT ALL ON FUNCTION metric_helpers.get_nearly_exhausted_sequences(threshold double precision, OUT schemaname name, OUT sequencename name, OUT seq_percent_used numeric) TO robot_zmon;;
+--
+-- Name: FUNCTION get_table_bloat_approx(OUT t_database name, OUT t_schema_name name, OUT t_table_name name, OUT t_real_size numeric, OUT t_extra_size double precision, OUT t_extra_ratio double precision, OUT t_fill_factor integer, OUT t_bloat_size double precision, OUT t_bloat_ratio double precision, OUT t_is_na boolean); Type: ACL; Schema: metric_helpers; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.create_application_user(username text) IS 'Creates a user that can login, sets the password to a strong random one,
-which is then returned';;
+REVOKE ALL ON FUNCTION metric_helpers.get_table_bloat_approx(OUT t_database name, OUT t_schema_name name, OUT t_table_name name, OUT t_real_size numeric, OUT t_extra_size double precision, OUT t_extra_ratio double precision, OUT t_fill_factor integer, OUT t_bloat_size double precision, OUT t_bloat_ratio double precision, OUT t_is_na boolean) FROM PUBLIC;;
+GRANT ALL ON FUNCTION metric_helpers.get_table_bloat_approx(OUT t_database name, OUT t_schema_name name, OUT t_table_name name, OUT t_real_size numeric, OUT t_extra_size double precision, OUT t_extra_ratio double precision, OUT t_fill_factor integer, OUT t_bloat_size double precision, OUT t_bloat_ratio double precision, OUT t_is_na boolean) TO admin;;
+GRANT ALL ON FUNCTION metric_helpers.get_table_bloat_approx(OUT t_database name, OUT t_schema_name name, OUT t_table_name name, OUT t_real_size numeric, OUT t_extra_size double precision, OUT t_extra_ratio double precision, OUT t_fill_factor integer, OUT t_bloat_size double precision, OUT t_bloat_ratio double precision, OUT t_is_na boolean) TO robot_zmon;;
+--
+-- Name: TABLE pg_stat_statements; Type: ACL; Schema: public; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.create_application_user_or_change_password(username text, password text) IS 'USE THIS ONLY IN EMERGENCY!  The password will appear in the DB logs.
-Creates a user that can login, sets the password to the one provided.
-If the user already exists, sets its password.';;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.pg_stat_statements TO echo;;
+--
+-- Name: FUNCTION pg_stat_statements(showtext boolean); Type: ACL; Schema: metric_helpers; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.create_role(rolename text) IS 'Creates a role that cannot log in, but can be used to set up fine-grained privileges';;
+REVOKE ALL ON FUNCTION metric_helpers.pg_stat_statements(showtext boolean) FROM PUBLIC;;
+GRANT ALL ON FUNCTION metric_helpers.pg_stat_statements(showtext boolean) TO admin;;
+GRANT ALL ON FUNCTION metric_helpers.pg_stat_statements(showtext boolean) TO robot_zmon;;
+--
+-- Name: FUNCTION pg_switch_wal(); Type: ACL; Schema: pg_catalog; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.create_user(username text) IS 'Creates a user that is supposed to be a human, to be authenticated without a password';;
+GRANT ALL ON FUNCTION pg_catalog.pg_switch_wal() TO admin;;
+--
+-- Name: FUNCTION pg_stat_statements_reset(userid oid, dbid oid, queryid bigint); Type: ACL; Schema: public; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.drop_role(username text) IS 'Drop a human or application user.  Intended for cleanup (either after team changes or mistakes in role setup).
-Roles (= users) that own database objects cannot be dropped.';;
+GRANT ALL ON FUNCTION public.pg_stat_statements_reset(userid oid, dbid oid, queryid bigint) TO admin;;
+--
+-- Name: FUNCTION set_user(text); Type: ACL; Schema: public; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.drop_user(username text) IS 'Drop a human or application user.  Intended for cleanup (either after team changes or mistakes in role setup).
-Roles (= users) that own database objects cannot be dropped.';;
+GRANT ALL ON FUNCTION public.set_user(text) TO admin;;
+--
+-- Name: FUNCTION create_application_user(username text); Type: ACL; Schema: user_management; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.revoke_admin(username text) IS 'Use this function to make a human user less privileged,
-ie. when you want to grant someone read privileges only';;
+REVOKE ALL ON FUNCTION user_management.create_application_user(username text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.create_application_user(username text) TO admin;;
+--
+-- Name: FUNCTION create_application_user_or_change_password(username text, password text); Type: ACL; Schema: user_management; Owner: postgres
+--
 
-COMMENT ON FUNCTION user_management.terminate_backend(pid integer) IS 'When there is a process causing harm, you can kill it using this function.  Get the pid from pg_stat_activity
-(be careful to match the user name (usename) and the query, in order not to kill innocent kittens) and pass it to terminate_backend()';;
+REVOKE ALL ON FUNCTION user_management.create_application_user_or_change_password(username text, password text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.create_application_user_or_change_password(username text, password text) TO admin;;
+--
+-- Name: FUNCTION create_role(rolename text); Type: ACL; Schema: user_management; Owner: postgres
+--
 
-ALTER SEQUENCE public.chat_messages_id_seq OWNED BY public.chat_messages.id;;
+REVOKE ALL ON FUNCTION user_management.create_role(rolename text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.create_role(rolename text) TO admin;;
+--
+-- Name: FUNCTION create_user(username text); Type: ACL; Schema: user_management; Owner: postgres
+--
 
-ALTER SEQUENCE public.cluster_metrics_id_seq OWNED BY public.cluster_metrics.id;;
+REVOKE ALL ON FUNCTION user_management.create_user(username text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.create_user(username text) TO admin;;
+--
+-- Name: FUNCTION drop_role(username text); Type: ACL; Schema: user_management; Owner: postgres
+--
 
-ALTER SEQUENCE public.node_metrics_id_seq OWNED BY public.node_metrics.id;;
+REVOKE ALL ON FUNCTION user_management.drop_role(username text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.drop_role(username text) TO admin;;
+--
+-- Name: FUNCTION drop_user(username text); Type: ACL; Schema: user_management; Owner: postgres
+--
+
+REVOKE ALL ON FUNCTION user_management.drop_user(username text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.drop_user(username text) TO admin;;
+--
+-- Name: FUNCTION revoke_admin(username text); Type: ACL; Schema: user_management; Owner: postgres
+--
+
+REVOKE ALL ON FUNCTION user_management.revoke_admin(username text) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.revoke_admin(username text) TO admin;;
+--
+-- Name: FUNCTION terminate_backend(pid integer); Type: ACL; Schema: user_management; Owner: postgres
+--
+
+REVOKE ALL ON FUNCTION user_management.terminate_backend(pid integer) FROM PUBLIC;;
+GRANT ALL ON FUNCTION user_management.terminate_backend(pid integer) TO admin;;
+--
+-- Name: TABLE index_bloat; Type: ACL; Schema: metric_helpers; Owner: postgres
+--
+
+GRANT SELECT ON TABLE metric_helpers.index_bloat TO admin;;
+GRANT SELECT ON TABLE metric_helpers.index_bloat TO robot_zmon;;
+--
+-- Name: TABLE nearly_exhausted_sequences; Type: ACL; Schema: metric_helpers; Owner: postgres
+--
+
+GRANT SELECT ON TABLE metric_helpers.nearly_exhausted_sequences TO admin;;
+GRANT SELECT ON TABLE metric_helpers.nearly_exhausted_sequences TO robot_zmon;;
+--
+-- Name: TABLE pg_stat_statements; Type: ACL; Schema: metric_helpers; Owner: postgres
+--
+
+GRANT SELECT ON TABLE metric_helpers.pg_stat_statements TO admin;;
+GRANT SELECT ON TABLE metric_helpers.pg_stat_statements TO robot_zmon;;
+--
+-- Name: TABLE table_bloat; Type: ACL; Schema: metric_helpers; Owner: postgres
+--
+
+GRANT SELECT ON TABLE metric_helpers.table_bloat TO admin;;
+GRANT SELECT ON TABLE metric_helpers.table_bloat TO robot_zmon;;
+--
+-- Name: TABLE pg_stat_activity; Type: ACL; Schema: pg_catalog; Owner: postgres
+--
+
+GRANT SELECT ON TABLE pg_catalog.pg_stat_activity TO admin;;
+--
+-- Name: TABLE app_configurations; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.app_configurations TO echo;;
+--
+-- Name: SEQUENCE app_configurations_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.app_configurations_id_seq TO echo;;
+--
+-- Name: TABLE chat_messages; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.chat_messages TO echo;;
+--
+-- Name: SEQUENCE chat_messages_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.chat_messages_id_seq TO echo;;
+--
+-- Name: TABLE chat_sessions; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.chat_sessions TO echo;;
+--
+-- Name: TABLE cluster_metrics; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.cluster_metrics TO echo;;
+--
+-- Name: SEQUENCE cluster_metrics_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.cluster_metrics_id_seq TO echo;;
+--
+-- Name: TABLE clusters; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.clusters TO echo;;
+--
+-- Name: SEQUENCE clusters_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.clusters_id_seq TO echo;;
+--
+-- Name: TABLE hadoop_exec_logs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.hadoop_exec_logs TO echo;;
+--
+-- Name: SEQUENCE hadoop_exec_logs_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.hadoop_exec_logs_id_seq TO echo;;
+--
+-- Name: TABLE hadoop_logs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.hadoop_logs TO echo;;
+--
+-- Name: SEQUENCE hadoop_logs_log_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.hadoop_logs_log_id_seq TO echo;;
+--
+-- Name: TABLE node_metrics; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.node_metrics TO echo;;
+--
+-- Name: SEQUENCE node_metrics_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.node_metrics_id_seq TO echo;;
+--
+-- Name: TABLE nodes; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.nodes TO echo;;
+--
+-- Name: SEQUENCE nodes_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.nodes_id_seq TO echo;;
+--
+-- Name: TABLE permissions; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.permissions TO echo;;
+--
+-- Name: SEQUENCE permissions_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.permissions_id_seq TO echo;;
+--
+-- Name: TABLE pg_stat_kcache_detail; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.pg_stat_kcache_detail TO echo;;
+--
+-- Name: TABLE pg_stat_kcache; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.pg_stat_kcache TO echo;;
+--
+-- Name: TABLE pg_stat_statements_info; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.pg_stat_statements_info TO echo;;
+--
+-- Name: TABLE repair_templates; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.repair_templates TO echo;;
+--
+-- Name: SEQUENCE repair_templates_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.repair_templates_id_seq TO echo;;
+--
+-- Name: TABLE role_permission_mapping; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.role_permission_mapping TO echo;;
+--
+-- Name: TABLE roles; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.roles TO echo;;
+--
+-- Name: SEQUENCE roles_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.roles_id_seq TO echo;;
+--
+-- Name: TABLE sys_exec_logs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.sys_exec_logs TO echo;;
+--
+-- Name: TABLE user_cluster_mapping; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_cluster_mapping TO echo;;
+--
+-- Name: SEQUENCE user_cluster_mapping_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.user_cluster_mapping_id_seq TO echo;;
+--
+-- Name: TABLE user_role_mapping; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_role_mapping TO echo;;
+--
+-- Name: TABLE users; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.users TO echo;;
+--
+-- Name: SEQUENCE users_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.users_id_seq TO echo;;
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES  TO echo;;
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,DELETE,UPDATE ON TABLES  TO echo;;
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict SXrgAm7tYeypjSdFNjkiY8IUbxx0EaiSgRlWAZQIjV3klsYOp84NcEuzavflAeq;;
