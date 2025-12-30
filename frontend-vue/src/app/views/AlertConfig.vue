@@ -2,7 +2,7 @@
   <section class="layout__section">
     <div class="layout__page-header exec-header">
       <div>
-        <h2 class="layout__page-title">告警配置（原型）</h2>
+        <h2 class="layout__page-title">告警配置</h2>
         <div class="layout__page-subtitle">设置告警规则、通知渠道与阈值</div>
       </div>
       <div class="header-actions"><button class="btn btn--primary" type="button" @click="open=true">新增配置</button></div>
@@ -15,6 +15,7 @@
       </div>
       <div class="layout__card-body">
         <div v-if="loading" class="u-text-center u-p-4 u-text-gray-500">正在加载配置...</div>
+        <div v-else-if="err && !open" class="u-p-4 u-text-center u-text-error">{{ err }}</div>
         <form v-else class="layout__grid layout__grid--3" @submit.prevent>
           <div>
             <label class="u-text-sm u-font-medium u-text-gray-700">告警严重级别</label>
@@ -46,7 +47,7 @@
     </article>
 
     <article class="layout__card u-mt-3">
-      <div class="layout__card-header"><h3 class="layout__card-title">规则列表（占位数据）</h3></div>
+      <div class="layout__card-header"><h3 class="layout__card-title">告警规则列表</h3></div>
       <div class="layout__card-body u-p-0">
         <table class="dashboard__table">
           <thead><tr><th>规则名称</th><th>条件</th><th>级别</th><th>通知渠道</th><th>操作</th></tr></thead>
@@ -100,12 +101,34 @@ const form = reactive<{ name:string; cond:string; level:'INFO'|'WARN'|'ERROR'; c
 
 const loading = ref(false)
 
+function getErrorMessage(e: any, prefix: string) {
+  const status = e.response?.status
+  const detail = e.response?.data?.detail
+  let msg = ''
+  
+  if (status === 401) {
+    msg = '会话已过期或未登录，请重新登录。'
+  } else if (status === 403) {
+    msg = '权限不足：您没有权限执行此操作。'
+  } else if (status === 404) {
+    msg = '接口不存在 (404)，请检查后端服务版本。'
+  } else if (status === 422) {
+    msg = `参数校验失败：${detail || '请检查输入格式'}`
+  } else if (status >= 500) {
+    msg = `后端服务器错误 (${status})，请稍后再试。`
+  } else {
+    msg = detail || e.message || '未知错误'
+  }
+  return `${prefix}：${msg}`
+}
+
 onMounted(() => {
   loadAll()
 })
 
 async function loadAll() {
   loading.value = true
+  err.value = ''
   try {
     const [settingsRes, rulesRes] = await Promise.all([
       api.get('/v1/alert/settings', { headers: { Authorization: `Bearer ${auth.token}` } }),
@@ -123,13 +146,14 @@ async function loadAll() {
     const r = rulesRes.data?.rules || []
     rules.splice(0, rules.length, ...r)
   } catch (e: any) {
-    err.value = '加载配置失败：' + (e.response?.data?.detail || e.message)
+    err.value = getErrorMessage(e, '加载配置失败')
   } finally {
     loading.value = false
   }
 }
 
 async function saveSettings() {
+  err.value = ''
   try {
     await api.post('/v1/alert/settings', {
       severity: severity.value,
@@ -141,7 +165,8 @@ async function saveSettings() {
     }, { headers: { Authorization: `Bearer ${auth.token}` } })
     alert('全局设置已保存')
   } catch (e: any) {
-    alert('保存失败：' + (e.response?.data?.detail || e.message))
+    err.value = getErrorMessage(e, '保存全局设置失败')
+    alert(err.value)
   }
 }
 
@@ -149,9 +174,9 @@ function levelClass(l:'INFO'|'WARN'|'ERROR'){ return l==='ERROR'?'level--error':
 
 async function save(){
   if (!form.name || !form.cond) { err.value='请填写规则名称与条件'; return }
+  err.value = ''
   try {
     await api.post('/v1/alert/rules', { ...form }, { headers: { Authorization: `Bearer ${auth.token}` } })
-    err.value = ''
     open.value = false
     form.name = ''
     form.cond = ''
@@ -159,17 +184,19 @@ async function save(){
     form.channel = ''
     await loadAll()
   } catch (e: any) {
-    err.value = '保存规则失败：' + (e.response?.data?.detail || e.message)
+    err.value = getErrorMessage(e, '保存规则失败')
   }
 }
 
 async function del(n:string){
   if (!confirm(`确定要删除规则 ${n} 吗？`)) return
+  err.value = ''
   try {
     await api.delete(`/v1/alert/rules/${encodeURIComponent(n)}`, { headers: { Authorization: `Bearer ${auth.token}` } })
     await loadAll()
   } catch (e: any) {
-    alert('删除失败：' + (e.response?.data?.detail || e.message))
+    err.value = getErrorMessage(e, '删除失败')
+    alert(err.value)
   }
 }
 
