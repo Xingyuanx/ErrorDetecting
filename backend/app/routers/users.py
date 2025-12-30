@@ -85,16 +85,16 @@ def _get_username(u) -> str:
     return getattr(u, "username", None) or (u.get("username") if isinstance(u, dict) else None)
 
 
-def _require_admin(u):
-    name = _get_username(u)
-    if name != "admin":
-        raise HTTPException(status_code=403, detail="not_admin")
+def _require_permission(user, permission: str):
+    perms = user.get("permissions", []) if isinstance(user, dict) else getattr(user, "permissions", [])
+    if permission not in perms:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {permission}")
 
 
 @router.get("/users")
 async def list_users(user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        _require_admin(user)
+        _require_permission(user, "auth:manage")
         result = await db.execute(select(User).limit(500))
         rows = result.scalars().all()
         users = []
@@ -118,7 +118,7 @@ async def list_users(user=Depends(get_current_user), db: AsyncSession = Depends(
 @router.post("/users")
 async def create_user(req: CreateUserRequest, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        _require_admin(user)
+        _require_permission(user, "auth:manage")
         errors: list[dict] = []
         if not (3 <= len(req.username) <= 50) or not re.fullmatch(r"^[A-Za-z][A-Za-z0-9_]{2,49}$", req.username or ""):
             errors.append({"field": "username", "message": "用户名需以字母开头，支持字母/数字/下划线，长度3-50"})
@@ -167,7 +167,7 @@ async def create_user(req: CreateUserRequest, user=Depends(get_current_user), db
 @router.patch("/users/{username}")
 async def update_user(username: str, req: UpdateUserRequest, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        _require_admin(user)
+        _require_permission(user, "auth:manage")
         result = await db.execute(select(User).where(User.username == username).limit(1))
         u = result.scalars().first()
         if not u:
@@ -197,7 +197,7 @@ async def update_user(username: str, req: UpdateUserRequest, user=Depends(get_cu
 @router.delete("/users/{username}")
 async def delete_user(username: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        _require_admin(user)
+        _require_permission(user, "auth:manage")
         result = await db.execute(select(User).where(User.username == username).limit(1))
         u = result.scalars().first()
         if not u:
