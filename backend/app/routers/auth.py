@@ -62,13 +62,35 @@ async def _map_user_role(db: AsyncSession, username: str, role_key: str) -> None
     await db.execute(text("INSERT INTO user_role_mapping(user_id, role_id) VALUES(:uid, :rid)"), {"uid": uid, "rid": rid})
     await db.commit()
 
+async def _get_user_roles(db: AsyncSession, user_id: int) -> list[str]:
+    res = await db.execute(
+        text("SELECT r.role_key FROM roles r JOIN user_role_mapping urm ON r.id = urm.role_id WHERE urm.user_id = :uid"),
+        {"uid": user_id},
+    )
+    return [row[0] for row in res.all()]
+
 @router.post("/user/login")
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     demo = {"admin": "admin123", "ops": "ops123", "obs": "obs123"}
     if req.username in demo and req.password == demo[req.username]:
         exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": req.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
-        return {"ok": True, "username": req.username, "fullName": req.username, "token": token}
+        
+        # 为 demo 账号获取角色
+        uid = await _get_user_id(db, req.username)
+        roles = await _get_user_roles(db, uid) if uid else []
+        if not roles:
+            # 如果 DB 中没记录，给个默认
+            role_map = {"admin": ["admin"], "ops": ["operator"], "obs": ["observer"]}
+            roles = role_map.get(req.username, [])
+            
+        return {
+            "ok": True, 
+            "username": req.username, 
+            "fullName": req.username, 
+            "token": token,
+            "roles": roles
+        }
     try:
         result = await db.execute(select(User).where(User.username == req.username).limit(1))
         user = result.scalars().first()
@@ -82,9 +104,19 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
             update(User).where(User.id == user.id).values(last_login=func.now(), updated_at=func.now())
         )
         await db.commit()
+        
+        # 获取用户角色
+        roles = await _get_user_roles(db, user.id)
+        
         exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": user.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
-        return {"ok": True, "username": user.username, "fullName": user.full_name, "token": token}
+        return {
+            "ok": True, 
+            "username": user.username, 
+            "fullName": user.full_name, 
+            "token": token,
+            "roles": roles
+        }
     except HTTPException:
         raise
     except Exception:
@@ -127,7 +159,13 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         await _map_user_role(db, req.username, "observer")
         exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": user.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
-        return {"ok": True, "username": user.username, "fullName": user.full_name, "token": token}
+        return {
+            "ok": True, 
+            "username": user.username, 
+            "fullName": user.full_name, 
+            "token": token,
+            "roles": ["observer"]
+        }
     except HTTPException:
         raise
     except Exception as e:

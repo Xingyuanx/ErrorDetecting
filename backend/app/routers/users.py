@@ -25,6 +25,10 @@ class UpdateUserRequest(BaseModel):
     role: str | None = None
     status: str | None = None
 
+class ChangePasswordRequest(BaseModel):
+    currentPassword: str
+    newPassword: str
+
 
 def _status_to_active(status: str) -> bool:
     return status == "enabled"
@@ -228,6 +232,39 @@ async def list_users_with_roles(user=Depends(get_current_user), db: AsyncSession
             for r in rows
         ]
         return {"users": users}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="server_error")
+
+
+@router.patch("/user/password")
+async def change_password(req: ChangePasswordRequest, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    try:
+        username = _get_username(user)
+        # 演示账号保护
+        if username in {"admin", "ops", "obs"}:
+            raise HTTPException(status_code=400, detail="demo_user_cannot_change_password")
+
+        # 密码强度校验
+        if not (8 <= len(req.newPassword) <= 128) or not re.search(r"[A-Z]", req.newPassword) or not re.search(r"[a-z]", req.newPassword) or not re.search(r"\d", req.newPassword):
+            raise HTTPException(status_code=400, detail="weak_new_password")
+
+        # 查找真实用户
+        res = await db.execute(select(User).where(User.username == username).limit(1))
+        u = res.scalars().first()
+        if not u:
+            raise HTTPException(status_code=401, detail="user_not_found")
+
+        # 验证旧密码
+        if not bcrypt.verify(req.currentPassword, u.password_hash):
+            raise HTTPException(status_code=400, detail="invalid_current_password")
+
+        # 更新密码
+        new_hash = bcrypt.hash(req.newPassword)
+        await db.execute(update(User).where(User.id == u.id).values(password_hash=new_hash, updated_at=func.now()))
+        await db.commit()
+        return {"ok": True}
     except HTTPException:
         raise
     except Exception:
