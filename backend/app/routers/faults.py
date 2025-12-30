@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete, update
 from ..db import get_db
-from ..models.system_logs import SystemLog
+from ..models.hadoop_logs import HadoopLog
 from ..models.clusters import Cluster
 from ..deps.auth import get_current_user
 from pydantic import BaseModel
@@ -32,7 +32,7 @@ def _map_level(level: str) -> str:
 
 
 class FaultCreate(BaseModel):
-    id: str
+    id: str | None = None
     type: str
     level: str
     status: str
@@ -58,156 +58,139 @@ async def list_faults(
     size: int = Query(10, ge=1, le=100),
 ):
     try:
-        stmt = select(SystemLog).where(SystemLog.service == "fault")
-        count_stmt = select(func.count(SystemLog.id)).where(SystemLog.service == "fault")
+        stmt = select(HadoopLog).where(HadoopLog.title == "fault")
+        count_stmt = select(func.count(HadoopLog.log_id)).where(HadoopLog.title == "fault")
 
         if cluster:
-            # 支持传 UUID 或名称
-            cid_res = await db.execute(select(Cluster.id).where(Cluster.uuid == cluster).limit(1))
-            cid = cid_res.scalars().first()
-            if not cid:
-                name_res = await db.execute(select(Cluster.id).where(Cluster.name == cluster).limit(1))
-                cid = name_res.scalars().first()
-            if cid:
-                stmt = stmt.where(SystemLog.cluster_id == cid)
-                count_stmt = count_stmt.where(SystemLog.cluster_id == cid)
-            else:
-                return {"items": [], "total": 0}
+            stmt = stmt.where(HadoopLog.cluster_name == cluster)
+            count_stmt = count_stmt.where(HadoopLog.cluster_name == cluster)
         if node:
-            stmt = stmt.where(SystemLog.host == node)
-            count_stmt = count_stmt.where(SystemLog.host == node)
+            stmt = stmt.where(HadoopLog.node_host == node)
+            count_stmt = count_stmt.where(HadoopLog.node_host == node)
         if time_from:
             try:
                 tf = datetime.fromisoformat(time_from.replace("Z", "+00:00"))
-                stmt = stmt.where(SystemLog.timestamp >= tf)
-                count_stmt = count_stmt.where(SystemLog.timestamp >= tf)
+                stmt = stmt.where(HadoopLog.log_time >= tf)
+                count_stmt = count_stmt.where(HadoopLog.log_time >= tf)
             except Exception:
                 pass
 
-        stmt = stmt.order_by(SystemLog.timestamp.desc()).offset((page - 1) * size).limit(size)
+        stmt = stmt.order_by(HadoopLog.log_time.desc()).offset((page - 1) * size).limit(size)
         rows = (await db.execute(stmt)).scalars().all()
         total = (await db.execute(count_stmt)).scalar() or 0
-
-        # 预取集群UUID映射
-        cid_set = {r.cluster_id for r in rows if r.cluster_id is not None}
-        uuid_map: dict[int, str] = {}
-        if cid_set:
-            res = await db.execute(select(Cluster.id, Cluster.uuid).where(Cluster.id.in_(list(cid_set))))
-            uuid_map = {rid: str(u) for rid, u in res.all()}
 
         items = []
         for r in rows:
             meta = {}
             try:
-                meta = json.loads(r.message or "{}")
+                if r.info:
+                    meta = json.loads(r.info)
             except Exception:
-                meta = {}
-            items.append(
-                {
-                    "id": r.log_id,
-                    "type": meta.get("type"),
-                    "level": (r.log_level or "").lower(),
-                    "status": meta.get("status"),
-                    "title": meta.get("title"),
-                    "cluster": uuid_map.get(r.cluster_id) or meta.get("cluster"),
-                    "node": r.host or meta.get("node"),
-                    "created": r.timestamp.isoformat() if r.timestamp else None,
-                }
-            )
+                pass
+            
+            items.append({
+                "id": str(r.log_id),
+                "type": meta.get("type", "unknown"),
+                "level": r.title,
+                "status": meta.get("status", "active"),
+                "title": meta.get("title", r.title),
+                "cluster": r.cluster_name,
+                "node": r.node_host,
+                "created": r.log_time.isoformat() if r.log_time else None
+            })
         return {"items": items, "total": int(total)}
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print(f"Error listing faults: {e}")
         raise HTTPException(status_code=500, detail="server_error")
 
 
 @router.post("/faults")
 async def create_fault(req: FaultCreate, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        # 仅 admin/ops 允许新增
         uname = _get_username(user)
         if uname not in {"admin", "ops"}:
             raise HTTPException(status_code=403, detail="not_allowed")
-        # 查找集群ID
-        cid = None
-        if req.cluster:
-            cid_res = await db.execute(select(Cluster.id).where(Cluster.uuid == req.cluster).limit(1))
-            cid = cid_res.scalars().first()
-            if not cid:
-                name_res = await db.execute(select(Cluster.id).where(Cluster.name == req.cluster).limit(1))
-                cid = name_res.scalars().first()
+        
+        # 确定集群名称
+        cluster_name = req.cluster or "unknown"
+        if req.cluster and "-" in req.cluster: # 可能是 UUID
+             res = await db.execute(select(Cluster.name).where(Cluster.uuid == req.cluster).limit(1))
+             name = res.scalars().first()
+             if name:
+                 cluster_name = name
+
         ts = _now()
         if req.created:
             try:
                 ts = datetime.fromisoformat(req.created.replace("Z", "+00:00"))
             except Exception:
                 pass
+
         meta = {"type": req.type, "status": req.status, "title": req.title, "cluster": req.cluster, "node": req.node}
-        log = SystemLog(
-            log_id=req.id,
-            fault_id=None,
-            cluster_id=cid,
-            timestamp=ts,
-            host=req.node or None,
-            service="fault",
-            source=uname,
-            log_level=_map_level(req.level),
-            message=json.dumps(meta, ensure_ascii=False),
-            exception=None,
-            raw_log=None,
-            processed=False,
-            created_at=_now(),
+        log = HadoopLog(
+            cluster_name=cluster_name,
+            node_host=req.node or "unknown",
+            title="fault",
+            info=json.dumps(meta, ensure_ascii=False),
+            log_time=ts
         )
         db.add(log)
-        await db.flush()
         await db.commit()
-        return {"ok": True}
+        return {"ok": True, "id": log.log_id}
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print(f"Error creating fault: {e}")
         raise HTTPException(status_code=500, detail="server_error")
 
 
 @router.put("/faults/{fid}")
-async def update_fault(fid: str, req: FaultUpdate, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_fault(fid: int, req: FaultUpdate, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
         uname = _get_username(user)
         if uname not in {"admin", "ops"}:
             raise HTTPException(status_code=403, detail="not_allowed")
-        res = await db.execute(select(SystemLog).where(SystemLog.log_id == fid, SystemLog.service == "fault").limit(1))
+        
+        res = await db.execute(select(HadoopLog).where(HadoopLog.log_id == fid, HadoopLog.title == "fault").limit(1))
         row = res.scalars().first()
         if not row:
             raise HTTPException(status_code=404, detail="not_found")
+        
         meta = {}
         try:
-            meta = json.loads(row.message or "{}")
+            if row.info:
+                meta = json.loads(row.info)
         except Exception:
-            meta = {}
+            pass
+            
         if req.status is not None:
             meta["status"] = req.status
         if req.title is not None:
             meta["title"] = req.title
-        await db.execute(
-            update(SystemLog).where(SystemLog.id == row.id).values(message=json.dumps(meta, ensure_ascii=False))
-        )
+            
+        row.info = json.dumps(meta, ensure_ascii=False)
         await db.commit()
         return {"ok": True}
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print(f"Error updating fault: {e}")
         raise HTTPException(status_code=500, detail="server_error")
 
 
 @router.delete("/faults/{fid}")
-async def delete_fault(fid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_fault(fid: int, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
         uname = _get_username(user)
         if uname not in {"admin", "ops"}:
             raise HTTPException(status_code=403, detail="not_allowed")
-        await db.execute(delete(SystemLog).where(SystemLog.log_id == fid, SystemLog.service == "fault"))
+        await db.execute(delete(HadoopLog).where(HadoopLog.log_id == fid, HadoopLog.title == "fault"))
         await db.commit()
         return {"ok": True}
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print(f"Error deleting fault: {e}")
         raise HTTPException(status_code=500, detail="server_error")

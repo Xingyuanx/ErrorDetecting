@@ -14,7 +14,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from ..models.nodes import Node
-from ..models.exec_logs import ExecLog
+from ..models.hadoop_exec_logs import HadoopExecLog
 from .runner import run_remote_command
 
 
@@ -39,24 +39,27 @@ async def _find_accessible_node(db: AsyncSession, user_name: str, hostname: str)
 
 async def _write_exec_log(db: AsyncSession, exec_id: str, command_type: str, status: str, start: datetime, end: Optional[datetime], exit_code: Optional[int], operator: str, stdout: Optional[str] = None, stderr: Optional[str] = None):
     """写入执行审计日志。"""
-    row = ExecLog(
-        exec_id=exec_id,
-        fault_id="-",
-        command_type=command_type,
-        script_path=None,
-        command_content="[tool]",
-        target_nodes=None,
-        risk_level="medium",
-        execution_status=status,
+    # 查找 from_user_id 和 cluster_name
+    uid_res = await db.execute(text("SELECT id FROM users WHERE username=:un LIMIT 1"), {"un": operator})
+    uid_row = uid_res.first()
+    from_user_id = uid_row[0] if uid_row else 1
+    
+    # 获取集群名称 (这里简化逻辑，取用户关联的第一个集群)
+    cluster_res = await db.execute(text("""
+        SELECT c.cluster_name 
+        FROM clusters c 
+        JOIN user_cluster_mapping m ON c.id = m.cluster_id 
+        WHERE m.user_id = :uid LIMIT 1
+    """), {"uid": from_user_id})
+    cluster_row = cluster_res.first()
+    cluster_name = cluster_row[0] if cluster_row else "default_cluster"
+
+    row = HadoopExecLog(
+        from_user_id=from_user_id,
+        cluster_name=cluster_name,
+        description=f"[{command_type}] {exec_id}",
         start_time=start,
-        end_time=end,
-        duration=(int((end - start).total_seconds()) if (start and end) else None),
-        stdout_log=stdout,
-        stderr_log=stderr,
-        exit_code=exit_code,
-        operator=operator,
-        created_at=_now(),
-        updated_at=_now(),
+        end_time=end
     )
     db.add(row)
     await db.flush()

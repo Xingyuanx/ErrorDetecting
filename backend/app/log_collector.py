@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .log_reader import log_reader
 from .ssh_utils import ssh_manager
 from .db import SessionLocal
-from .models.system_logs import SystemLog
+from .models.hadoop_logs import HadoopLog
+from sqlalchemy import text
 
 class LogCollector:
     """Real-time log collector for Hadoop cluster"""
@@ -103,21 +104,27 @@ class LogCollector:
         """Save log data to database"""
         try:
             async with SessionLocal() as session:
-                # Create SystemLog instance
-                system_log = SystemLog(
-                    log_id=str(uuid.uuid4()).replace('-', '')[:32],
-                    timestamp=log_data["timestamp"],
-                    host=log_data["host"],
-                    service=log_data["service"],
-                    log_level=log_data["log_level"],
-                    message=log_data["message"],
-                    raw_log=log_data["raw_log"],
-                    processed=False,
-                    created_at=datetime.datetime.now(datetime.timezone.utc)
+                # 获取集群名称
+                cluster_res = await session.execute(text("""
+                    SELECT c.cluster_name 
+                    FROM clusters c 
+                    JOIN nodes n ON c.id = n.cluster_id 
+                    WHERE n.hostname = :hn LIMIT 1
+                """), {"hn": log_data["host"]})
+                cluster_row = cluster_res.first()
+                cluster_name = cluster_row[0] if cluster_row else "default_cluster"
+
+                # Create HadoopLog instance
+                hadoop_log = HadoopLog(
+                    log_time=log_data["timestamp"],
+                    node_host=log_data["host"],
+                    title=log_data["service"],
+                    info=log_data["message"],
+                    cluster_name=cluster_name
                 )
                 
                 # Add to session and commit
-                session.add(system_log)
+                session.add(hadoop_log)
                 await session.commit()
         except Exception as e:
             print(f"Error saving log to database: {e}")

@@ -9,7 +9,7 @@ import uuid
 
 from ..db import get_db
 from ..deps.auth import get_current_user
-from ..models.system_logs import SystemLog
+from ..models.hadoop_logs import HadoopLog
 from ..models.chat import ChatSession, ChatMessage
 from ..agents.diagnosis_agent import run_diagnose_and_repair
 from ..services.llm import LLMClient
@@ -46,11 +46,11 @@ async def diagnose_repair(req: DiagnoseRepairReq, user=Depends(get_current_user)
         # 聚合简要日志上下文（结构化日志）
         filters = []
         if req.node:
-            filters.append(SystemLog.host == req.node)
+            filters.append(HadoopLog.node_host == req.node)
         if req.keywords:
-            # 这里简化为 message 包含关键词，实际可扩展 ilike/source/op 等
-            filters.append(SystemLog.message.ilike(f"%{req.keywords}%"))
-        stmt = select(SystemLog).limit(100).order_by(SystemLog.timestamp.desc())
+            # 这里简化为 info 包含关键词
+            filters.append(HadoopLog.info.ilike(f"%{req.keywords}%"))
+        stmt = select(HadoopLog).limit(100).order_by(HadoopLog.log_time.desc())
         for f in filters:
             stmt = stmt.where(f)
         rows = (await db.execute(stmt)).scalars().all()

@@ -9,7 +9,7 @@ import uuid as uuidlib
 from ..db import get_db
 from ..deps.auth import get_current_user
 from ..models.nodes import Node
-from ..models.exec_logs import ExecLog
+from ..models.sys_exec_logs import SysExecLog
 from ..services.runner import run_remote_command
 
 
@@ -67,26 +67,12 @@ class ReadLogReq(BaseModel):
 
 
 
-async def _write_exec_log(db: AsyncSession, exec_id: str, command_type: str, status: str, start: datetime, end: datetime | None, exit_code: int | None, operator: str):
-    """写入或更新执行审计日志。"""
-    row = ExecLog(
-        exec_id=exec_id,
-        fault_id="-",
-        command_type=command_type,
-        script_path=None,
-        command_content="[api]",
-        target_nodes=None,
-        risk_level="medium",
-        execution_status=status,
-        start_time=start,
-        end_time=end,
-        duration=(int((end - start).total_seconds()) if (start and end) else None),
-        stdout_log=None,
-        stderr_log=None,
-        exit_code=exit_code,
-        operator=operator,
-        created_at=_now(),
-        updated_at=_now(),
+async def _write_exec_log(db: AsyncSession, operation_id: str, description: str, user_id: int):
+    """写入系统操作日志。"""
+    row = SysExecLog(
+        user_id=user_id,
+        description=description,
+        operation_time=_now()
     )
     db.add(row)
     await db.flush()
@@ -99,6 +85,8 @@ async def read_log(req: ReadLogReq, user=Depends(get_current_user), db: AsyncSes
     try:
         _require_ops(user)
         uname = _get_username(user)
+        # 假设这里需要 user_id，从 user 对象获取或查询
+        user_id = getattr(user, "id", 1) 
         node = await _find_accessible_node(db, uname, req.node)
         if not node:
             raise HTTPException(status_code=404, detail="node_not_found")
@@ -107,15 +95,17 @@ async def read_log(req: ReadLogReq, user=Depends(get_current_user), db: AsyncSes
         if req.pattern:
             pat_q = shlex.quote(req.pattern)
             cmd = f"{cmd} | grep -E {pat_q}"
-        exec_id = _gen_exec_id()
+        
         start = _now()
         code, out, err = await run_remote_command(str(getattr(node, "ip_address", "")), req.sshUser or "", cmd, timeout=req.timeout)
-        end = _now()
-        await _write_exec_log(db, exec_id, "read_log", ("success" if code == 0 else "failed"), start, end, code, uname)
+        
+        desc = f"Read log: {req.path} on {req.node} (Exit: {code})"
+        await _write_exec_log(db, None, desc, user_id)
+        
         if code != 0:
             raise HTTPException(status_code=500, detail="exec_failed")
         lines = [ln for ln in out.splitlines()]
-        return {"execId": exec_id, "exitCode": code, "lines": lines}
+        return {"exitCode": code, "lines": lines}
     except HTTPException:
         raise
     except Exception:
