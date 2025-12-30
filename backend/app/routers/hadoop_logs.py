@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, text
 from ..db import get_db
 from ..deps.auth import get_current_user
 from ..log_reader import log_reader
@@ -8,8 +8,13 @@ from ..log_collector import log_collector
 from ..ssh_utils import ssh_manager
 from ..models.nodes import Node
 from ..models.clusters import Cluster
+from ..metrics_collector import metrics_collector
 from ..models.hadoop_logs import HadoopLog
-from datetime import datetime
+from datetime import datetime, timezone
+import time
+from ..models.node_metrics import NodeMetric
+from ..models.cluster_metrics import ClusterMetric
+from datetime import timedelta
 from ..schemas import (
     LogRequest,
     LogResponse,
@@ -19,6 +24,41 @@ from ..schemas import (
 )
 
 router = APIRouter()
+
+async def _ensure_metrics_schema(db: AsyncSession):
+    await db.execute(text("""
+        CREATE TABLE IF NOT EXISTS node_metrics (
+            id SERIAL PRIMARY KEY,
+            cluster_id INTEGER,
+            node_id INTEGER,
+            hostname VARCHAR(100),
+            cpu_usage DOUBLE PRECISION,
+            memory_usage DOUBLE PRECISION,
+            created_at TIMESTAMPTZ
+        )
+    """))
+    await db.execute(text("""
+        CREATE TABLE IF NOT EXISTS cluster_metrics (
+            id SERIAL PRIMARY KEY,
+            cluster_id INTEGER,
+            cluster_name VARCHAR(100),
+            cpu_avg DOUBLE PRECISION,
+            memory_avg DOUBLE PRECISION,
+            created_at TIMESTAMPTZ
+        )
+    """))
+    await db.execute(text("ALTER TABLE node_metrics ADD COLUMN IF NOT EXISTS node_id INTEGER"))
+    await db.execute(text("ALTER TABLE node_metrics ADD COLUMN IF NOT EXISTS hostname VARCHAR(100)"))
+    await db.execute(text("ALTER TABLE node_metrics ADD COLUMN IF NOT EXISTS cpu_usage DOUBLE PRECISION"))
+    await db.execute(text("ALTER TABLE node_metrics ADD COLUMN IF NOT EXISTS memory_usage DOUBLE PRECISION"))
+    await db.execute(text("ALTER TABLE node_metrics ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ"))
+    await db.execute(text("ALTER TABLE node_metrics ADD COLUMN IF NOT EXISTS cluster_id INTEGER"))
+    await db.execute(text("ALTER TABLE cluster_metrics ADD COLUMN IF NOT EXISTS cluster_name VARCHAR(100)"))
+    await db.execute(text("ALTER TABLE cluster_metrics ADD COLUMN IF NOT EXISTS cpu_avg DOUBLE PRECISION"))
+    await db.execute(text("ALTER TABLE cluster_metrics ADD COLUMN IF NOT EXISTS memory_avg DOUBLE PRECISION"))
+    await db.execute(text("ALTER TABLE cluster_metrics ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ"))
+    await db.execute(text("ALTER TABLE cluster_metrics ADD COLUMN IF NOT EXISTS cluster_id INTEGER"))
+    await db.commit()
 
 def _parse_time(s: str | None) -> datetime | None:
     if not s:
@@ -289,7 +329,7 @@ async def start_collectors_by_cluster(cluster_uuid: str, interval: int = 5, user
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="server_error")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/hadoop/collectors/backfill-by-cluster/{cluster_uuid}/")
 async def backfill_logs_by_cluster(cluster_uuid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -353,4 +393,63 @@ async def backfill_logs_by_cluster(cluster_uuid: str, user=Depends(get_current_u
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="server_error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/metrics/{cluster_uuid}/")
+async def sync_metrics(cluster_uuid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    try:
+        from sqlalchemy import select
+        try:
+            metrics_collector.stop_all()
+        except Exception:
+            pass
+        cid_res = await db.execute(select(Cluster.id, Cluster.name).where(Cluster.uuid == cluster_uuid).limit(1))
+        row = cid_res.first()
+        if not row:
+            raise HTTPException(status_code=404, detail="cluster_not_found")
+        cid, cname = row
+        nodes_res = await db.execute(select(Node.id, Node.hostname, Node.ip_address).where(Node.cluster_id == cid))
+        rows = nodes_res.all()
+        now = datetime.now(timezone.utc)
+        details = []
+        for nid, hn, ip in rows:
+            ssh_client = ssh_manager.get_connection(hn, ip=str(ip))
+            out1, err1 = ssh_client.execute_command("cat /proc/stat | head -n 1")
+            time.sleep(0.5)
+            out2, err2 = ssh_client.execute_command("cat /proc/stat | head -n 1")
+            cpu_pct = 0.0
+            if not err1 and not err2 and out1.strip() and out2.strip():
+                p1 = out1.strip().split()
+                p2 = out2.strip().split()
+                v1 = [int(x) for x in p1[1:]]
+                v2 = [int(x) for x in p2[1:]]
+                get1 = lambda i: (v1[i] if i < len(v1) else 0)
+                get2 = lambda i: (v2[i] if i < len(v2) else 0)
+                idle = (get2(3) + get2(4)) - (get1(3) + get1(4))
+                total = (get2(0) - get1(0)) + (get2(1) - get1(1)) + (get2(2) - get1(2)) + idle + (get2(5) - get1(5)) + (get2(6) - get1(6)) + (get2(7) - get1(7))
+                if total > 0:
+                    cpu_pct = round((1.0 - idle / total) * 100.0, 2)
+            outm, errm = ssh_client.execute_command("cat /proc/meminfo")
+            mem_pct = 0.0
+            if not errm and outm.strip():
+                mt = 0
+                ma = 0
+                for line in outm.splitlines():
+                    if line.startswith("MemTotal:"):
+                        mt = int(line.split()[1])
+                    elif line.startswith("MemAvailable:"):
+                        ma = int(line.split()[1])
+                if mt > 0:
+                    mem_pct = round((1.0 - (ma / mt)) * 100.0, 2)
+            details.append({"node": hn, "cpu": cpu_pct, "memory": mem_pct})
+        if details:
+            ca = round(sum(d["cpu"] for d in details) / len(details), 3)
+            ma = round(sum(d["memory"] for d in details) / len(details), 3)
+        else:
+            ca = 0.0
+            ma = 0.0
+        return {"cluster": {"cpu_avg": round(ca, 2), "memory_avg": round(ma, 2), "time": now.isoformat(), "cluster_name": cname}, "nodes": details}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

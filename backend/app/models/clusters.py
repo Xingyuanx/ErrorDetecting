@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer
+from sqlalchemy import String, Integer, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
-from sqlalchemy import TIMESTAMP
 from . import Base
 
 class Cluster(Base):

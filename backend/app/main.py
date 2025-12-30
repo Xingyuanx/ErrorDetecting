@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth, health, secure, users, clusters, nodes, metrics, faults, ops, ai, hadoop_logs, sys_exec_logs, hadoop_exec_logs
+import os
 
 app = FastAPI(title="Hadoop Fault Detecting API", version="v1")
 
@@ -26,3 +27,4 @@ app.include_router(hadoop_exec_logs.router, prefix="/api/v1")
 app.include_router(ops.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(sys_exec_logs.router, prefix="/api/v1")
+
