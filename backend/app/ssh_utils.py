@@ -14,6 +14,9 @@ STATIC_NODE_CONFIG = {
     "hadoop100": ("192.168.10.100", "hadoop", "limouren...")
 }
 
+DEFAULT_SSH_USER = os.getenv("HADOOP_USER", "hadoop")
+DEFAULT_SSH_PASSWORD = os.getenv("HADOOP_PASSWORD", "limouren...")
+
 class SSHClient:
     """SSH Client for connecting to remote servers"""
     
@@ -24,6 +27,17 @@ class SSHClient:
         self.port = port
         self.client: Optional[paramiko.SSHClient] = None
     
+    def _ensure_connected(self) -> None:
+        if self.client is None:
+            self.connect()
+            return
+        try:
+            transport = self.client.get_transport()
+            if transport is None or not transport.is_active():
+                self.connect()
+        except Exception:
+            self.connect()
+    
     def connect(self) -> None:
         """Establish SSH connection"""
         self.client = paramiko.SSHClient()
@@ -32,7 +46,10 @@ class SSHClient:
         sock = None
         socks5 = os.getenv("TS_SOCKS5_SERVER") or os.getenv("TAILSCALE_SOCKS5_SERVER")
         if socks5:
-            sock = _socks5_connect(socks5, self.hostname, self.port, SSH_TIMEOUT)
+            try:
+                sock = _socks5_connect(socks5, self.hostname, self.port, SSH_TIMEOUT)
+            except Exception:
+                sock = None
         self.client.connect(
             hostname=self.hostname,
             username=self.username,
@@ -44,24 +61,21 @@ class SSHClient:
     
     def execute_command(self, command: str) -> tuple:
         """Execute command on remote server"""
-        if not self.client:
-            self.connect()
+        self._ensure_connected()
         
         stdin, stdout, stderr = self.client.exec_command(command)
         return stdout.read().decode(), stderr.read().decode()
     
     def execute_command_with_timeout(self, command: str, timeout: int = 30) -> tuple:
         """Execute command with timeout"""
-        if not self.client:
-            self.connect()
+        self._ensure_connected()
         
         stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
         return stdout.read().decode(), stderr.read().decode()
     
     def read_file(self, file_path: str) -> str:
         """Read file content from remote server"""
-        if not self.client:
-            self.connect()
+        self._ensure_connected()
         
         with self.client.open_sftp() as sftp:
             with sftp.open(file_path, 'r') as f:
@@ -69,8 +83,7 @@ class SSHClient:
     
     def download_file(self, remote_path: str, local_path: str) -> None:
         """Download file from remote server to local"""
-        if not self.client:
-            self.connect()
+        self._ensure_connected()
         
         with self.client.open_sftp() as sftp:
             sftp.get(remote_path, local_path)
@@ -102,8 +115,8 @@ class SSHConnectionManager:
             if not ip:
                 raise ValueError(f"IP address required for new connection to {node_name}")
             
-            _user = username or SSH_USER
-            _pass = password or SSH_PASSWORD
+            _user = username or DEFAULT_SSH_USER
+            _pass = password or DEFAULT_SSH_PASSWORD
             
             client = SSHClient(ip, _user, _pass)
             self.connections[node_name] = client

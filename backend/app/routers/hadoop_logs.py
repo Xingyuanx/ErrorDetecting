@@ -217,8 +217,15 @@ async def set_hadoop_log_directory(log_dir: str, user=Depends(get_current_user))
 async def execute_hadoop_command(node_name: str, command: str, timeout: int = 30, user=Depends(get_current_user)):
     """Execute a command on a specific Hadoop node"""
     try:
-        # Get SSH connection
-        ssh_client = ssh_manager.get_connection(node_name)
+        from sqlalchemy import select
+        from ..db import SessionLocal
+        from ..models.nodes import Node
+        async with SessionLocal() as db:
+            res = await db.execute(select(Node.ip_address).where(Node.hostname == node_name).limit(1))
+            ip = res.scalar_one_or_none()
+        if not ip:
+            raise HTTPException(status_code=404, detail=f"Node {node_name} not found")
+        ssh_client = ssh_manager.get_connection(node_name, ip=str(ip))
         
         # Execute command with timeout
         stdout, stderr = ssh_client.execute_command_with_timeout(command, timeout)
@@ -232,3 +239,118 @@ async def execute_hadoop_command(node_name: str, command: str, timeout: int = 30
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/hadoop/collectors/start-by-cluster/{cluster_uuid}/")
+async def start_collectors_by_cluster(cluster_uuid: str, interval: int = 5, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Start log collection for all nodes of the cluster (by UUID), only for existing services"""
+    try:
+        cid_res = await db.execute(select(Cluster.id).where(Cluster.uuid == cluster_uuid).limit(1))
+        cid = cid_res.scalar_one_or_none()
+        if cid is None:
+            raise HTTPException(status_code=404, detail="cluster_not_found")
+        nodes_res = await db.execute(select(Node.hostname, Node.ip_address).where(Node.cluster_id == cid))
+        rows = nodes_res.all()
+        if not rows:
+            return {"started": 0, "nodes": []}
+        started = []
+        for hn, ip in rows:
+            ip_s = str(ip)
+            files = []
+            try:
+                log_reader.find_working_log_dir(hn, ip_s)
+                files = log_reader.get_log_files_list(hn, ip=ip_s)
+            except Exception:
+                files = []
+            services = []
+            for fn in files:
+                f = fn.lower()
+                if "namenode" in f:
+                    services.append("namenode")
+                elif "secondarynamenode" in f:
+                    services.append("secondarynamenode")
+                elif "datanode" in f:
+                    services.append("datanode")
+                elif "resourcemanager" in f:
+                    services.append("resourcemanager")
+                elif "nodemanager" in f:
+                    services.append("nodemanager")
+                elif "historyserver" in f:
+                    services.append("historyserver")
+            services = list(set(services))
+            for t in services:
+                ok = False
+                try:
+                    ok = log_collector.start_collection(hn, t, ip=ip_s, interval=interval)
+                except Exception:
+                    ok = False
+                if ok:
+                    started.append(f"{hn}_{t}")
+        return {"started": len(started), "nodes": started, "interval": interval}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="server_error")
+
+@router.post("/hadoop/collectors/backfill-by-cluster/{cluster_uuid}/")
+async def backfill_logs_by_cluster(cluster_uuid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    try:
+        cid_res = await db.execute(select(Cluster.id).where(Cluster.uuid == cluster_uuid).limit(1))
+        cid = cid_res.scalar_one_or_none()
+        if cid is None:
+            raise HTTPException(status_code=404, detail="cluster_not_found")
+        nodes_res = await db.execute(select(Node.hostname, Node.ip_address).where(Node.cluster_id == cid))
+        rows = nodes_res.all()
+        if not rows:
+            return {"backfilled": 0, "details": []}
+        details = []
+        for hn, ip in rows:
+            ip_s = str(ip)
+            ssh_client = ssh_manager.get_connection(hn, ip=ip_s)
+            candidates = [
+                "/opt/module/hadoop-3.1.3/logs",
+                "/usr/local/hadoop/logs",
+                "/usr/local/hadoop-3.3.6/logs",
+                "/usr/local/hadoop-3.3.5/logs",
+                "/usr/local/hadoop-3.1.3/logs",
+                "/opt/hadoop/logs",
+                "/var/log/hadoop",
+            ]
+            base = None
+            for d in candidates:
+                out, err = ssh_client.execute_command(f"ls -1 {d} 2>/dev/null")
+                if not err and out.strip():
+                    base = d
+                    break
+            services = []
+            count = 0
+            if base:
+                out, err = ssh_client.execute_command(f"ls -1 {base} 2>/dev/null")
+                if not err and out.strip():
+                    for fn in out.splitlines():
+                        f = fn.lower()
+                        t = None
+                        if "namenode" in f:
+                            t = "namenode"
+                        elif "secondarynamenode" in f:
+                            t = "secondarynamenode"
+                        elif "datanode" in f:
+                            t = "datanode"
+                        elif "resourcemanager" in f:
+                            t = "resourcemanager"
+                        elif "nodemanager" in f:
+                            t = "nodemanager"
+                        elif "historyserver" in f:
+                            t = "historyserver"
+                        if t:
+                            services.append(t)
+                            out2, err2 = ssh_client.execute_command(f"cat {base}/{fn} 2>/dev/null")
+                            if not err2 and out2:
+                                log_collector._save_log_chunk(hn, t, out2)
+                                count += out2.count("\n")
+            details.append({"node": hn, "services": list(set(services)), "lines": count})
+        total_lines = sum(d["lines"] for d in details)
+        return {"backfilled": total_lines, "details": details}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="server_error")

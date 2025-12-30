@@ -9,6 +9,7 @@ from .ssh_utils import ssh_manager
 from .db import SessionLocal
 from .models.hadoop_logs import HadoopLog
 from sqlalchemy import text
+import asyncio
 
 class LogCollector:
     """Real-time log collector for Hadoop cluster"""
@@ -17,8 +18,11 @@ class LogCollector:
         self.collectors: Dict[str, threading.Thread] = {}
         self.is_running: bool = False
         self.collection_interval: int = 5  # 默认采集间隔，单位：秒
+        self._loops: Dict[str, asyncio.AbstractEventLoop] = {}
+        self._targets: Dict[str, str] = {}
+        self._line_counts: Dict[str, int] = {}
     
-    def start_collection(self, node_name: str, log_type: str, interval: Optional[int] = None):
+    def start_collection(self, node_name: str, log_type: str, ip: Optional[str] = None, interval: Optional[int] = None) -> bool:
         """Start real-time log collection for a specific node and log type"""
         if interval:
             self.collection_interval = interval
@@ -27,17 +31,14 @@ class LogCollector:
         
         if collector_id in self.collectors and self.collectors[collector_id].is_alive():
             print(f"Collector {collector_id} is already running")
-            return
+            return False
         
-        # Check if log file exists first
-        if not log_reader.check_log_file_exists(node_name, log_type):
-            print(f"Log file {log_type} for node {node_name} does not exist, skipping collection")
-            return
+        # Start even if log file not yet exists; collector will self-check in loop
         
         # Create a new collector thread
         collector_thread = threading.Thread(
             target=self._collect_logs,
-            args=(node_name, log_type),
+            args=(node_name, log_type, ip),
             name=collector_id,
             daemon=True
         )
@@ -45,6 +46,7 @@ class LogCollector:
         self.collectors[collector_id] = collector_thread
         collector_thread.start()
         print(f"Started collector {collector_id}")
+        return True
     
     def stop_collection(self, node_name: str, log_type: str):
         """Stop log collection for a specific node and log type"""
@@ -78,8 +80,7 @@ class LogCollector:
             if timestamp_end > 0:
                 timestamp_str = line[1:timestamp_end]
                 try:
-                    # Parse timestamp string to datetime object
-                    timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f")
+                    timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f").replace(tzinfo=datetime.timezone.utc)
                 except ValueError:
                     # If parsing fails, use current time
                     timestamp = datetime.datetime.now(datetime.timezone.utc)
@@ -106,7 +107,7 @@ class LogCollector:
             async with SessionLocal() as session:
                 # 获取集群名称
                 cluster_res = await session.execute(text("""
-                    SELECT c.cluster_name 
+                    SELECT c.name 
                     FROM clusters c 
                     JOIN nodes n ON c.id = n.cluster_id 
                     WHERE n.hostname = :hn LIMIT 1
@@ -129,27 +130,89 @@ class LogCollector:
         except Exception as e:
             print(f"Error saving log to database: {e}")
     
+    async def _save_logs_to_db_batch(self, logs: List[Dict]):
+        """Save a batch of logs to database in one transaction"""
+        try:
+            async with SessionLocal() as session:
+                for log_data in logs:
+                    cluster_res = await session.execute(text("""
+                        SELECT c.name 
+                        FROM clusters c 
+                        JOIN nodes n ON c.id = n.cluster_id 
+                        WHERE n.hostname = :hn LIMIT 1
+                    """), {"hn": log_data["host"]})
+                    cluster_row = cluster_res.first()
+                    cluster_name = cluster_row[0] if cluster_row else "default_cluster"
+                    hadoop_log = HadoopLog(
+                        log_time=log_data["timestamp"],
+                        node_host=log_data["host"],
+                        title=log_data["service"],
+                        info=log_data["message"],
+                        cluster_name=cluster_name
+                    )
+                    session.add(hadoop_log)
+                await session.commit()
+        except Exception as e:
+            print(f"Error batch saving logs: {e}")
+    
     def _collect_logs(self, node_name: str, log_type: str, ip: str):
         """Internal method to collect logs continuously"""
         print(f"Starting log collection for {node_name}_{log_type}")
         
+        collector_id = f"{node_name}_{log_type}"
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self._loops[collector_id] = loop
+
         last_file_size = 0
+        last_line_count = self._line_counts.get(collector_id, 0)
         retry_count = 0
         max_retries = 3
         
-        while collector_id := f"{node_name}_{log_type}" in self.collectors:
+        while collector_id in self.collectors:
             try:
                 # Wait for next collection interval
                 time.sleep(self.collection_interval)
                 
-                # Check if log file still exists
-                if not log_reader.check_log_file_exists(node_name, log_type, ip=ip):
-                    print(f"Log file {node_name}_{log_type} no longer exists, stopping collection")
-                    self.stop_collection(node_name, log_type)
-                    break
+                # Resolve target file once and reuse
+                target = self._targets.get(collector_id)
+                if not target:
+                    try:
+                        ssh_client = ssh_manager.get_connection(node_name, ip=ip)
+                        dirs = [
+                            "/opt/module/hadoop-3.1.3/logs",
+                            "/usr/local/hadoop/logs",
+                            "/usr/local/hadoop-3.3.6/logs",
+                            "/usr/local/hadoop-3.3.5/logs",
+                            "/usr/local/hadoop-3.1.3/logs",
+                            "/opt/hadoop/logs",
+                            "/var/log/hadoop",
+                        ]
+                        for d in dirs:
+                            out, err = ssh_client.execute_command(f"ls -1 {d} 2>/dev/null")
+                            if not err and out.strip():
+                                for fn in out.splitlines():
+                                    f = fn.lower()
+                                    if log_type in f and node_name in f:
+                                        target = f"{d}/{fn}"
+                                        break
+                            if target:
+                                break
+                        if target:
+                            self._targets[collector_id] = target
+                    except Exception:
+                        target = None
+                if not target:
+                    print(f"Log file {node_name}_{log_type} not found, will retry")
+                    retry_count += 1
+                    continue
                 
                 # Read current log content
-                current_log_content = log_reader.read_log(node_name, log_type, ip=ip)
+                ssh_client = ssh_manager.get_connection(node_name, ip=ip)
+                current_log_content = ""
+                out2, err2 = ssh_client.execute_command(f"cat {target} 2>/dev/null")
+                if not err2:
+                    current_log_content = out2
                 current_file_size = len(current_log_content)
                 
                 # Check if log file has new content
@@ -168,6 +231,16 @@ class LogCollector:
                 # Reset retry count on successful collection
                 retry_count = 0
                 
+                # Also track by line count to cover same-length encodings
+                lines = current_log_content.splitlines()
+                if len(lines) > last_line_count:
+                    tail = "\n".join(lines[last_line_count:])
+                    if tail.strip():
+                        self._save_log_chunk(node_name, log_type, tail)
+                        print(f"Collected {len(lines) - last_line_count} new lines (by count) from {node_name}_{log_type}")
+                    last_line_count = len(lines)
+                    self._line_counts[collector_id] = last_line_count
+                
             except Exception as e:
                 print(f"Error collecting logs from {node_name}_{log_type}: {e}")
                 retry_count += 1
@@ -178,22 +251,35 @@ class LogCollector:
                     break
                 
                 print(f"Retrying in {self.collection_interval * 2} seconds... ({retry_count}/{max_retries})")
+        
+        try:
+            loop = self._loops.pop(collector_id, None)
+            if loop and loop.is_running():
+                loop.stop()
+            if loop:
+                loop.close()
+        except Exception:
+            pass
     
     def _save_log_chunk(self, node_name: str, log_type: str, content: str):
         """Save a chunk of log content to database"""
-        import asyncio
-        
         # Split content into lines
         lines = content.splitlines()
         
         # Parse each line and save to database
+        log_batch: List[Dict] = []
         for line in lines:
             if line.strip():
-                # Parse log line
                 log_data = self._parse_log_line(line, node_name, log_type)
-                
-                # Save to database asynchronously
-                asyncio.run(self._save_log_to_db(log_data))
+                log_batch.append(log_data)
+        if not log_batch:
+            return
+        collector_id = f"{node_name}_{log_type}"
+        loop = self._loops.get(collector_id)
+        if loop:
+            loop.run_until_complete(self._save_logs_to_db_batch(log_batch))
+        else:
+            asyncio.run(self._save_logs_to_db_batch(log_batch))
     
     def get_collectors_status(self) -> Dict[str, bool]:
         """Get the status of all collectors"""
