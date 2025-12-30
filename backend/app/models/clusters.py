@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, TIMESTAMP
+from sqlalchemy import String, Integer, Float, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
 from . import Base
 
@@ -12,6 +12,8 @@ class Cluster(Base):
     type: Mapped[str] = mapped_column(String(50))
     node_count: Mapped[int] = mapped_column(Integer, default=0)
     health_status: Mapped[str] = mapped_column(String(20), default="unknown")
+    cpu_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    memory_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
     namenode_ip: Mapped[str | None] = mapped_column(INET, nullable=True)
     namenode_psw: Mapped[str | None] = mapped_column(String(255), nullable=True)
     rm_ip: Mapped[str | None] = mapped_column(INET, nullable=True)
@@ -30,6 +32,8 @@ class Cluster(Base):
             "type": self.type,
             "node_count": self.node_count,
             "health_status": self.health_status,
+            "cpu_avg": self.cpu_avg,
+            "memory_avg": self.memory_avg,
             "namenode_ip": (str(self.namenode_ip) if self.namenode_ip else None),
             "namenode_psw": self.namenode_psw,
             "rm_ip": (str(self.rm_ip) if self.rm_ip else None),

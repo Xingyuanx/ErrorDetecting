@@ -29,6 +29,8 @@ class ClusterCreateRequest(BaseModel):
     type: str
     node_count: int
     health_status: str
+    cpu_avg: float | None = None
+    memory_avg: float | None = None
     description: str | None = None
     namenode_ip: str | None = None
     namenode_psw: str | None = None
@@ -60,6 +62,8 @@ async def list_clusters(user=Depends(get_current_user), db: AsyncSession = Depen
                 "type": c.type,
                 "node_count": c.node_count,
                 "health_status": c.health_status,
+                "cpu_avg": c.cpu_avg,
+                "memory_avg": c.memory_avg,
                 "namenode_ip": (str(c.namenode_ip) if c.namenode_ip else None),
                 "namenode_psw": c.namenode_psw,
                 "rm_ip": (str(c.rm_ip) if c.rm_ip else None),
@@ -127,6 +131,8 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
             type=req.type,
             node_count=req.node_count,
             health_status=req.health_status,
+            cpu_avg=req.cpu_avg,
+            memory_avg=req.memory_avg,
             namenode_ip=req.namenode_ip,
             namenode_psw=req.namenode_psw,
             rm_ip=req.rm_ip,

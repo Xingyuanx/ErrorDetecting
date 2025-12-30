@@ -89,7 +89,13 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
             session = ChatSession(id=internal_id, user_id=user_id, title=req.message[:20])
             db.add(session)
 
-        system_prompt = "You are a helpful Hadoop diagnostic assistant."
+        system_prompt = (
+            "You are a helpful Hadoop diagnostic assistant. "
+            "Please provide clear, structured, and well-formatted responses using Markdown. "
+            "Use headers (##, ###) for sections, bullet points for lists, and code blocks for logs or commands. "
+            "Ensure proper line breaks between paragraphs and sections to enhance readability. "
+            "If you are providing a diagnosis, use a 'Diagnosis' and 'Recommendation' structure."
+        )
         if req.context:
             if req.context.get("agent"):
                 system_prompt += f" Your name is {req.context['agent']}."
