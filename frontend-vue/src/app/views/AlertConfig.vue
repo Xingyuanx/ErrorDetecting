@@ -9,9 +9,13 @@
     </div>
 
     <article class="layout__card u-mt-2">
-      <div class="layout__card-header"><h3 class="layout__card-title">通知与阈值</h3></div>
+      <div class="layout__card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="layout__card-title">通知与阈值</h3>
+        <button class="btn btn--primary u-text-sm" @click="saveSettings" :disabled="loading">保存全局设置</button>
+      </div>
       <div class="layout__card-body">
-        <form class="layout__grid layout__grid--3" @submit.prevent>
+        <div v-if="loading" class="u-text-center u-p-4 u-text-gray-500">正在加载配置...</div>
+        <form v-else class="layout__grid layout__grid--3" @submit.prevent>
           <div>
             <label class="u-text-sm u-font-medium u-text-gray-700">告警严重级别</label>
             <select v-model="severity" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
@@ -78,29 +82,104 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
+import api from '../lib/api'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
 const severity = ref<'INFO'|'WARN'|'ERROR'>('INFO')
 const enableEmail = ref(false)
 const enableSms = ref(false)
 const enableWebhook = ref(false)
-const email = ref('ops@example.com')
-const webhook = ref('https://hooks.example.com/alert')
-const rules = reactive<{ name:string; cond:string; level:'INFO'|'WARN'|'ERROR'; channel:string }[]>([
-  { name:'cpu-high-usage', cond:'CPU > 85% 持续 5 分钟', level:'WARN', channel:'邮件' },
-  { name:'node-disconnected', cond:'心跳丢失 3 次', level:'ERROR', channel:'邮件 + Webhook' }
-])
+const email = ref('')
+const webhook = ref('')
+const rules = reactive<{ name:string; cond:string; level:'INFO'|'WARN'|'ERROR'; channel:string }[]>([])
 const open = ref(false)
 const err = ref('')
 const form = reactive<{ name:string; cond:string; level:'INFO'|'WARN'|'ERROR'; channel:string }>({ name:'', cond:'', level:'INFO', channel:'' })
-function levelClass(l:'INFO'|'WARN'|'ERROR'){ return l==='ERROR'?'level--error': l==='WARN'?'level--warn':'level--info' }
-function save(){
-  if (!form.name || !form.cond) { err.value='请填写规则名称与条件'; return }
-  if (rules.some(r => r.name===form.name)) { err.value='规则名称已存在'; return }
-  rules.push({ name: form.name, cond: form.cond, level: form.level, channel: form.channel || '邮件' })
-  err.value=''; open.value=false; form.name=''; form.cond=''; form.level='INFO'; form.channel=''
+
+const loading = ref(false)
+
+onMounted(() => {
+  loadAll()
+})
+
+async function loadAll() {
+  loading.value = true
+  try {
+    const [settingsRes, rulesRes] = await Promise.all([
+      api.get('/v1/alert/settings', { headers: { Authorization: `Bearer ${auth.token}` } }),
+      api.get('/v1/alert/rules', { headers: { Authorization: `Bearer ${auth.token}` } })
+    ])
+    
+    const s = settingsRes.data
+    severity.value = s.severity || 'INFO'
+    enableEmail.value = !!s.enableEmail
+    enableSms.value = !!s.enableSms
+    enableWebhook.value = !!s.enableWebhook
+    email.value = s.email || ''
+    webhook.value = s.webhook || ''
+
+    const r = rulesRes.data?.rules || []
+    rules.splice(0, rules.length, ...r)
+  } catch (e: any) {
+    err.value = '加载配置失败：' + (e.response?.data?.detail || e.message)
+  } finally {
+    loading.value = false
+  }
 }
-function del(n:string){ const i = rules.findIndex(r => r.name===n); if (i>=0) rules.splice(i,1) }
-function edit(r:any){ open.value=true; form.name=r.name; form.cond=r.cond; form.level=r.level; form.channel=r.channel }
+
+async function saveSettings() {
+  try {
+    await api.post('/v1/alert/settings', {
+      severity: severity.value,
+      enableEmail: enableEmail.value,
+      enableSms: enableSms.value,
+      enableWebhook: enableWebhook.value,
+      email: email.value,
+      webhook: webhook.value
+    }, { headers: { Authorization: `Bearer ${auth.token}` } })
+    alert('全局设置已保存')
+  } catch (e: any) {
+    alert('保存失败：' + (e.response?.data?.detail || e.message))
+  }
+}
+
+function levelClass(l:'INFO'|'WARN'|'ERROR'){ return l==='ERROR'?'level--error': l==='WARN'?'level--warn':'level--info' }
+
+async function save(){
+  if (!form.name || !form.cond) { err.value='请填写规则名称与条件'; return }
+  try {
+    await api.post('/v1/alert/rules', { ...form }, { headers: { Authorization: `Bearer ${auth.token}` } })
+    err.value = ''
+    open.value = false
+    form.name = ''
+    form.cond = ''
+    form.level = 'INFO'
+    form.channel = ''
+    await loadAll()
+  } catch (e: any) {
+    err.value = '保存规则失败：' + (e.response?.data?.detail || e.message)
+  }
+}
+
+async function del(n:string){
+  if (!confirm(`确定要删除规则 ${n} 吗？`)) return
+  try {
+    await api.delete(`/v1/alert/rules/${encodeURIComponent(n)}`, { headers: { Authorization: `Bearer ${auth.token}` } })
+    await loadAll()
+  } catch (e: any) {
+    alert('删除失败：' + (e.response?.data?.detail || e.message))
+  }
+}
+
+function edit(r:any){
+  open.value = true
+  form.name = r.name
+  form.cond = r.cond
+  form.level = r.level
+  form.channel = r.channel
+}
 </script>
 
 <style scoped>
