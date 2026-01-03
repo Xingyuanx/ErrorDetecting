@@ -14,7 +14,9 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from ..models.nodes import Node
+from ..models.clusters import Cluster
 from ..models.hadoop_exec_logs import HadoopExecLog
+from ..ssh_utils import SSHClient
 from .runner import run_remote_command
 
 
@@ -46,7 +48,7 @@ async def _write_exec_log(db: AsyncSession, exec_id: str, command_type: str, sta
     
     # 获取集群名称 (这里简化逻辑，取用户关联的第一个集群)
     cluster_res = await db.execute(text("""
-        SELECT c.cluster_name 
+        SELECT c.name 
         FROM clusters c 
         JOIN user_cluster_mapping m ON c.id = m.cluster_id 
         WHERE m.user_id = :uid LIMIT 1
@@ -169,6 +171,129 @@ async def tool_web_search(query: str, max_results: int = 5) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
+async def tool_start_cluster(db: AsyncSession, user_name: str, cluster_uuid: str) -> Dict[str, Any]:
+    """工具：启动 Hadoop 集群。"""
+    # 1. 权限与用户
+    uid_res = await db.execute(text("SELECT id FROM users WHERE username=:un LIMIT 1"), {"un": user_name})
+    uid_row = uid_res.first()
+    user_id = uid_row[0] if uid_row else 1
+
+    # 2. 查找集群
+    res = await db.execute(select(Cluster).where(Cluster.uuid == cluster_uuid).limit(1))
+    cluster = res.scalars().first()
+    if not cluster:
+        return {"error": "cluster_not_found"}
+
+    # 3. 获取 SSH 用户 (从关联节点中获取，默认为 hadoop)
+    node_res = await db.execute(select(Node).where(Node.cluster_id == cluster.id).limit(1))
+    node = node_res.scalars().first()
+    ssh_user = node.ssh_user if node and node.ssh_user else "hadoop"
+
+    start_time = _now()
+    logs = []
+
+    # 4. 在 NameNode 执行 start-dfs.sh
+    if cluster.namenode_ip and cluster.namenode_psw:
+        try:
+            def run_nn_start():
+                with SSHClient(str(cluster.namenode_ip), ssh_user, cluster.namenode_psw) as client:
+                    return client.execute_command("start-dfs.sh")
+            out, err = await asyncio.to_thread(run_nn_start)
+            logs.append(f"NameNode ({cluster.namenode_ip}) start: {out} {err}")
+        except Exception as e:
+            logs.append(f"NameNode ({cluster.namenode_ip}) start failed: {str(e)}")
+    
+    # 5. 在 ResourceManager 执行 start-yarn.sh
+    if cluster.rm_ip and cluster.rm_psw:
+        try:
+            def run_rm_start():
+                with SSHClient(str(cluster.rm_ip), ssh_user, cluster.rm_psw) as client:
+                    return client.execute_command("start-yarn.sh")
+            out, err = await asyncio.to_thread(run_rm_start)
+            logs.append(f"ResourceManager ({cluster.rm_ip}) start: {out} {err}")
+        except Exception as e:
+            logs.append(f"ResourceManager ({cluster.rm_ip}) start failed: {str(e)}")
+
+    end_time = _now()
+    
+    # 6. 更新集群状态
+    cluster.health_status = "healthy"
+    cluster.updated_at = end_time
+    await db.flush()
+
+    # 7. 记录日志
+    full_desc = " | ".join(logs)
+    exec_row = HadoopExecLog(
+        from_user_id=user_id,
+        cluster_name=cluster.name,
+        description=f"AI Tool Start Cluster: {full_desc}",
+        start_time=start_time,
+        end_time=end_time
+    )
+    db.add(exec_row)
+    await db.commit()
+    
+    return {"status": "success", "logs": logs}
+
+
+async def tool_stop_cluster(db: AsyncSession, user_name: str, cluster_uuid: str) -> Dict[str, Any]:
+    """工具：停止 Hadoop 集群。"""
+    uid_res = await db.execute(text("SELECT id FROM users WHERE username=:un LIMIT 1"), {"un": user_name})
+    uid_row = uid_res.first()
+    user_id = uid_row[0] if uid_row else 1
+
+    res = await db.execute(select(Cluster).where(Cluster.uuid == cluster_uuid).limit(1))
+    cluster = res.scalars().first()
+    if not cluster:
+        return {"error": "cluster_not_found"}
+
+    node_res = await db.execute(select(Node).where(Node.cluster_id == cluster.id).limit(1))
+    node = node_res.scalars().first()
+    ssh_user = node.ssh_user if node and node.ssh_user else "hadoop"
+
+    start_time = _now()
+    logs = []
+
+    if cluster.namenode_ip and cluster.namenode_psw:
+        try:
+            def run_nn_stop():
+                with SSHClient(str(cluster.namenode_ip), ssh_user, cluster.namenode_psw) as client:
+                    return client.execute_command("stop-dfs.sh")
+            out, err = await asyncio.to_thread(run_nn_stop)
+            logs.append(f"NameNode ({cluster.namenode_ip}) stop: {out} {err}")
+        except Exception as e:
+            logs.append(f"NameNode ({cluster.namenode_ip}) stop failed: {str(e)}")
+    
+    if cluster.rm_ip and cluster.rm_psw:
+        try:
+            def run_rm_stop():
+                with SSHClient(str(cluster.rm_ip), ssh_user, cluster.rm_psw) as client:
+                    return client.execute_command("stop-yarn.sh")
+            out, err = await asyncio.to_thread(run_rm_stop)
+            logs.append(f"ResourceManager ({cluster.rm_ip}) stop: {out} {err}")
+        except Exception as e:
+            logs.append(f"ResourceManager ({cluster.rm_ip}) stop failed: {str(e)}")
+
+    end_time = _now()
+    
+    cluster.health_status = "unknown"
+    cluster.updated_at = end_time
+    await db.flush()
+
+    full_desc = " | ".join(logs)
+    exec_row = HadoopExecLog(
+        from_user_id=user_id,
+        cluster_name=cluster.name,
+        description=f"AI Tool Stop Cluster: {full_desc}",
+        start_time=start_time,
+        end_time=end_time
+    )
+    db.add(exec_row)
+    await db.commit()
+    
+    return {"status": "success", "logs": logs}
+
+
 def openai_tools_schema() -> List[Dict[str, Any]]:
     """返回 OpenAI 兼容的工具定义（Function Calling）。"""
     return [
@@ -202,6 +327,34 @@ def openai_tools_schema() -> List[Dict[str, Any]]:
                         "max_results": {"type": "integer", "default": 5},
                     },
                     "required": ["query"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "start_cluster",
+                "description": "启动指定的 Hadoop 集群",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cluster_uuid": {"type": "string", "description": "集群的 UUID"},
+                    },
+                    "required": ["cluster_uuid"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "stop_cluster",
+                "description": "停止指定的 Hadoop 集群",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cluster_uuid": {"type": "string", "description": "集群的 UUID"},
+                    },
+                    "required": ["cluster_uuid"],
                 },
             },
         },

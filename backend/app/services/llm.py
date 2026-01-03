@@ -32,8 +32,8 @@ _DEFAULT_ENDPOINTS: Dict[str, str] = {
 
 _DEFAULT_MODELS: Dict[str, str] = {
     "openai": "gpt-4o-mini",
-    "siliconflow": "deepseek-ai/DeepSeek-R1",
-    "deepseek": "deepseek-ai/DeepSeek-R1",
+    "siliconflow": "deepseek-ai/DeepSeek-V3",
+    "deepseek": "deepseek-v3",
 }
 
 def _clean_str(s: str) -> str:
@@ -64,7 +64,7 @@ class LLMClient:
         api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or os.getenv("SILICONFLOW_API_KEY") or ""
         self.api_key = api_key
         self.simulate = os.getenv("LLM_SIMULATE", "false").lower() == "true"
-        self.timeout = int(os.getenv("LLM_TIMEOUT", "30"))
+        self.timeout = int(os.getenv("LLM_TIMEOUT", "300"))
 
     def _headers(self) -> Dict[str, str]:
         return {

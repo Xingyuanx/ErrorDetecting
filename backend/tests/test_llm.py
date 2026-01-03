@@ -9,7 +9,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.llm import LLMClient
-from app.services.ops_tools import openai_tools_schema, tool_web_search
+from app.services.ops_tools import openai_tools_schema, tool_web_search, tool_start_cluster, tool_stop_cluster
+from app.db import SessionLocal
 from dotenv import load_dotenv
 import json
 
@@ -18,7 +19,7 @@ async def main():
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
     load_dotenv(env_path)
     
-    print("Testing LLMClient with Tools...")
+    print("Testing LLMClient with REAL Tools...")
     try:
         llm = LLMClient()
         print(f"Provider: {llm.provider}")
@@ -26,14 +27,12 @@ async def main():
         print(f"Model: {llm.model}")
         print(f"Timeout: {llm.timeout}")
         
-        messages = [{"role": "user", "content": "请联网查询今天的日期和星期"}]
+        messages = [{"role": "user", "content": "停止集群 5c43a9c7-e2a9-4756-b75d-6813ac55d3ba"}]
         
         # 1. Get tools definition
-        tools = openai_tools_schema()
-        # Filter only web_search for this test
-        chat_tools = [t for t in tools if t["function"]["name"] == "web_search"]
+        chat_tools = openai_tools_schema()
         
-        print(f"Tools: {json.dumps(chat_tools, ensure_ascii=False)}")
+        print(f"Tools loaded: {[t['function']['name'] for t in chat_tools]}")
         
         print("Sending initial request...")
         resp = await llm.chat(messages, tools=chat_tools)
@@ -47,28 +46,58 @@ async def main():
                 # Append assistant message with tool_calls
                 messages.append(msg)
                 
-                for tc in tool_calls:
-                    fn = tc.get("function", {})
-                    name = fn.get("name")
-                    args_str = fn.get("arguments", "{}")
-                    print(f"Executing tool: {name} with args: {args_str}")
-                    
-                    if name == "web_search":
-                        try:
-                            args = json.loads(args_str)
-                            # Execute tool
-                            tool_result = await tool_web_search(args.get("query"), args.get("max_results", 5))
-                            
-                            # Append tool result message
-                            messages.append({
-                                "role": "tool",
-                                "tool_call_id": tc.get("id"),
-                                "name": name,
-                                "content": json.dumps(tool_result, ensure_ascii=False)
-                            })
-                            print("Tool execution completed.")
-                        except Exception as e:
-                            print(f"Tool execution failed: {e}")
+                async with SessionLocal() as db:
+                    for tc in tool_calls:
+                        fn = tc.get("function", {})
+                        name = fn.get("name")
+                        args_str = fn.get("arguments", "{}")
+                        print(f"Executing REAL tool: {name} with args: {args_str}")
+                        
+                        if name == "web_search":
+                            try:
+                                args = json.loads(args_str)
+                                tool_result = await tool_web_search(args.get("query"), args.get("max_results", 5))
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc.get("id"),
+                                    "name": name,
+                                    "content": json.dumps(tool_result, ensure_ascii=False)
+                                })
+                                print("Tool execution completed.")
+                            except Exception as e:
+                                print(f"Tool execution failed: {e}")
+                        elif name == "start_cluster":
+                            try:
+                                args = json.loads(args_str)
+                                cluster_uuid = args.get("cluster_uuid")
+                                # Execute REAL tool
+                                tool_result = await tool_start_cluster(db, "admin", cluster_uuid)
+                                
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc.get("id"),
+                                    "name": name,
+                                    "content": json.dumps(tool_result, ensure_ascii=False)
+                                })
+                                print(f"REAL tool start_cluster execution completed: {tool_result.get('status')}")
+                            except Exception as e:
+                                print(f"REAL tool execution failed: {e}")
+                        elif name == "stop_cluster":
+                            try:
+                                args = json.loads(args_str)
+                                cluster_uuid = args.get("cluster_uuid")
+                                # Execute REAL tool
+                                tool_result = await tool_stop_cluster(db, "admin", cluster_uuid)
+                                
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc.get("id"),
+                                    "name": name,
+                                    "content": json.dumps(tool_result, ensure_ascii=False)
+                                })
+                                print(f"REAL tool stop_cluster execution completed: {tool_result.get('status')}")
+                            except Exception as e:
+                                print(f"REAL tool execution failed: {e}")
                 
                 # 2. Send follow-up request with tool results
                 print("Sending follow-up request...")
