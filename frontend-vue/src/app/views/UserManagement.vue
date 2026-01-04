@@ -1,104 +1,290 @@
 <template>
-  <section class="layout__section">
-    <div class="layout__page-header"><h2 class="layout__page-title">用户管理</h2></div>
-    <div class="u-mb-2"><button class="btn" @click="open=true">新增用户</button></div>
-    <table id="admin-user-table" class="dashboard__table"><thead><tr><th>用户名</th><th>邮箱</th><th>角色</th><th>状态</th><th>操作</th></tr></thead><tbody><tr v-for="u in users" :key="u.username" class="dashboard__table-row"><td>{{ u.username }}</td><td>{{ u.email }}</td><td>
-      <select class="header__search-input" :value="u.role" :disabled="changingRoleUser===u.username" @change="onRoleChange(u.username, ($event.target as HTMLSelectElement).value)">
-        <option value="admin">管理员</option>
-        <option value="operator">操作员</option>
-        <option value="observer">观察员</option>
-      </select>
-    </td><td>{{ statusName(u.status) }}</td><td><button class="btn u-text-sm" @click="ban(u.username)">封禁</button><button class="btn u-text-sm u-ml-1" @click="unban(u.username)">解禁</button><button class="btn u-text-sm u-ml-1" @click="del(u.username)">删除</button></td></tr></tbody></table>
-    <div v-if="err" class="u-text-sm u-text-error u-mb-2">{{ err }}</div>
-    <div v-show="open" class="u-mt-2 layout__card u-p-4">
-      <h3 class="u-mb-2 u-text-sm u-font-bold">新增系统用户</h3>
-      <form @submit.prevent="save" class="layout__grid layout__grid--2">
-        <input v-model.trim="form.username" placeholder="用户名 (Username)" class="header__search-input" />
-        <input v-model.trim="form.fullName" placeholder="姓名 (Full Name)" class="header__search-input" />
-        <input v-model.trim="form.email" placeholder="邮箱 (Email)" class="header__search-input" />
-        <input v-model.trim="form.password" type="password" placeholder="输入密码" class="header__search-input" />
-        <input v-model.trim="form.confirmPassword" type="password" placeholder="确认密码" class="header__search-input" />
-        <select v-model="form.role" class="header__search-input">
-          <option value="admin">管理员</option>
-          <option value="operator">操作员</option>
-          <option value="observer">观察员</option>
-        </select>
-        <select v-model="form.status" class="header__search-input">
-          <option value="enabled">启用</option>
-          <option value="pending">待审核</option>
-          <option value="disabled">禁用</option>
-        </select>
-        <div class="u-col-span-2 u-mt-2">
-          <button class="btn btn--primary" :disabled="saving">{{ saving ? '提交中...' : '保存用户' }}</button>
-          <button class="btn u-ml-1" type="button" @click="cancel" :disabled="saving">取消</button>
-        </div>
-      </form>
+  <div class="user-management-container">
+    <div class="page-header">
+      <h2 class="page-title">用户管理</h2>
+      <el-button type="primary" @click="open = true">新增用户</el-button>
     </div>
-  </section>
+
+    <el-card class="table-card" shadow="never">
+      <el-table
+        :data="users"
+        stripe
+        style="width: 100%"
+        header-cell-class-name="table-header"
+      >
+        <el-table-column prop="username" label="用户名" min-width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="180" />
+        <el-table-column label="角色" width="150">
+          <template #default="{ row }">
+            <el-select
+              v-model="row.role"
+              size="small"
+              :disabled="changingRoleUser === row.username"
+              @change="(val: string) => onRoleChange(row.username, val)"
+            >
+              <el-option label="管理员" value="admin" />
+              <el-option label="操作员" value="operator" />
+              <el-option label="观察员" value="observer" />
+            </el-select>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="statusType(row.status)" size="small">
+              {{ statusName(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              size="small"
+              type="warning"
+              plain
+              v-if="row.status !== 'disabled'"
+              @click="ban(row.username)"
+            >封禁</el-button>
+            <el-button
+              size="small"
+              type="success"
+              plain
+              v-else
+              @click="unban(row.username)"
+            >解禁</el-button>
+            <el-popconfirm title="确认删除此用户？" @confirm="del(row.username)">
+              <template #reference>
+                <el-button size="small" type="danger" plain>删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <el-dialog
+      v-model="open"
+      title="新增系统用户"
+      :width="isMobile ? '95%' : '600px'"
+      @closed="cancel"
+    >
+      <el-form :model="form" label-width="100px" label-position="right">
+        <el-form-item label="用户名" required>
+          <el-input v-model="form.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="姓名" required>
+          <el-input v-model="form.fullName" placeholder="请输入姓名" />
+        </el-form-item>
+        <el-form-item label="邮箱" required>
+          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="密码" required>
+          <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码" required>
+          <el-input v-model="form.confirmPassword" type="password" placeholder="请再次确认密码" show-password />
+        </el-form-item>
+        <el-form-item label="角色" required>
+          <el-select v-model="form.role" class="w-full">
+            <el-option label="管理员" value="admin" />
+            <el-option label="操作员" value="operator" />
+            <el-option label="观察员" value="observer" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态" required>
+          <el-select v-model="form.status" class="w-full">
+            <el-option label="启用" value="enabled" />
+            <el-option label="待审核" value="pending" />
+            <el-option label="禁用" value="disabled" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="open = false">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="save">保存用户</el-button>
+        </div>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import api from '../lib/api'
+import { UserService } from '../api/user.service'
+import { ElMessage } from 'element-plus'
+
 const auth = useAuthStore()
+const isMobile = ref(window.innerWidth < 768)
+const updateWidth = () => { isMobile.value = window.innerWidth < 768 }
+
 const users = reactive<{ username:string; email:string; role:string; status:string }[]>([])
 const open = ref(false)
-const err = ref('')
 const saving = ref(false)
 const changingRoleUser = ref('')
 const form = reactive({ username:'', fullName:'', email:'', password:'', confirmPassword:'', role:'operator', status:'enabled' })
-function normalizeRole(r: string) {
-  const v = String(r || '').trim().toLowerCase()
-  if (v === 'admin' || v === 'administrator') return 'admin'
-  if (v === 'operator' || v === 'ops' || v === 'op') return 'operator'
-  if (v === 'observer' || v === 'obs' || v === 'view') return 'observer'
-  return v || 'observer'
+
+function statusName(s:string){ 
+  if(s==='enabled') return '启用'
+  if(s==='pending') return '待审核'
+  if(s==='disabled') return '禁用'
+  return s 
 }
-function roleName(r:string){
-  const normalized = normalizeRole(r)
-  if(normalized==='admin')return '管理员';
-  if(normalized==='operator')return '操作员';
-  if(normalized==='observer')return '观察员';
-  return normalized
+
+function statusType(s: string) {
+  if (s === 'enabled') return 'success'
+  if (s === 'pending') return 'warning'
+  if (s === 'disabled') return 'danger'
+  return 'info'
 }
-function statusName(s:string){ if(s==='enabled')return '启用'; if(s==='pending')return '待审核'; if(s==='disabled')return '禁用'; return s }
+
 async function load(){
   try{
-    const r = await api.get('/v1/users',{ headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined });
-    const data = r.data?.users || r.data;
+    const data = await UserService.list()
     const list = Array.isArray(data) ? data.map((u: any) => ({
       username: u.username || u.user_name || u.name,
       email: u.email || u.mail,
       role: u.role,
       status: u.status
-    })) : [];
-    users.splice(0,users.length,...list);
+    })) : []
+    users.splice(0, users.length, ...list)
   } catch(e:any){
-    err.value = e?.response?.data?.detail || e?.message || '加载失败'
+    ElMessage.error(e.friendlyMessage || '加载失败')
   }
 }
+
 async function save(){
-  if(!form.username||!form.fullName||!form.email||!form.role||!form.status){ err.value='请填写完整信息'; return }
-  if(!form.password||!form.confirmPassword){ err.value='请输入密码并确认'; return }
-  if(form.password!==form.confirmPassword){ err.value='两次密码不一致'; return }
+  if(!form.username||!form.fullName||!form.email||!form.role||!form.status){ 
+    ElMessage.warning('请填写完整信息')
+    return 
+  }
+  if(!form.password||!form.confirmPassword){ 
+    ElMessage.warning('请输入密码并确认')
+    return 
+  }
+  if(form.password!==form.confirmPassword){ 
+    ElMessage.warning('两次密码不一致')
+    return 
+  }
+  
   try{
-    saving.value = true; err.value = ''
-    const payload = { username: form.username, full_name: form.fullName, email: form.email, role: form.role, status: form.status, password: form.password }
-    await api.post('/v1/users', payload, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined })
-    await load(); cancel()
+    saving.value = true
+    const payload = { 
+      username: form.username, 
+      full_name: form.fullName, 
+      email: form.email, 
+      role: form.role, 
+      status: form.status, 
+      password: form.password 
+    }
+    await UserService.create(payload)
+    ElMessage.success('保存成功')
+    await load()
+    open.value = false
   } catch(e:any){
-    const d=e?.response?.data; const errs=d?.detail?.errors;
-    if(Array.isArray(errs)&&errs.length){ err.value = errs.map((x:any)=>x?.message||'').filter(Boolean).join('；') }
-    else { err.value = d?.detail || '保存失败' }
+    ElMessage.error(e.friendlyMessage || '保存失败')
   } finally {
     saving.value = false
   }
 }
-function cancel(){ open.value=false; err.value=''; form.username=''; form.fullName=''; form.email=''; form.password=''; form.confirmPassword=''; form.role='operator'; form.status='enabled' }
-async function ban(u:string){ try{ await api.patch(`/v1/users/${encodeURIComponent(u)}`, { status:'disabled' }, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load() } catch(e:any){ err.value = e?.response?.data?.detail || '操作失败' } }
-async function unban(u:string){ try{ await api.patch(`/v1/users/${encodeURIComponent(u)}`, { status:'enabled' }, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load() } catch(e:any){ err.value = e?.response?.data?.detail || '操作失败' } }
-async function del(u:string){ try{ await api.delete(`/v1/users/${encodeURIComponent(u)}`, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load() } catch(e:any){ err.value = e?.response?.data?.detail || '删除失败' } }
-async function onRoleChange(username:string, role:string){ try{ err.value=''; changingRoleUser.value=username; await api.patch(`/v1/users/${encodeURIComponent(username)}`, { role }, { headers: auth.token?{ Authorization:`Bearer ${auth.token}` }:undefined }); await load(); err.value='角色已更新' } catch(e:any){ const d=e?.response?.data; const errs=d?.detail?.errors; if(Array.isArray(errs)&&errs.length){ err.value = errs.map((x:any)=>x?.message||'').filter(Boolean).join('；') } else { err.value = d?.detail || '角色更新失败' } } finally { changingRoleUser.value='' } }
-onMounted(()=>{ load() })
+
+function cancel(){ 
+  open.value=false
+  Object.assign(form, { username:'', fullName:'', email:'', password:'', confirmPassword:'', role:'operator', status:'enabled' }) 
+}
+
+async function ban(u:string){ 
+  try{ 
+    await UserService.update(u, { status:'disabled' })
+    ElMessage.success('已封禁')
+    await load() 
+  } catch(e:any){ 
+    ElMessage.error(e.friendlyMessage || '操作失败') 
+  } 
+}
+
+async function unban(u:string){ 
+  try{ 
+    await UserService.update(u, { status:'enabled' })
+    ElMessage.success('已解禁')
+    await load() 
+  } catch(e:any){ 
+    ElMessage.error(e.friendlyMessage || '操作失败') 
+  } 
+}
+
+async function del(u:string){ 
+  try{ 
+    await UserService.remove(u)
+    ElMessage.success('已删除')
+    await load() 
+  } catch(e:any){ 
+    ElMessage.error(e.friendlyMessage || '删除失败') 
+  } 
+}
+
+async function onRoleChange(u:string, r:string){ 
+  try{ 
+    changingRoleUser.value=u
+    await UserService.update(u, { role:r })
+    ElMessage.success('角色已更新')
+    await load() 
+  } catch(e:any){ 
+    ElMessage.error(e.friendlyMessage || '修改角色失败') 
+  } finally { 
+    changingRoleUser.value='' 
+  } 
+}
+
+onMounted(() => {
+  load()
+  window.addEventListener('resize', updateWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWidth)
+})
 </script>
+
+<style scoped>
+.user-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.table-card {
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+:deep(.table-header) {
+  background-color: #f8fafc !important;
+  color: #475569;
+  font-weight: 600;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style>

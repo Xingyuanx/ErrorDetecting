@@ -1,296 +1,238 @@
 <template>
-  <section class="container">
-    <!-- 样式复用自 Login.vue -->
-    <form class="form" @submit.prevent="onSubmit">
-      <div style="text-align: center; width: 100%">
-        <h1
-          style="
-            font-size: 1.5rem;
-            color: var(--bg-dark);
-            margin-bottom: 0.5rem;
-          "
-        >
-          新用户注册
-        </h1>
+  <div class="register-container">
+    <el-card class="register-card">
+      <div class="register-header">
+        <el-icon :size="48" color="#0ea5e9"><User /></el-icon>
+        <h2 class="register-title">新用户注册</h2>
+        <p class="register-subtitle">填写以下信息完成账号注册</p>
       </div>
 
-      <span class="input-span">
-        <label for="username" class="label">账号</label>
-        <input
-          type="text"
-          name="username"
-          id="username"
-          v-model.trim="username"
-        />
-      </span>
-
-      <span class="input-span">
-        <label for="password" class="label">密码</label>
-        <div class="password-group">
-          <input
-            :type="showPassword ? 'text' : 'password'"
-            name="password"
-            id="password"
-            v-model.trim="password"
-          />
-          <i
-            class="fas"
-            :class="showPassword ? 'fa-eye' : 'fa-eye-slash'"
-            @click="showPassword = !showPassword"
-          ></i>
-        </div>
-      </span>
-
-      <span class="input-span">
-        <label for="confirm" class="label">确认密码</label>
-        <div class="password-group">
-          <input
-            :type="showConfirm ? 'text' : 'password'"
-            name="confirm"
-            id="confirm"
-            v-model.trim="confirm"
-          />
-          <i
-            class="fas"
-            :class="showConfirm ? 'fa-eye' : 'fa-eye-slash'"
-            @click="showConfirm = !showConfirm"
-          ></i>
-        </div>
-      </span>
-
-      <span class="input-span">
-        <label for="email" class="label">邮箱</label>
-        <input type="email" name="email" id="email" v-model.trim="email" />
-      </span>
-
-      <span class="input-span">
-        <label for="fullName" class="label">姓名</label>
-        <input
-          type="text"
-          name="fullName"
-          id="fullName"
-          v-model.trim="fullName"
-        />
-      </span>
-
-      <button class="submit-btn" type="submit" :disabled="loading">
-        {{ loading ? "提交中..." : "提交" }}
-      </button>
-      <span class="span"
-        >已有账号？ <RouterLink to="/login">返回登录</RouterLink></span
+      <el-form
+        :model="registerForm"
+        :rules="rules"
+        ref="registerFormRef"
+        label-position="top"
+        @submit.prevent="onSubmit"
+        size="large"
       >
+        <el-form-item label="账号" prop="username">
+          <el-input
+            v-model.trim="registerForm.username"
+            placeholder="请输入账号"
+            prefix-icon="User"
+          />
+        </el-form-item>
 
-      <div
-        v-if="msg"
-        class="register__msg"
-        style="text-align: center; color: #f43f5e; font-size: 0.9rem"
-      >
-        {{ msg }}
-      </div>
-    </form>
-  </section>
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model.trim="registerForm.password"
+            type="password"
+            placeholder="请输入密码"
+            prefix-icon="Lock"
+            show-password
+          />
+          <div class="form-tip">需至少8位，包含大小写字母和数字</div>
+        </el-form-item>
+
+        <el-form-item label="确认密码" prop="confirm">
+          <el-input
+            v-model.trim="registerForm.confirm"
+            type="password"
+            placeholder="请再次输入密码以确认"
+            prefix-icon="CircleCheck"
+            show-password
+          />
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input
+            v-model.trim="registerForm.email"
+            placeholder="请输入邮箱"
+            prefix-icon="Message"
+          />
+        </el-form-item>
+
+        <el-form-item label="姓名" prop="fullName">
+          <el-input
+            v-model.trim="registerForm.fullName"
+            placeholder="请输入真实姓名"
+            prefix-icon="Edit"
+          />
+        </el-form-item>
+
+        <el-form-item class="submit-item">
+          <el-button
+            type="primary"
+            native-type="submit"
+            :loading="loading"
+            class="full-width"
+          >
+            提交注册
+          </el-button>
+        </el-form-item>
+
+        <div class="login-link">
+          <span>
+            已有账号？
+            <el-link type="primary" :underline="false" @click="router.push('/login')">返回登录</el-link>
+          </span>
+        </div>
+      </el-form>
+    </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
-const username = ref("");
-const password = ref("");
-const confirm = ref("");
-const email = ref("");
-const fullName = ref("");
-const showPassword = ref(false);
-const showConfirm = ref(false);
-// const role = ref('operator') // 未使用
-const msg = ref("");
-const loading = ref(false);
+import { User, Lock, Message, CircleCheck, Edit } from "@element-plus/icons-vue";
+import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+
 const router = useRouter();
 const auth = useAuthStore();
+const registerFormRef = ref<FormInstance>();
+const loading = ref(false);
+
+const registerForm = reactive({
+  username: "",
+  password: "",
+  confirm: "",
+  email: "",
+  fullName: "",
+});
+
+const validateConfirmPassword = (rule: any, value: any, callback: any) => {
+  if (value === "") {
+    callback(new Error("请再次输入密码"));
+  } else if (value !== registerForm.password) {
+    callback(new Error("两次输入的密码不一致"));
+  } else {
+    callback();
+  }
+};
+
+const rules = reactive<FormRules>({
+  username: [
+    { required: true, message: "请输入账号", trigger: "blur" },
+    { min: 3, message: "账号长度至少为3位", trigger: "blur" },
+  ],
+  password: [
+    { required: true, message: "请输入密码", trigger: "blur" },
+    { min: 8, message: "密码长度至少为8位", trigger: "blur" },
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+      message: "密码需包含大小写字母和数字",
+      trigger: "blur",
+    },
+  ],
+  confirm: [
+    { required: true, validator: validateConfirmPassword, trigger: "blur" },
+  ],
+  email: [
+    { required: true, message: "请输入邮箱", trigger: "blur" },
+    { type: "email", message: "请输入有效的邮箱地址", trigger: "blur" },
+  ],
+  fullName: [{ required: true, message: "请输入姓名", trigger: "blur" }],
+});
+
 async function onSubmit() {
-  loading.value = true;
-  if (
-    !username.value ||
-    !password.value ||
-    !confirm.value ||
-    !email.value ||
-    !fullName.value
-  ) {
-    msg.value = "请填写所有必填字段";
-    loading.value = false;
-    return;
-  }
-  if (password.value !== confirm.value) {
-    msg.value = "两次密码不一致";
-    loading.value = false;
-    return;
-  }
-  const r = await auth.register(
-    username.value,
-    email.value,
-    password.value,
-    fullName.value
-  );
-  if (r.ok) router.replace({ name: auth.defaultPage });
-  else msg.value = r.message || "注册失败";
-  loading.value = false;
+  if (!registerFormRef.value) return;
+
+  await registerFormRef.value.validate(async (valid) => {
+    if (valid) {
+      loading.value = true;
+      try {
+        const r = await auth.register(
+          registerForm.username,
+          registerForm.email,
+          registerForm.password,
+          registerForm.fullName
+        );
+
+        if (r.ok) {
+          ElMessage.success("注册成功！");
+          router.replace({ name: auth.defaultPage });
+        } else {
+          ElMessage.error(r.message || "注册失败");
+        }
+      } catch (err) {
+        ElMessage.error("请求出错，请重试");
+      } finally {
+        loading.value = false;
+      }
+    }
+  });
 }
 </script>
 
 <style scoped>
-/* From Uiverse.io by csemszepp */
-.container {
+.register-container {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1; /* 让 container 撑满父容器 flex 空间 */
+  padding: 20px;
+}
+
+.register-card {
   width: 100%;
-  min-width: 100%;
-  min-height: calc(100vh - var(--header-h));
-  --s: 200px; /* control the size */
-  --c1: #1d1d1d;
-  --c2: #4e4f51;
-  --c3: #3c3c3c;
-
-  background: repeating-conic-gradient(
-        from 30deg,
-        #0000 0 120deg,
-        var(--c3) 0 180deg
-      )
-      calc(0.5 * var(--s)) calc(0.5 * var(--s) * 0.577),
-    repeating-conic-gradient(
-      from 30deg,
-      var(--c1) 0 60deg,
-      var(--c2) 0 120deg,
-      var(--c3) 0 180deg
-    );
-  background-size: var(--s) calc(var(--s) * 0.577);
+  max-width: 450px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9);
 }
 
-/* From Uiverse.io by bociKond */
-.form {
-  --bg-light: #efefef;
-  --bg-dark: #707070;
-  --clr: #58bc82;
-  --clr-alpha: #9c9c9c60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem; /* 减小行间距 */
+:deep(.el-card__body) {
+  padding: 24px 40px;
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.register-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 12px 0 4px;
+}
+
+.register-subtitle {
+  font-size: 14px;
+  color: #64748b;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.submit-item {
+  margin-top: 24px;
+  margin-bottom: 12px !important;
+}
+
+.full-width {
   width: 100%;
-  max-width: 400px;
-  background: white; /* 改为不透明白色 */
-  padding: 1.5rem; /* 减小容器内边距 */
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-}
-
-.form .input-span {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem; /* 减小 label 和 input 的间距 */
-}
-
-.password-group {
-  position: relative;
-  width: 100%;
-  display: flex;
-}
-
-.password-group i {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: var(--bg-dark);
-  opacity: 0.7;
-  font-size: 1rem;
-  z-index: 10;
-}
-
-.password-group i:hover {
-  opacity: 1;
-  color: var(--clr);
-}
-
-.form input[type="text"],
-.form input[type="password"],
-.form input[type="email"] {
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.75rem; /* 减小输入框高度 */
-  width: 100%;
-  border: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: var(--clr-alpha);
-  outline: 2px solid var(--bg-dark);
-}
-
-.form input[name="password"],
-.form input[name="confirm"] {
-  padding-right: 2.5rem;
-}
-
-.form input[type="text"]:focus,
-.form input[type="password"]:focus,
-.form input[type="email"]:focus {
-  outline: 2px solid var(--clr);
-}
-
-.label {
-  align-self: flex-start;
-  color: var(--clr);
+  height: 40px;
+  font-size: 16px;
   font-weight: 600;
 }
 
-/* From Uiverse.io by biswacpcode */
-.submit-btn {
-  color: var(--bg-light);
-  text-decoration: none;
-  font-size: 25px;
-  border: none;
-  background-color: var(--bg-dark);
-  padding: 0.5rem 1rem;
-  border-radius: 3rem;
-  font-weight: 600;
-  font-family: "Poppins", sans-serif;
-  cursor: pointer;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  margin-top: 1rem;
-}
-
-.submit-btn::before {
-  margin-left: auto;
-}
-
-.submit-btn::after,
-.submit-btn::before {
-  content: "";
-  width: 0%;
-  height: 2px;
-  background: var(--clr);
-  display: block;
-  transition: 0.5s;
-}
-
-.submit-btn:hover::after,
-.submit-btn:hover::before {
-  width: 100%;
-}
-
-.span {
-  text-decoration: none;
-  color: var(--bg-dark);
-  font-size: 0.9rem;
-}
-
-.span a {
-  color: var(--clr);
-  text-decoration: none;
+.login-link {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #64748b;
 }
 </style>

@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import api from '../lib/api'
+import { MetricService } from '../api/metric.service'
 import { useAuthStore } from '../stores/auth'
 const props = defineProps<{ cluster: string }>()
 const auth = useAuthStore()
@@ -18,10 +18,12 @@ function render(times: string[], values: number[]) {
 async function load() {
   if (!chart) return
   try {
-    const r = await api.get('/v1/metrics/cpu_trend', { params: { cluster: props.cluster }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const times = Array.isArray(r.data?.times) ? r.data.times : ['00:00','04:00','08:00','12:00','16:00','20:00','24:00']
-    const values = Array.isArray(r.data?.values) ? r.data.values : [20,35,45,60,55,40,30]
-    render(times, values)
+    const { times, values } = await MetricService.getCpuTrend(props.cluster)
+    if (times.length > 0 && values.length > 0) {
+      render(times, values)
+    } else {
+      render(['00:00','04:00','08:00','12:00','16:00','20:00','24:00'], [20,35,45,60,55,40,30])
+    }
   } catch {
     render(['00:00','04:00','08:00','12:00','16:00','20:00','24:00'], [20,35,45,60,55,40,30])
   }

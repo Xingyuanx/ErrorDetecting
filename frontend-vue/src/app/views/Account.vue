@@ -1,75 +1,84 @@
 <template>
-  <section class="layout__section">
-    <div class="layout__page-header exec-header">
-      <div>
-        <h2 class="layout__page-title">账号管理</h2>
-        <div class="layout__page-subtitle">修改密码、设置双因素认证等</div>
+  <div class="account-container">
+    <div class="page-header">
+      <div class="header-content">
+        <h2 class="page-title">账号管理</h2>
+        <p class="page-subtitle">修改密码、设置双因素认证等</p>
       </div>
-      <div class="layout__page-actions"><button class="btn btn--primary" :disabled="loading" type="button" @click="save">保存设置</button></div>
+      <el-button type="primary" :loading="loading" @click="save">保存设置</el-button>
     </div>
 
-    <article class="layout__card u-mt-2">
-      <div class="layout__card-header"><h3 class="layout__card-title">安全设置</h3></div>
-      <div class="layout__card-body">
-        <form class="layout__grid layout__grid--3" @submit.prevent="save">
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">当前密码</label>
-            <input v-model.trim="form.current" type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="••••••••" autocomplete="current-password" />
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">新密码</label>
-            <input v-model.trim="form.next" type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="至少8位" autocomplete="new-password" />
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">确认新密码</label>
-            <input v-model.trim="form.confirm" type="password" class="u-w-full u-p-2 u-border u-rounded u-mt-1" placeholder="再次输入" autocomplete="new-password" />
-          </div>
-        </form>
-        <div class="u-text-sm u-text-gray-700 u-mt-2" role="alert">{{ err }}</div>
-      </div>
-    </article>
-  </section>
+    <el-card shadow="never" class="settings-card">
+      <template #header>
+        <div class="card-header">安全设置</div>
+      </template>
+      <el-form label-position="top" :model="form" @submit.prevent="save">
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="当前密码">
+              <el-input v-model.trim="form.current" type="password" show-password placeholder="••••••••" autocomplete="current-password" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="新密码">
+              <el-input v-model.trim="form.next" type="password" show-password placeholder="至少8位" autocomplete="new-password" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="确认新密码">
+              <el-input v-model.trim="form.confirm" type="password" show-password placeholder="再次输入" autocomplete="new-password" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import api from '../lib/api'
-import { useAuthStore } from '../stores/auth'
+import { ElMessage } from 'element-plus'
+import { UserService } from '../api/user.service'
 
-const auth = useAuthStore()
-const form = reactive({ current:'', next:'', confirm:'' })
-const err = ref('')
+const form = reactive({ current: '', next: '', confirm: '' })
 const loading = ref(false)
 
-async function save(){
-  err.value = ''
-  if (!form.current || !form.next || !form.confirm) { err.value = '请填写完整密码信息'; return }
-  if (form.next.length < 8) { err.value = '新密码至少8位'; return }
-  if (form.next !== form.confirm) { err.value = '两次输入的新密码不一致'; return }
-  
+async function save() {
+  if (!form.current || !form.next || !form.confirm) {
+    ElMessage.warning('请填写完整密码信息')
+    return
+  }
+  if (form.next.length < 8) {
+    ElMessage.warning('新密码至少8位')
+    return
+  }
+  if (form.next !== form.confirm) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+
   loading.value = true
   try {
-    const r = await api.patch('/v1/user/password', {
+    const r = await UserService.updatePassword({
       currentPassword: form.current,
       newPassword: form.next
-    }, {
-      headers: { Authorization: `Bearer ${auth.token}` }
     })
-    
-    if (r.data?.ok) {
-      err.value = '密码修改成功'
+
+    if (r?.ok || r?.data?.ok || r?.status === 'success') {
+      ElMessage.success('密码修改成功')
       form.current = ''
       form.next = ''
       form.confirm = ''
     } else {
-      err.value = r.data?.detail || '修改失败'
+      ElMessage.error(r?.detail || r?.message || '修改失败')
     }
   } catch (e: any) {
-    const detail = e.response?.data?.detail
-    if (detail === 'invalid_current_password') err.value = '当前密码错误'
-    else if (detail === 'weak_new_password') err.value = '新密码太弱（需包含大小写字母和数字）'
-    else if (detail === 'demo_user_cannot_change_password') err.value = '演示账号不允许修改密码'
-    else err.value = '服务器错误，请稍后再试'
+    const detail = e.friendlyMessage || e.response?.data?.detail
+    let msg = e.friendlyMessage || '服务器错误，请稍后再试'
+    if (detail === 'invalid_current_password') msg = '当前密码错误'
+    else if (detail === 'weak_new_password') msg = '新密码太弱（需包含大小写字母和数字）'
+    else if (detail === 'demo_user_cannot_change_password') msg = '演示账号不允许修改密码'
+    ElMessage.error(msg)
   } finally {
     loading.value = false
   }
@@ -77,12 +86,38 @@ async function save(){
 </script>
 
 <style scoped>
-.exec-header{ display:flex; justify-content:space-between; align-items:center }
-.layout__page-subtitle{ color:#6b7280; font-size:13px }
-.layout__card{ background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(16,24,40,0.06) }
-.layout__card-header{ padding:12px 16px; border-bottom:1px solid #e5e7eb }
-.layout__card-title{ font-size:14px; font-weight:600 }
-.layout__card-body{ padding:16px }
-.layout__grid{ display:grid; gap:16px }
-.layout__grid--3{ grid-template-columns: 1fr 1fr 1fr }
+.account-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 4px 0 0 0;
+}
+
+.settings-card {
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+.card-header {
+  font-weight: 600;
+}
 </style>

@@ -40,7 +40,6 @@ class NavigationManager {
         this.bindDropdownEvents();
         this.bindUserMenuEvents();
         this.bindGlobalClickEvents();
-        this.bindSearchEvents();
         this.bindClusterListEvents();
         this.bindLogPaginationEvents();
         this.bindSidebarToggle();
@@ -851,61 +850,6 @@ class NavigationManager {
                 this.closeAllDropdowns();
             }
         });
-    }
-
-    /**
-     * 绑定搜索事件
-     */
-    bindSearchEvents() {
-        const searchInput = document.getElementById('global-search');
-        if (searchInput) {
-            // 搜索输入事件
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim();
-                if (query.length > 2) {
-                    this.performSearch(query);
-                }
-            });
-
-            // 回车键搜索
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const query = e.target.value.trim();
-                    if (query) {
-                        this.performSearch(query);
-                    }
-                }
-            });
-        }
-
-        // 日志搜索表单
-        const logSearchForm = document.getElementById('log-search-form');
-        if (logSearchForm) {
-            logSearchForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.performLogSearch();
-            });
-            // 实时搜索（防抖）
-            ['log-level','source-cluster','source-node','op-type','user-id','time-range'].forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                const evt = (el.tagName === 'INPUT') ? 'input' : 'change';
-                el.addEventListener(evt, () => this.applyLogSearch());
-            });
-            const clearBtn = document.getElementById('log-clear-filters');
-            if (clearBtn) clearBtn.addEventListener('click', () => this.clearLogFilters());
-        }
-    }
-
-    /**
-     * 执行全局搜索
-     * @param {string} query - 搜索查询
-     */
-    performSearch(query) {
-        console.log('执行全局搜索:', query);
-        // 这里可以实现实际的搜索逻辑
-        // 例如：搜索节点、日志、配置等
     }
 
     /**

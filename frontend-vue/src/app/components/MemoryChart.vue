@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import api from '../lib/api'
+import { MetricService } from '../api/metric.service'
 import { useAuthStore } from '../stores/auth'
 const props = defineProps<{ cluster: string }>()
 const auth = useAuthStore()
@@ -18,10 +18,12 @@ function render(used: number, free: number) {
 async function load() {
   if (!chart) return
   try {
-    const r = await api.get('/v1/metrics/memory_usage', { params: { cluster: props.cluster }, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const used = Number(r.data?.used ?? 8.5)
-    const free = Number(r.data?.free ?? 15.5)
-    render(used, free)
+    const { used, free } = await MetricService.getMemoryUsage(props.cluster)
+    if (used > 0 || free > 0) {
+      render(used, free)
+    } else {
+      render(8.5, 15.5)
+    }
   } catch {
     render(8.5, 15.5)
   }

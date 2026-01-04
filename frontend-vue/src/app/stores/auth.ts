@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import api from '../lib/api'
+import { AuthService } from '../api/auth.service'
 
 type User = { id: number; username: string; role: 'admin'|'operator'|'observer' }
 
@@ -51,20 +51,12 @@ export const useAuthStore = defineStore('auth', {
       else localStorage.removeItem('cm_token')
     },
     async login(username: string, password: string) {
-      if (username === '123' && password === '123') {
-        const role: 'admin' = 'admin'
-        const token = makeDemoToken()
-        this.user = { id: 1, username: 'demo-admin', role }
-        this.token = token
-        this.persist()
-        return { ok: true, role }
-      }
       try {
-        const r = await api.post('/v1/user/login', { username, password })
-        const token = r?.data?.token
-        const userId = r?.data?.user?.id || r?.data?.id || 0
-        const backendRoles = (r?.data?.roles || []) as string[]
-        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || r?.data?.role_key || (backendRoles.length > 0 ? backendRoles[0] : '')) as string
+        const r: any = await AuthService.login({ username, password })
+        const token = r?.token
+        const userId = r?.user?.id || r?.id || 0
+        const backendRoles = (r?.roles || []) as string[]
+        const backendRoleRaw = (r?.user?.role || r?.role || r?.role_key || (backendRoles.length > 0 ? backendRoles[0] : '')) as string
         const backendRole = normalizeRole(backendRoleRaw)
         const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' || username === 'administrator' ? 'admin' : (username === 'ops' || username === 'operator') ? 'operator' : 'observer')
         if (!token) {
@@ -75,35 +67,23 @@ export const useAuthStore = defineStore('auth', {
         this.persist()
         return { ok: true, role }
       } catch (e: any) {
-        const d = e?.response?.data
-        if (!e?.response) {
-          return { ok: false, message: '网络异常，后端不可用' }
-        }
-        const message = d?.detail === 'invalid_credentials' ? '账号或密码错误' : d?.detail === 'inactive_user' ? '账号未激活' : '登录失败'
-        return { ok: false, message }
+        return { ok: false, message: e.friendlyMessage || '登录失败' }
       }
     },
     async register(username: string, email: string, password: string, fullName: string) {
       try {
-        const r = await api.post('/v1/user/register', { username, email, password, fullName })
-        const userId = r?.data?.user?.id || r?.data?.id || 0
-        const backendRoles = (r?.data?.roles || []) as string[]
-        const backendRoleRaw = (r?.data?.user?.role || r?.data?.role || r?.data?.role_key || (backendRoles.length > 0 ? backendRoles[0] : '')) as string
+        const r: any = await AuthService.register({ username, email, password, fullName })
+        const userId = r?.user?.id || r?.id || 0
+        const backendRoles = (r?.roles || []) as string[]
+        const backendRoleRaw = (r?.user?.role || r?.role || r?.role_key || (backendRoles.length > 0 ? backendRoles[0] : '')) as string
         const backendRole = normalizeRole(backendRoleRaw)
         const role: 'admin'|'operator'|'observer' = backendRole || (username === 'admin' || username === 'administrator' ? 'admin' : (username === 'ops' || username === 'operator') ? 'operator' : 'observer')
         this.user = { id: userId, username, role }
-        this.token = r?.data?.token || null
+        this.token = r?.token || null
         this.persist()
         return { ok: true, role }
       } catch (e: any) {
-        const d = e?.response?.data
-        const errs = d?.detail?.errors
-        if (Array.isArray(errs) && errs.length) {
-          const message = errs.map((x: any) => x?.message || '').filter(Boolean).join('；')
-          return { ok: false, message }
-        }
-        const message = d?.detail === 'user_exists' ? '用户名已存在' : d?.detail === 'email_exists' ? '邮箱已存在' : '注册失败'
-        return { ok: false, message }
+        return { ok: false, message: e.friendlyMessage || '注册失败' }
       }
     },
     logout() { this.user = null; this.token = null; this.persist() }

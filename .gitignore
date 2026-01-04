@@ -2,6 +2,7 @@
 src/fronted/vue3/
 frontend-vue/node_modules/
 frontend-vue/dist/
+frontend-vue/.vite/
 .venv/
 __pycache__/
 *.pyc

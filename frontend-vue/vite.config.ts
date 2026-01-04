@@ -16,10 +16,8 @@ export default defineConfig(({ mode }) => {
       host: devHost,
       strictPort: true,
       port: devPort,
-      hmr: {
-        host: hmrHost,
-        clientPort: hmrPort,
-      },
+      // 完全关闭 HMR 以屏蔽 HMR 客户端的探测报错
+      hmr: false,
       cors: true,
       allowedHosts: allowedHostsEnv.length ? allowedHostsEnv : true,
       proxy: {

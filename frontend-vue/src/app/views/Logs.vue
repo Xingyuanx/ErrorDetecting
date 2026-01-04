@@ -1,101 +1,125 @@
 <template>
-  <section class="layout__section">
-    <div class="layout__page-header"><h2 class="layout__page-title">集群日志</h2></div>
-    <article class="layout__card">
-      <div class="layout__card-header"><h3 class="layout__card-title">搜索条件</h3></div>
-      <div class="layout__card-body">
-        <form id="log-search-form" @submit.prevent="apply(true)" class="layout__grid layout__grid--3">
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">日志级别</label>
-            <select v-model="q.level" id="log-level" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-              <option value="">全部级别</option>
-              <option value="debug">DEBUG</option>
-              <option value="info">INFO</option>
-              <option value="warn">WARN</option>
-              <option value="error">ERROR</option>
-            </select>
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">来源集群</label>
-            <select v-model="q.cluster" id="source-cluster" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-              <option value="">全部集群</option>
-              <option v-for="c in clustersOpts" :key="c" :value="c">{{ c }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">来源节点</label>
-            <select v-model="q.node" id="source-node" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-              <option value="">全部节点</option>
-              <option v-for="n in nodesOpts" :key="n" :value="n">{{ n }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">操作类型</label>
-            <select v-model="q.op" id="op-type" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-              <option value="">全部类型</option>
-              <option v-for="o in opsOpts" :key="o" :value="o">{{ o }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">来源：</label>
-            <select v-model="q.source" id="source-id" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-              <option value="">全部来源</option>
-              <option v-for="s in sourcesOpts" :key="s" :value="s">{{ s }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="u-text-sm u-font-medium u-text-gray-700">时间范围</label>
-            <select v-model="q.timeRange" id="time-range" class="u-w-full u-p-2 u-border u-rounded u-mt-1">
-              <option value="">全部时间</option>
-              <option value="1h">最近1小时</option>
-              <option value="6h">最近6小时</option>
-              <option value="24h">最近24小时</option>
-              <option value="7d">最近7天</option>
-            </select>
-          </div>
-          <div class="filter-actions" style="grid-column: 1 / -1;">
-            <button type="button" class="btn btn-link" @click="clear">清除筛选</button>
-          </div>
-        </form>
-        <div id="log-filter-summary" class="u-mt-3 u-text-sm u-text-gray-700">当前筛选：{{ summary }}</div>
-      </div>
-    </article>
-    <table class="dashboard__table">
-      <thead><tr><th>时间</th><th>级别</th><th>集群</th><th>节点</th><th>操作</th><th>来源</th><th>消息</th></tr></thead>
-      <tbody id="logs-tbody">
-        <tr v-for="item in pageData" :key="item.id" class="dashboard__table-row">
-          <td><time :datetime="item.time">{{ item.time.split('T')[1] || item.time }}</time></td>
-          <td><span class="u-font-medium">{{ item.level.toUpperCase() }}</span></td>
-          <td><code>{{ item.cluster }}</code></td>
-          <td>{{ item.node }}</td>
-          <td>{{ item.op }}</td>
-          <td>{{ item.source }}</td>
-          <td>{{ item.message }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="u-mt-2 pagination-bar">
-      <button id="log-prev" class="btn" :disabled="page <= 1" @click="prev">上一页</button>
-      <input type="number" v-model.number="page" min="1" :max="maxPage" class="header__search-input u-ml-1" style="width: 80px; text-align: center;" />
-      <button id="log-next" class="btn u-ml-1" :disabled="page >= maxPage" @click="next">下一页</button>
-      <select id="log-page-size" v-model.number="size" class="header__search-input u-ml-1">
-        <option :value="10">10条/页</option>
-        <option :value="20">20条/页</option>
-        <option :value="50">50条/页</option>
-      </select>
-      <span id="log-page-info" class="u-ml-1">共 {{ maxPage }} 页</span>
+  <div class="logs-container">
+    <div class="page-header">
+      <h2 class="page-title">集群日志</h2>
     </div>
-  </section>
+
+    <el-card class="filter-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>搜索条件</span>
+          <el-button type="primary" link @click="clear">清除筛选</el-button>
+        </div>
+      </template>
+      
+      <el-form :model="q" label-position="top" size="default">
+        <el-row :gutter="20">
+          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+            <el-form-item label="日志级别">
+              <el-select v-model="q.level" placeholder="全部级别" clearable class="w-full">
+                <el-option label="DEBUG" value="debug" />
+                <el-option label="INFO" value="info" />
+                <el-option label="WARN" value="warn" />
+                <el-option label="ERROR" value="error" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+            <el-form-item label="来源集群">
+              <el-select v-model="q.cluster" placeholder="全部集群" clearable class="w-full">
+                <el-option v-for="c in clustersOpts" :key="c" :label="c" :value="c" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+            <el-form-item label="来源节点">
+              <el-select v-model="q.node" placeholder="全部节点" clearable class="w-full">
+                <el-option v-for="n in nodesOpts" :key="n" :label="n" :value="n" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+            <el-form-item label="操作类型">
+              <el-select v-model="q.op" placeholder="全部类型" clearable class="w-full">
+                <el-option v-for="o in opsOpts" :key="o" :label="o" :value="o" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+            <el-form-item label="来源">
+              <el-select v-model="q.source" placeholder="全部来源" clearable class="w-full">
+                <el-option v-for="s in sourcesOpts" :key="s" :label="s" :value="s" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+            <el-form-item label="时间范围">
+              <el-select v-model="q.timeRange" placeholder="全部时间" clearable class="w-full">
+                <el-option label="最近1小时" value="1h" />
+                <el-option label="最近6小时" value="6h" />
+                <el-option label="最近24小时" value="24h" />
+                <el-option label="最近7天" value="7d" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <div class="filter-summary">
+        <el-tag type="info" variant="plain" size="small">当前筛选：{{ summary }}</el-tag>
+      </div>
+    </el-card>
+
+    <el-card class="table-card" shadow="never">
+      <el-table
+        v-loading="loading"
+        :data="pageData"
+        stripe
+        style="width: 100%"
+        header-cell-class-name="table-header"
+      >
+        <el-table-column label="时间" width="120">
+          <template #default="{ row }">
+            {{ row.time.split('T')[1]?.slice(0, 8) || row.time }}
+          </template>
+        </el-table-column>
+        <el-table-column label="级别" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getLevelTag(row.level)" size="small" effect="dark">
+              {{ row.level.toUpperCase() }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="cluster" label="集群" width="150" show-overflow-tooltip />
+        <el-table-column prop="node" label="节点" width="150" show-overflow-tooltip />
+        <el-table-column prop="op" label="操作" width="120" />
+        <el-table-column prop="source" label="来源" width="150" show-overflow-tooltip />
+        <el-table-column prop="message" label="消息" min-width="300" show-overflow-tooltip />
+      </el-table>
+
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted } from 'vue'
-import api from '../lib/api'
+import { LogService } from '../api/log.service'
 import { useAuthStore } from '../stores/auth'
+
 const auth = useAuthStore()
 const data = ref<{ id:number; time:string; level:string; cluster:string; node:string; op:string; source:string; message:string }[]>([])
 const page = ref(1)
-const size = ref(10)
+const size = ref(20)
 const total = ref(0)
 const loading = ref(false)
 const err = ref('')
@@ -104,11 +128,23 @@ const clustersOpts = ref<string[]>([])
 const nodesOpts = ref<string[]>([])
 const opsOpts = ref<string[]>([])
 const sourcesOpts = ref<string[]>([])
+
+function getLevelTag(level: string) {
+  const map: Record<string, string> = {
+    'debug': 'info',
+    'info': 'success',
+    'warn': 'warning',
+    'error': 'danger'
+  }
+  return map[level.toLowerCase()] || 'info'
+}
+
 function rangeFromNow(r:string){
   const now = Date.now()
   const span = r==='1h'?60*60*1000:r==='6h'?6*60*60*1000:r==='24h'?24*60*60*1000:r==='7d'?7*24*60*60*1000:0
   return span? new Date(now-span).toISOString() : ''
 }
+
 async function load(){
   loading.value = true
   err.value = ''
@@ -120,8 +156,8 @@ async function load(){
     if (q.op) params.op = q.op
     if (q.source) params.source = q.source
     if (q.timeRange) params.time_from = rangeFromNow(q.timeRange)
-    const r = await api.get('/v1/logs', { params, headers: auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined })
-    const items = Array.isArray(r.data?.items) ? r.data.items : (Array.isArray(r.data?.logs)? r.data.logs : [])
+    
+    const { items, total: t } = await LogService.list(params)
     const normalized = items.map((d:any)=>({
       id: d.log_id || d.id,
       time: d.log_time || d.timestamp || '',
@@ -133,40 +169,49 @@ async function load(){
       message: d.info || d.message || ''
     }))
     data.value = normalized
-    total.value = Number(r.data?.total ?? items.length)
+    total.value = t
+    
     if (!clustersOpts.value.length) clustersOpts.value = Array.from(new Set(items.map((d:any)=>d.cluster).filter(Boolean)))
     if (!nodesOpts.value.length) nodesOpts.value = Array.from(new Set(items.map((d:any)=>d.node).filter(Boolean)))
     if (!opsOpts.value.length) opsOpts.value = Array.from(new Set(items.map((d:any)=>d.op).filter(Boolean)))
     if (!sourcesOpts.value.length) sourcesOpts.value = Array.from(new Set(normalized.map((d:any)=>d.source).filter(Boolean)))
-  }catch(e:any){ err.value = e?.response?.data?.detail || '加载失败' }
-  finally{ loading.value = false }
+  }catch(e:any){ 
+    err.value = e.friendlyMessage || e?.response?.data?.detail || '加载失败' 
+  } finally{ 
+    loading.value = false 
+  }
 }
-function apply(manual=false) { page.value = 1 }
-function clear() { q.level=''; q.cluster=''; q.node=''; q.op=''; q.source=''; q.timeRange=''; page.value=1 }
-const maxPage = computed(() => Math.max(1, Math.ceil(total.value / size.value)))
-function prev() { if (page.value > 1) page.value -= 1 }
-function next() { if (page.value < maxPage.value) page.value += 1 }
+
+function clear() { 
+  q.level=''; q.cluster=''; q.node=''; q.op=''; q.source=''; q.timeRange=''; 
+  page.value=1 
+}
+
+const handleSizeChange = (val: number) => {
+  size.value = val
+  page.value = 1
+  load()
+}
+
+const handleCurrentChange = (val: number) => {
+  page.value = val
+  load()
+}
+
 const pageData = computed(() => {
   const s = q.source.trim().toLowerCase()
   let list = data.value
   if (s) list = list.filter(d => String(d.source || '').toLowerCase().includes(s))
   return list
 })
+
 watch(() => ({...q}), () => { 
-  if (page.value === 1) load()
-  else page.value = 1 
-}, { deep: true })
-watch(page, (val) => {
-  if (typeof val !== 'number' || isNaN(val)) return
-  if (val < 1) { page.value = 1; return }
-  if (val > maxPage.value) { page.value = maxPage.value; return }
+  page.value = 1
   load()
-})
-watch(size, () => { 
-  if (page.value === 1) load()
-  else page.value = 1 
-})
+}, { deep: true })
+
 onMounted(()=>{ load() })
+
 const summary = computed(() => {
   const parts = [] as string[]
   if (q.level) parts.push(`级别=${q.level}`)
@@ -180,14 +225,52 @@ const summary = computed(() => {
 </script>
 
 <style scoped>
-.layout__card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 8px 24px rgba(16,24,40,0.06) }
-.layout__card-header { padding: 12px 16px; border-bottom: 1px solid #e5e7eb }
-.layout__card-title { font-size: 14px; font-weight: 600 }
-.layout__card-body { padding: 16px }
-.layout__grid { display: grid; gap: 16px }
-.layout__grid--3 { grid-template-columns: 1fr 1fr 1fr }
-.btn-link { background: transparent; border-color: transparent; color: #2563eb }
-.filter-actions { display: flex; justify-content: flex-end; align-items: center; }
-.pagination-bar { display: flex; justify-content: center; align-items: center; }
-.dashboard__table th { white-space: nowrap; }
+.logs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  margin-bottom: 8px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.filter-card, .table-card {
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.filter-summary {
+  margin-top: 12px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+:deep(.table-header) {
+  background-color: #f8fafc !important;
+  color: #475569;
+  font-weight: 600;
+}
 </style>
