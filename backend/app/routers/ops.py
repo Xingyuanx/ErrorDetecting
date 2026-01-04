@@ -8,7 +8,7 @@ import uuid as uuidlib
 import asyncio
 
 from ..db import get_db
-from ..deps.auth import get_current_user
+from ..deps.auth import get_current_user, PermissionChecker
 from ..models.nodes import Node
 from ..models.clusters import Cluster
 from ..models.sys_exec_logs import SysExecLog
@@ -131,10 +131,13 @@ async def _write_hadoop_exec_log(db: AsyncSession, user_id: int, cluster_name: s
 
 
 @router.post("/ops/clusters/{cluster_uuid}/start")
-async def start_cluster(cluster_uuid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def start_cluster(
+    cluster_uuid: str, 
+    user=Depends(PermissionChecker(["cluster:start"])), 
+    db: AsyncSession = Depends(get_db)
+):
     """启动集群：在 NameNode 执行 hsfsstart，在 ResourceManager 执行 yarnstart。"""
     try:
-        _require_ops(user)
         uname = _get_username(user)
         user_id = getattr(user, "id", 1)
 
@@ -194,10 +197,13 @@ async def start_cluster(cluster_uuid: str, user=Depends(get_current_user), db: A
 
 
 @router.post("/ops/clusters/{cluster_uuid}/stop")
-async def stop_cluster(cluster_uuid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def stop_cluster(
+    cluster_uuid: str, 
+    user=Depends(PermissionChecker(["cluster:stop"])), 
+    db: AsyncSession = Depends(get_db)
+):
     """停止集群：在 NameNode 执行 hsfsstop，在 ResourceManager 执行 yarnstop。"""
     try:
-        _require_ops(user)
         uname = _get_username(user)
         user_id = getattr(user, "id", 1)
 

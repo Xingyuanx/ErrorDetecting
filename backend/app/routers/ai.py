@@ -13,7 +13,7 @@ from ..models.hadoop_logs import HadoopLog
 from ..models.chat import ChatSession, ChatMessage
 from ..agents.diagnosis_agent import run_diagnose_and_repair
 from ..services.llm import LLMClient
-from ..services.ops_tools import openai_tools_schema, tool_web_search, tool_start_cluster, tool_stop_cluster, tool_read_cluster_logs
+from ..services.ops_tools import openai_tools_schema, tool_web_search
 
 
 router = APIRouter()
@@ -89,7 +89,6 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         if not session:
             session = ChatSession(id=internal_id, user_id=user_id, title=req.message[:20])
             db.add(session)
-            await db.flush()
 
         system_prompt = (
             "You are a helpful Hadoop diagnostic assistant. "
@@ -119,18 +118,12 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         llm = LLMClient()
         target_model = req.context.get("model") if req.context else None
         web_search_enabled = bool(req.context and req.context.get("webSearch"))
-        cluster_ops_enabled = bool(req.context and req.context.get("clusterOps"))
-        
         chat_tools = None
-        if web_search_enabled or cluster_ops_enabled:
-            all_tools = openai_tools_schema()
-            chat_tools = []
-            if web_search_enabled:
-                chat_tools.extend([t for t in all_tools if t["function"]["name"] == "web_search"])
-            if cluster_ops_enabled:
-                chat_tools.extend([t for t in all_tools if t["function"]["name"] in ["start_cluster", "stop_cluster", "read_cluster_logs"]])
+        if web_search_enabled:
+            tools = openai_tools_schema()
+            chat_tools = [t for t in tools if t["function"]["name"] == "web_search"]
         
-        if req.stream and not (web_search_enabled or cluster_ops_enabled):
+        if req.stream and not web_search_enabled:
             return await handle_streaming_chat(llm, messages, internal_id, db, tools=None, model=target_model)
 
         resp = await llm.chat(messages, tools=chat_tools, stream=False, model=target_model)
@@ -153,18 +146,7 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
                 
                 tool_result = {"error": "unknown_tool"}
                 if name == "web_search":
-                    print(f"Calling web_search with query: {args.get('query')}")
                     tool_result = await tool_web_search(args.get("query"), args.get("max_results", 5))
-                    print(f"Web search result count: {len(tool_result.get('results', []))}")
-                elif name == "start_cluster":
-                    uname = _get_username(user)
-                    tool_result = await tool_start_cluster(db, uname, args.get("cluster_uuid"))
-                elif name == "stop_cluster":
-                    uname = _get_username(user)
-                    tool_result = await tool_stop_cluster(db, uname, args.get("cluster_uuid"))
-                elif name == "read_cluster_logs":
-                    uname = _get_username(user)
-                    tool_result = await tool_read_cluster_logs(db, uname, args.get("cluster_uuid"), args.get("path"), args.get("lines", 100))
                 
                 messages.append({
                     "role": "tool",

@@ -82,10 +82,10 @@ def _failure_payload(base: dict) -> dict:
 
 def main() -> int:
     base_url = _env("BASE_URL", "http://127.0.0.1:8000")
-    login_user = _env("LOGIN_USER", "admin")
-    login_password = _env("LOGIN_PASSWORD")
+    login_user = _env("LOGIN_USER", "admin2")
+    login_password = _env("LOGIN_PASSWORD", "123123Ab")
     ssh_user = _env("HADOOP_USER", "hadoop")
-    ssh_password = _env("HADOOP_PASSWORD")
+    ssh_password = _env("HADOOP_PASSWORD", "limouren...")
 
     missing = [k for k, v in [("LOGIN_PASSWORD", login_password), ("HADOOP_PASSWORD", ssh_password)] if not v]
     if missing:

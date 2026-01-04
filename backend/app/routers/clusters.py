@@ -4,8 +4,8 @@ from sqlalchemy import select, delete, func, text
 from ..db import get_db
 from ..models.clusters import Cluster
 from ..models.nodes import Node
-from ..deps.auth import get_current_user
-from ..services.ssh_probe import check_ssh_connectivity
+from ..deps.auth import get_current_user, PermissionChecker
+from ..services.ssh_probe import check_ssh_connectivity, get_hdfs_cluster_id
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import uuid as uuidlib
@@ -78,12 +78,15 @@ async def list_clusters(user=Depends(get_current_user), db: AsyncSession = Depen
 
 
 @router.post("/clusters")
-async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def create_cluster(
+    req: ClusterCreateRequest, 
+    user=Depends(PermissionChecker(["cluster:register"])), 
+    db: AsyncSession = Depends(get_db)
+):
     """注册一个集群并建立当前用户的归属映射。"""
     try:
         name = _get_username(user)
-        if name not in {"admin", "ops"}:
-            raise HTTPException(status_code=403, detail="not_allowed")
+        # 移除硬编码的角色检查，PermissionChecker 已经处理了权限校验
         
         # 参数校验：类型与状态
         valid_types = {"hadoop", "spark", "kubernetes"}
@@ -98,84 +101,102 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
         if errors:
             raise HTTPException(status_code=400, detail={"errors": errors})
         
-        # 检查集群名称是否已存在
-        exists = await db.execute(select(Cluster.id).where(Cluster.name == req.name).limit(1))
-        if exists.scalars().first():
-             # 使用指南建议的错误格式
-            raise HTTPException(status_code=400, detail={"errors": [{"field": "name", "message": "集群名称已存在"}]})
+        # 1. 获取 HDFS 集群真实 UUID (从 NameNode 获取)
+        cluster_uuid, err = get_hdfs_cluster_id(str(req.namenode_ip), req.nodes[0].ssh_user, req.nodes[0].ssh_password)
+        if not cluster_uuid:
+            raise HTTPException(status_code=400, detail={"errors": [{"field": "namenode_ip", "message": f"无法获取集群ID: {err}"}]})
 
-        # SSH 连通性预检查
-        ssh_errors: list[dict] = []
-        for idx, n_req in enumerate(req.nodes):
-            ip = getattr(n_req, "ip_address", None) or getattr(n_req, "ip", None)
-            user_ = getattr(n_req, "ssh_user", None)
-            pwd_ = getattr(n_req, "ssh_password", None)
-            ok, err = check_ssh_connectivity(str(ip), str(user_ or ""), str(pwd_ or ""))
-            if not ok:
-                ssh_errors.append({
-                    "field": f"nodes[{idx}].ssh",
-                    "message": "注册失败：SSH不可连接",
-                    "step": "connect",
-                    "detail": err,
-                    "hostname": getattr(n_req, "hostname", None),
-                    "ip": str(ip) if ip is not None else None,
-                })
-        if ssh_errors:
-            raise HTTPException(status_code=400, detail={"errors": ssh_errors})
-        
-        new_uuid = str(uuidlib.uuid4())
-        
-        c = Cluster(
-            uuid=new_uuid,
-            name=req.name,
-            type=req.type,
-            node_count=req.node_count,
-            health_status=req.health_status,
-            cpu_avg=req.cpu_avg,
-            memory_avg=req.memory_avg,
-            namenode_ip=req.namenode_ip,
-            namenode_psw=req.namenode_psw,
-            rm_ip=req.rm_ip,
-            rm_psw=req.rm_psw,
-            description=req.description,
-            config_info={}, # 保留为空字典或根据需要填充
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-        db.add(c)
-        await db.flush() # 获取 c.id
+        # 2. 检查该 UUID 是否已在数据库中
+        res = await db.execute(select(Cluster).where(Cluster.uuid == cluster_uuid).limit(1))
+        existing_cluster = res.scalars().first()
 
-        # 插入节点
-        for n_req in req.nodes:
-            node_uuid = str(uuidlib.uuid4())
-            node = Node(
-                uuid=node_uuid,
-                cluster_id=c.id,
-                hostname=n_req.hostname,
-                ip_address=n_req.ip_address,
-                ssh_user=n_req.ssh_user,
-                ssh_password=n_req.ssh_password,
-                # description=n_req.description, # Database schema missing description column
-                status="unknown",
+        if existing_cluster:
+            # 集群已存在，仅建立用户映射
+            c = existing_cluster
+            new_uuid = cluster_uuid
+        else:
+            # 集群不存在，执行注册流程
+            # 检查集群名称是否已存在
+            name_exists = await db.execute(select(Cluster.id).where(Cluster.name == req.name).limit(1))
+            if name_exists.scalars().first():
+                raise HTTPException(status_code=400, detail={"errors": [{"field": "name", "message": "集群名称已存在"}]})
+
+            # SSH 连通性预检查
+            ssh_errors: list[dict] = []
+            for idx, n_req in enumerate(req.nodes):
+                ip = getattr(n_req, "ip_address", None) or getattr(n_req, "ip", None)
+                user_ = getattr(n_req, "ssh_user", None)
+                pwd_ = getattr(n_req, "ssh_password", None)
+                ok, conn_err = check_ssh_connectivity(str(ip), str(user_ or ""), str(pwd_ or ""))
+                if not ok:
+                    ssh_errors.append({
+                        "field": f"nodes[{idx}].ssh",
+                        "message": "注册失败：SSH不可连接",
+                        "step": "connect",
+                        "detail": conn_err,
+                        "hostname": getattr(n_req, "hostname", None),
+                        "ip": str(ip) if ip is not None else None,
+                    })
+            if ssh_errors:
+                raise HTTPException(status_code=400, detail={"errors": ssh_errors})
+            
+            new_uuid = cluster_uuid
+            
+            c = Cluster(
+                uuid=new_uuid,
+                name=req.name,
+                type=req.type,
+                node_count=req.node_count,
+                health_status=req.health_status,
+                cpu_avg=req.cpu_avg,
+                memory_avg=req.memory_avg,
+                namenode_ip=req.namenode_ip,
+                namenode_psw=req.namenode_psw,
+                rm_ip=req.rm_ip,
+                rm_psw=req.rm_psw,
+                description=req.description,
+                config_info={}, 
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
             )
-            db.add(node)
+            db.add(c)
+            await db.flush() # 获取 c.id
 
-        # 建立用户映射
+            # 插入节点
+            for n_req in req.nodes:
+                node_uuid = str(uuidlib.uuid4())
+                node = Node(
+                    uuid=node_uuid,
+                    cluster_id=c.id,
+                    hostname=n_req.hostname,
+                    ip_address=n_req.ip_address,
+                    ssh_user=n_req.ssh_user,
+                    ssh_password=n_req.ssh_password,
+                    status="unknown",
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
+                )
+                db.add(node)
+
+        # 3. 建立用户映射 (无论集群是新注册还是已存在)
         uid_res = await db.execute(text("SELECT id FROM users WHERE username=:un LIMIT 1"), {"un": name})
         uid_row = uid_res.first()
+        # 简化逻辑：如果是 admin 用户则赋予 admin 角色，否则赋予 operator 角色
         role_key = "admin" if name == "admin" else "operator"
         rid_res = await db.execute(text("SELECT id FROM roles WHERE role_key=:rk LIMIT 1"), {"rk": role_key})
         rid_row = rid_res.first()
+        
         if uid_row and rid_row:
-            await db.execute(text("INSERT INTO user_cluster_mapping(user_id, cluster_id, role_id) VALUES (:uid,:cid,:rid) ON CONFLICT (user_id, cluster_id) DO NOTHING"), {"uid": uid_row[0], "cid": c.id, "rid": rid_row[0]})
+            await db.execute(
+                text("INSERT INTO user_cluster_mapping(user_id, cluster_id, role_id) VALUES (:uid,:cid,:rid) ON CONFLICT (user_id, cluster_id) DO NOTHING"), 
+                {"uid": uid_row[0], "cid": c.id, "rid": rid_row[0]}
+            )
         
         await db.commit()
         
         return {
             "status": "success",
-            "message": "集群注册成功",
+            "message": "集群注册成功" if not existing_cluster else "集群已关联至当前用户",
             "uuid": new_uuid
         }
     except HTTPException:
@@ -187,12 +208,15 @@ async def create_cluster(req: ClusterCreateRequest, user=Depends(get_current_use
 
 
 @router.delete("/clusters/{uuid}")
-async def delete_cluster(uuid: str, user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_cluster(
+    uuid: str, 
+    user=Depends(PermissionChecker(["cluster:delete"])), 
+    db: AsyncSession = Depends(get_db)
+):
     """注销指定集群，并清理用户归属映射。"""
     try:
         name = _get_username(user)
-        if name not in {"admin", "ops"}:
-            raise HTTPException(status_code=403, detail="not_allowed")
+        # 移除硬编码的角色检查
         try:
             uo = uuidlib.UUID(uuid)
         except Exception:

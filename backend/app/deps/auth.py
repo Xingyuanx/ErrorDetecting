@@ -5,6 +5,7 @@ from ..db import get_db
 from ..models.users import User
 from ..config import JWT_SECRET
 import jwt
+from typing import List
 
 async def get_current_user(authorization: str | None = Header(None), db: AsyncSession = Depends(get_db)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -37,7 +38,20 @@ async def get_current_user(authorization: str | None = Header(None), db: AsyncSe
                 JOIN users u ON urm.user_id = u.id
                 WHERE u.username = :u
                 UNION
-                -- 兼容 demo 账号（如果不在 DB 中）
+                -- 兼容预设角色及其对应的基本权限
+                SELECT 'cluster:register' AS permission_key
+                WHERE (:u = 'admin' OR :u = 'ops' OR :u = 'obs')
+                UNION
+                SELECT 'cluster:delete' AS permission_key
+                WHERE (:u = 'admin' OR :u = 'ops')
+                UNION
+                SELECT 'cluster:start' AS permission_key
+                WHERE (:u = 'admin' OR :u = 'ops')
+                UNION
+                SELECT 'cluster:stop' AS permission_key
+                WHERE (:u = 'admin' OR :u = 'ops')
+                UNION
+                -- 兼容 demo 账号（如果不在 DB 中）的更多权限
                 SELECT DISTINCT p.permission_key
                 FROM permissions p
                 JOIN role_permission_mapping rpm ON p.id = rpm.permission_id
@@ -58,3 +72,17 @@ async def get_current_user(authorization: str | None = Header(None), db: AsyncSe
     except Exception as e:
         print(f"Auth error: {e}")
         raise HTTPException(status_code=500, detail="auth_error")
+
+class PermissionChecker:
+    def __init__(self, required_permissions: List[str]):
+        self.required_permissions = required_permissions
+
+    def __call__(self, user=Depends(get_current_user)):
+        user_perms = user.get("permissions", [])
+        for perm in self.required_permissions:
+            if perm not in user_perms:
+                raise HTTPException(
+                    status_code=403, 
+                    detail=f"Permission denied: required {perm}"
+                )
+        return user
