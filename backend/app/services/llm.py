@@ -34,6 +34,7 @@ _DEFAULT_MODELS: Dict[str, str] = {
     "openai": "gpt-4o-mini",
     "siliconflow": "deepseek-ai/DeepSeek-V3",
     "deepseek": "deepseek-v3",
+    "r1": "Pro/deepseek-ai/DeepSeek-R1",
 }
 
 def _clean_str(s: str) -> str:
@@ -72,7 +73,7 @@ class LLMClient:
             "Content-Type": "application/json",
         }
 
-    async def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None, stream: bool = False) -> Any:
+    async def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None, stream: bool = False, model: Optional[str] = None) -> Any:
         if self.simulate or httpx is None:
             if stream:
                 async def _sim_stream():
@@ -89,7 +90,9 @@ class LLMClient:
                     }
                 ]
             }
-        payload: Dict[str, Any] = {"model": self.model, "messages": messages, "stream": stream}
+        
+        target_model = model or self.model
+        payload: Dict[str, Any] = {"model": target_model, "messages": messages, "stream": stream}
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"

@@ -294,6 +294,56 @@ async def tool_stop_cluster(db: AsyncSession, user_name: str, cluster_uuid: str)
     return {"status": "success", "logs": logs}
 
 
+async def tool_read_cluster_logs(db: AsyncSession, user_name: str, cluster_uuid: str, path: str, lines: int = 100) -> Dict[str, Any]:
+    """工具：读取指定集群中所有节点的日志。"""
+    # 1. 查找集群
+    res = await db.execute(select(Cluster).where(Cluster.uuid == cluster_uuid).limit(1))
+    cluster = res.scalars().first()
+    if not cluster:
+        return {"error": "cluster_not_found"}
+
+    # 2. 查找该集群下的所有节点
+    node_res = await db.execute(select(Node).where(Node.cluster_id == cluster.id))
+    nodes = node_res.scalars().all()
+    if not nodes:
+        return {"error": "no_nodes_found_in_cluster"}
+
+    results = {}
+    path_q = shlex.quote(path)
+    cmd = f"tail -n {lines} {path_q}"
+
+    # 3. 依次读取每个节点的日志
+    for n in nodes:
+        hostname = str(getattr(n, "hostname", "unknown"))
+        ip = str(getattr(n, "ip_address", ""))
+        ssh_user = str(getattr(n, "ssh_user", "hadoop"))
+        ssh_pwd = str(getattr(n, "ssh_password", ""))
+
+        if not ip or not ssh_pwd:
+            results[hostname] = {"error": "missing_ssh_info"}
+            continue
+
+        try:
+            def run_ssh():
+                with SSHClient(ip, ssh_user, ssh_pwd) as client:
+                    return client.execute_command(cmd)
+            
+            out, err = await asyncio.to_thread(run_ssh)
+            results[hostname] = {
+                "stdout": out,
+                "stderr": err,
+                "ip": ip
+            }
+        except Exception as e:
+            results[hostname] = {"error": str(e)}
+
+    return {
+        "cluster_name": cluster.name,
+        "path": path,
+        "node_logs": results
+    }
+
+
 def openai_tools_schema() -> List[Dict[str, Any]]:
     """返回 OpenAI 兼容的工具定义（Function Calling）。"""
     return [
@@ -355,6 +405,22 @@ def openai_tools_schema() -> List[Dict[str, Any]]:
                         "cluster_uuid": {"type": "string", "description": "集群的 UUID"},
                     },
                     "required": ["cluster_uuid"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read_cluster_logs",
+                "description": "读取指定集群中所有节点的特定日志文件内容",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cluster_uuid": {"type": "string", "description": "集群的 UUID"},
+                        "path": {"type": "string", "description": "日志文件路径"},
+                        "lines": {"type": "integer", "default": 100, "description": "每个节点读取的行数"},
+                    },
+                    "required": ["cluster_uuid", "path"],
                 },
             },
         },

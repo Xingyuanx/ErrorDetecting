@@ -6,12 +6,13 @@ from ..services.llm import LLMClient
 from ..services.ops_tools import openai_tools_schema, tool_read_log, tool_start_cluster, tool_stop_cluster
 
 
-async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict[str, Any], auto: bool = True, max_steps: int = 3) -> Dict[str, Any]:
+async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict[str, Any], auto: bool = True, max_steps: int = 3, model: Optional[str] = None) -> Dict[str, Any]:
     """单智能体：根据日志上下文诊断并自动修复（Function Calling）。
 
     - context：包含 cluster/node/logs 等关键信息
     - auto：是否允许自动执行工具（默认允许）
     - max_steps：最多工具调用步数
+    - model：指定的模型名称
     返回：根因、动作列表与结果、剩余风险
     """
     llm = LLMClient()
@@ -31,7 +32,7 @@ async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict
     residual_risk = "medium"
 
     for step in range(max_steps):
-        resp = await llm.chat(messages, tools=tools, stream=False)
+        resp = await llm.chat(messages, tools=tools, stream=False, model=model)
         choice = (resp.get("choices") or [{}])[0]
         msg = choice.get("message", {})
         tool_calls = msg.get("tool_calls") or []

@@ -13,7 +13,7 @@ from ..models.hadoop_logs import HadoopLog
 from ..models.chat import ChatSession, ChatMessage
 from ..agents.diagnosis_agent import run_diagnose_and_repair
 from ..services.llm import LLMClient
-from ..services.ops_tools import openai_tools_schema, tool_web_search
+from ..services.ops_tools import openai_tools_schema, tool_web_search, tool_start_cluster, tool_stop_cluster, tool_read_cluster_logs
 
 
 router = APIRouter()
@@ -26,6 +26,7 @@ class DiagnoseRepairReq(BaseModel):
     keywords: str | None = Field(None, description="关键词")
     auto: bool = Field(True, description="是否允许自动修复")
     maxSteps: int = Field(3, ge=1, le=6, description="最多工具步数")
+    model: str | None = Field(None, description="使用的模型")
 
 class ChatReq(BaseModel):
     sessionId: str = Field(..., description="会话ID")
@@ -61,7 +62,7 @@ async def diagnose_repair(req: DiagnoseRepairReq, user=Depends(get_current_user)
         ctx_logs = [r.to_dict() for r in rows[:50]]
         context = {"cluster": req.cluster, "node": req.node, "logs": ctx_logs}
         uname = _get_username(user)
-        result = await run_diagnose_and_repair(db, uname, context, auto=req.auto, max_steps=req.maxSteps)
+        result = await run_diagnose_and_repair(db, uname, context, auto=req.auto, max_steps=req.maxSteps, model=req.model)
         return result
     except HTTPException:
         raise
@@ -88,6 +89,7 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         if not session:
             session = ChatSession(id=internal_id, user_id=user_id, title=req.message[:20])
             db.add(session)
+            await db.flush()
 
         system_prompt = (
             "You are a helpful Hadoop diagnostic assistant. "
@@ -115,16 +117,23 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
         db.add(user_msg)
 
         llm = LLMClient()
+        target_model = req.context.get("model") if req.context else None
         web_search_enabled = bool(req.context and req.context.get("webSearch"))
-        chat_tools = None
-        if web_search_enabled:
-            tools = openai_tools_schema()
-            chat_tools = [t for t in tools if t["function"]["name"] == "web_search"]
+        cluster_ops_enabled = bool(req.context and req.context.get("clusterOps"))
         
-        if req.stream and not web_search_enabled:
-            return await handle_streaming_chat(llm, messages, internal_id, db, tools=None)
+        chat_tools = None
+        if web_search_enabled or cluster_ops_enabled:
+            all_tools = openai_tools_schema()
+            chat_tools = []
+            if web_search_enabled:
+                chat_tools.extend([t for t in all_tools if t["function"]["name"] == "web_search"])
+            if cluster_ops_enabled:
+                chat_tools.extend([t for t in all_tools if t["function"]["name"] in ["start_cluster", "stop_cluster", "read_cluster_logs"]])
+        
+        if req.stream and not (web_search_enabled or cluster_ops_enabled):
+            return await handle_streaming_chat(llm, messages, internal_id, db, tools=None, model=target_model)
 
-        resp = await llm.chat(messages, tools=chat_tools, stream=False)
+        resp = await llm.chat(messages, tools=chat_tools, stream=False, model=target_model)
         choices = resp.get("choices") or []
         if not choices:
             raise HTTPException(status_code=502, detail="llm_unavailable")
@@ -144,7 +153,18 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
                 
                 tool_result = {"error": "unknown_tool"}
                 if name == "web_search":
+                    print(f"Calling web_search with query: {args.get('query')}")
                     tool_result = await tool_web_search(args.get("query"), args.get("max_results", 5))
+                    print(f"Web search result count: {len(tool_result.get('results', []))}")
+                elif name == "start_cluster":
+                    uname = _get_username(user)
+                    tool_result = await tool_start_cluster(db, uname, args.get("cluster_uuid"))
+                elif name == "stop_cluster":
+                    uname = _get_username(user)
+                    tool_result = await tool_stop_cluster(db, uname, args.get("cluster_uuid"))
+                elif name == "read_cluster_logs":
+                    uname = _get_username(user)
+                    tool_result = await tool_read_cluster_logs(db, uname, args.get("cluster_uuid"), args.get("path"), args.get("lines", 100))
                 
                 messages.append({
                     "role": "tool",
@@ -154,16 +174,16 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
                 })
             
             if req.stream:
-                return await handle_streaming_chat(llm, messages, internal_id, db, tools=chat_tools)
+                return await handle_streaming_chat(llm, messages, internal_id, db, tools=chat_tools, model=target_model)
             else:
-                resp = await llm.chat(messages, tools=chat_tools, stream=False)
+                resp = await llm.chat(messages, tools=chat_tools, stream=False, model=target_model)
                 choices = resp.get("choices") or []
                 if not choices:
                     raise HTTPException(status_code=502, detail="llm_unavailable_after_tool")
                 msg = choices[0].get("message") or {}
         else:
             if req.stream:
-                return await handle_streaming_chat(llm, messages, internal_id, db, tools=chat_tools)
+                return await handle_streaming_chat(llm, messages, internal_id, db, tools=chat_tools, model=target_model)
         
         reply = msg.get("content") or ""
         reasoning = msg.get("reasoning_content") or ""
@@ -177,15 +197,16 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="server_error")
+        print(f"AI Chat Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"server_error: {str(e)}")
 
-async def handle_streaming_chat(llm: LLMClient, messages: list, session_id: str, db: AsyncSession, tools=None):
+async def handle_streaming_chat(llm: LLMClient, messages: list, session_id: str, db: AsyncSession, tools=None, model: str = None):
     async def event_generator():
         full_reply = ""
         full_reasoning = ""
         
         try:
-            stream_gen = await llm.chat(messages, tools=tools, stream=True)
+            stream_gen = await llm.chat(messages, tools=tools, stream=True, model=model)
             async for chunk in stream_gen:
                 choices = chunk.get("choices") or []
                 if not choices:

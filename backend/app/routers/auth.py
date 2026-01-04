@@ -146,22 +146,37 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     try:
         errors: list[dict] = []
-        if not (3 <= len(req.username) <= 50) or not re.fullmatch(r"^[A-Za-z][A-Za-z0-9_]{2,49}$", req.username or ""):
-            errors.append({"field": "username", "code": "invalid_username", "message": "用户名需以字母开头，支持字母/数字/下划线，长度3-50"})
-        if not re.fullmatch(r"^[^@\s]+@[^@\s]+\.[^@\s]+", req.email or ""):
+        # 用户名校验：3-50位，字母开头，支持字母/数字/下划线
+        if not req.username or not (3 <= len(req.username) <= 50):
+            errors.append({"field": "username", "code": "invalid_username", "message": "用户名长度需在3-50之间"})
+        elif not re.fullmatch(r"^[A-Za-z][A-Za-z0-9_]*$", req.username):
+            errors.append({"field": "username", "code": "invalid_username", "message": "用户名需以字母开头，仅支持字母、数字和下划线"})
+
+        # 邮箱校验
+        if not req.email or not re.fullmatch(r"^[^@\s]+@[^@\s]+\.[^@\s]+", req.email):
             errors.append({"field": "email", "code": "invalid_email", "message": "邮箱格式不正确"})
-        if not (8 <= len(req.password) <= 128) or not re.search(r"[A-Z]", req.password) or not re.search(r"[a-z]", req.password) or not re.search(r"\d", req.password):
-            errors.append({"field": "password", "code": "weak_password", "message": "密码至少8位，需包含大小写字母与数字"})
-        if not (2 <= len(req.fullName) <= 100):
+
+        # 密码校验：前端要求>=6位，后端要求>=8位并包含复杂性。为了兼容性调优提示。
+        if not req.password or len(req.password) < 6:
+            errors.append({"field": "password", "code": "weak_password", "message": "密码长度至少为6位"})
+        elif len(req.password) < 8 or not re.search(r"[A-Z]", req.password) or not re.search(r"[a-z]", req.password) or not re.search(r"\d", req.password):
+            errors.append({"field": "password", "code": "weak_password", "message": "密码建议至少8位，且包含大小写字母与数字"})
+
+        # 姓名校验
+        if not req.fullName or not (2 <= len(req.fullName) <= 100):
             errors.append({"field": "fullName", "code": "invalid_full_name", "message": "姓名长度需在2-100之间"})
+
         if errors:
-            raise HTTPException(status_code=400, detail={"errors": errors})
+            raise HTTPException(status_code=400, detail={"errors": errors, "message": errors[0]["message"]})
+
+        # 检查唯一性
         exists_username = await db.execute(select(User).where(User.username == req.username).limit(1))
         if exists_username.scalars().first():
-            raise HTTPException(status_code=409, detail="user_exists")
+            raise HTTPException(status_code=400, detail={"message": "该用户名已被注册", "code": "user_exists"})
+
         exists_email = await db.execute(select(User.id).where(User.email == req.email).limit(1))
         if exists_email.scalars().first():
-            raise HTTPException(status_code=409, detail="email_exists")
+            raise HTTPException(status_code=400, detail={"message": "该邮箱已被绑定", "code": "email_exists"})
         password_hash = bcrypt.hash(req.password)
         user = User(
             username=req.username,
