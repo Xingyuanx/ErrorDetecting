@@ -674,6 +674,43 @@ function formatError(e: any, def: string) {
   min-height: calc(100vh - 120px);
 }
 
+/* 桌面端特有样式：固定高度，内部滚动 */
+@media (min-width: 1025px) {
+  .diagnosis-container {
+    height: calc(100vh - 110px); /* 稍微调高一点，增加展示空间 */
+    min-height: unset;
+    overflow: hidden;
+    padding-bottom: 4px;
+  }
+
+  .selection-card {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+
+  :deep(.selection-card .el-card__body) {
+    padding: 8px 16px;
+  }
+
+  .main-content {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 0 !important;
+  }
+
+  .main-content :deep(.el-col) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 调整卡片 body，确保内容区撑满 */
+  .log-card, .chat-card {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 @media (max-width: 768px) {
   .diagnosis-container {
     height: auto;
