@@ -1,7 +1,21 @@
-import axios from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../stores/auth'
 
-const api = axios.create({
+// 扩展 AxiosInstance 接口，使其支持解包后的数据类型
+declare module 'axios' {
+  export interface AxiosInstance {
+    request<T = any, R = T, D = any>(config: AxiosRequestConfig<D>): Promise<R>;
+    get<T = any, R = T, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+    delete<T = any, R = T, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+    head<T = any, R = T, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+    options<T = any, R = T, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+    post<T = any, R = T, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
+    put<T = any, R = T, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
+    patch<T = any, R = T, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
+  }
+}
+
+const api: AxiosInstance = axios.create({
   baseURL: '/api',
   timeout: 10000
 })
