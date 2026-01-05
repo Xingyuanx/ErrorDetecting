@@ -80,7 +80,7 @@ onMounted(async () => {
     email.value = emailVal
     roleName.value = RoleLabel[roleKey as keyof typeof RoleLabel] || roleRaw || '观察员'
     if (name && name === currentName) {
-      auth.user = { username: name, role: roleKey as any }
+      auth.user = { id: picked?.id || 0, username: name, role: roleKey }
       auth.persist()
     }
   } catch (e: any) {
