@@ -17,5 +17,10 @@ export const MetricService = {
       used: Number(res?.used ?? 0),
       free: Number(res?.free ?? 0)
     }
+  },
+
+  /** 立即采样 CPU/内存 指标 */
+  async sampleMetrics(clusterUuid: string): Promise<any> {
+    return api.post(`/v1/metrics/${clusterUuid}/`)
   }
 }

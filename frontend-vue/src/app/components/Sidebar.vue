@@ -3,9 +3,6 @@
     :default-active="route.path"
     class="sidebar-menu"
     :collapse="ui.sidebarHidden"
-    background-color="#001529"
-    text-color="rgba(255, 255, 255, 0.65)"
-    active-text-color="#fff"
     router
   >
     <div class="logo-container" :class="{ 'is-collapse': ui.sidebarHidden }">
@@ -72,6 +69,7 @@ function can(roles: string[]) {
 .sidebar-menu {
   border-right: none;
   height: 100%;
+  background-color: var(--app-header-bg);
 }
 
 .logo-container {
@@ -80,7 +78,8 @@ function can(roles: string[]) {
   align-items: center;
   padding: 0 20px;
   gap: 12px;
-  background-color: #002140;
+  background-color: var(--app-header-bg);
+  border-bottom: 1px solid var(--app-border-color);
   transition: all 0.3s;
   overflow: hidden;
 }
@@ -91,7 +90,7 @@ function can(roles: string[]) {
 }
 
 .logo-text {
-  color: #fff;
+  color: var(--app-text-primary);
   font-size: 18px;
   font-weight: 600;
   white-space: nowrap;
@@ -99,9 +98,38 @@ function can(roles: string[]) {
 
 :deep(.el-menu-item.is-active) {
   background-color: var(--el-color-primary) !important;
+  color: #ffffff !important;
 }
 
-:deep(.el-menu-item:hover) {
-  color: #fff !important;
+:deep(.el-menu-item.is-active .el-icon) {
+  color: #ffffff !important;
+}
+
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  color: var(--app-text-primary);
+}
+
+:deep(.el-menu-item .el-icon),
+:deep(.el-sub-menu__title .el-icon) {
+  color: var(--app-text-primary);
+}
+
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  color: var(--el-color-primary) !important;
+}
+
+:deep(.el-menu-item:hover .el-icon),
+:deep(.el-sub-menu__title:hover .el-icon) {
+  color: var(--el-color-primary) !important;
+}
+
+:deep(.el-sub-menu__icon-arrow) {
+  color: var(--app-text-primary);
+}
+
+:deep(.el-sub-menu:hover .el-sub-menu__icon-arrow) {
+  color: var(--el-color-primary) !important;
 }
 </style>

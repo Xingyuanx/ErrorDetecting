@@ -78,15 +78,18 @@ onUnmounted(() => {
 </script>
 
 <style>
-:root {
-  --el-color-primary: #0ea5e9;
-}
-
-body {
+html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
   font-family: var(--el-font-family);
-  background-color: #f0f9ff;
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#app {
+  height: 100%;
 }
 
 .layout-wrapper {
@@ -100,7 +103,8 @@ body {
 }
 
 .aside-menu {
-  background-color: #001529;
+  background-color: var(--app-header-bg);
+  border-right: 1px solid var(--app-border-color);
   transition: width 0.3s, transform 0.3s, left 0.3s;
   overflow-x: hidden;
   z-index: 1001;
@@ -155,13 +159,13 @@ body {
 }
 
 .header-nav {
-  background-color: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--app-header-bg);
+  border-bottom: 1px solid var(--app-border-color);
   padding: 0;
 }
 
 .main-content {
-  background-color: #f8fafc;
+  background-color: var(--app-content-bg);
   padding: 20px;
 }
 
@@ -169,7 +173,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%);
+  background-color: var(--app-bg);
   position: relative;
   overflow: hidden;
 }

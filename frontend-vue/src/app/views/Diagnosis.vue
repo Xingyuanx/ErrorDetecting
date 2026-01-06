@@ -734,12 +734,12 @@ function formatError(e: any, def: string) {
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--app-text-primary);
   margin: 0;
 }
 
 .page-subtitle {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 14px;
   margin: 4px 0 0 0;
 }
@@ -799,13 +799,13 @@ function formatError(e: any, def: string) {
   display: inline-block;
 }
 
-.status-dot-running { background-color: #10b981; }
-.status-dot-warning { background-color: #f59e0b; }
-.status-dot-error   { background-color: #ef4444; }
+.status-dot-running { background-color: var(--el-color-success); }
+.status-dot-warning { background-color: var(--el-color-warning); }
+.status-dot-error   { background-color: var(--el-color-danger); }
 
 .selection-tip {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--app-text-secondary);
   margin-top: 8px;
 }
 
@@ -834,7 +834,7 @@ function formatError(e: any, def: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--app-text-secondary);
   font-size: 14px;
 }
 
@@ -880,7 +880,7 @@ function formatError(e: any, def: string) {
 
 .chat-role {
   font-size: 12px;
-  color: #64748b;
+  color: var(--app-text-secondary);
   margin-bottom: 4px;
 }
 
@@ -891,14 +891,14 @@ function formatError(e: any, def: string) {
 .chat-content {
   padding: 12px;
   border-radius: 8px;
-  background-color: #fff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--app-card-bg);
+  border: 1px solid var(--app-border-color);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .chat-item-user .chat-content {
-  background-color: #f0f9ff;
-  border-color: #bae6fd;
+  background-color: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary-light-7);
 }
 
 .reasoning-container {
@@ -907,8 +907,8 @@ function formatError(e: any, def: string) {
 
 .reasoning-text {
   font-size: 12px;
-  color: #475569;
-  background-color: #f8fafc;
+  color: var(--app-text-secondary);
+  background-color: var(--app-content-bg);
   padding: 8px;
   border-radius: 4px;
   white-space: pre-wrap;
@@ -953,13 +953,13 @@ function formatError(e: any, def: string) {
 
 .progress-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--app-text-secondary);
   margin-bottom: 4px;
 }
 
 :deep(.table-header) {
-  background-color: #f8fafc !important;
-  color: #475569;
+  background-color: var(--app-content-bg) !important;
+  color: var(--app-text-secondary);
   font-weight: 600;
 }
 
@@ -1015,7 +1015,7 @@ function formatError(e: any, def: string) {
   width: 6px;
 }
 .chat-history::-webkit-scrollbar-thumb {
-  background-color: #e2e8f0;
+  background-color: var(--app-border-color);
   border-radius: 3px;
 }
 .chat-history::-webkit-scrollbar-track {

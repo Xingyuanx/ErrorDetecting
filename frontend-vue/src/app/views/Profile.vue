@@ -110,23 +110,25 @@ onMounted(async () => {
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--app-text-primary);
   margin: 0;
 }
 
 .page-subtitle {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 14px;
   margin: 4px 0 0 0;
 }
 
 .info-card {
   border-radius: 8px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--app-border-color);
+  background-color: var(--app-card-bg);
 }
 
 .card-header {
   font-weight: 600;
+  color: var(--app-text-primary);
 }
 
 .info-item {
@@ -136,17 +138,17 @@ onMounted(async () => {
 }
 
 .info-label {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 14px;
 }
 
 .info-value {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--app-text-primary);
 }
 
 .error-msg {
-  color: #ef4444;
+  color: var(--el-color-danger);
   font-size: 14px;
 }
 </style>

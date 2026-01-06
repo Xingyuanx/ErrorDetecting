@@ -23,17 +23,17 @@
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
         <el-card shadow="hover" class="stat-card">
-          <el-statistic title="健康节点" :value="healthyCount" value-style="color: #16a34a" />
+          <el-statistic title="健康节点" :value="healthyCount" value-style="color: var(--el-color-success)" />
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
         <el-card shadow="hover" class="stat-card">
-          <el-statistic title="警告节点" :value="warningCount" value-style="color: #f59e0b" />
+          <el-statistic title="警告节点" :value="warningCount" value-style="color: var(--el-color-warning)" />
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
         <el-card shadow="hover" class="stat-card">
-          <el-statistic title="异常节点" :value="errorCount" value-style="color: #dc2626" />
+          <el-statistic title="异常节点" :value="errorCount" value-style="color: var(--el-color-danger)" />
         </el-card>
       </el-col>
     </el-row>
@@ -197,7 +197,7 @@ async function remove(name:string){
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--app-text-primary);
   margin: 0;
 }
 

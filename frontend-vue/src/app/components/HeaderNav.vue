@@ -25,6 +25,15 @@
         </el-button>
       </el-tooltip>
 
+      <el-tooltip :content="isDark ? '切换到浅色模式' : '切换到暗黑模式'" placement="bottom">
+        <el-button link @click="ui.toggleTheme()">
+          <el-icon :size="20">
+            <Moon v-if="!isDark" />
+            <Sunny v-else />
+          </el-icon>
+        </el-button>
+      </el-tooltip>
+
       <el-tooltip :content="isFullscreen ? '退出全屏' : '全屏显示'" placement="bottom">
         <el-button link @click="toggleFullscreen" class="u-hidden-mobile">
           <el-icon :size="20">
@@ -80,13 +89,14 @@ import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth";
 import { useUIStore } from "../stores/ui";
-import { Expand, Fold, Refresh, FullScreen, Aim, UserFilled, ArrowDown } from '@element-plus/icons-vue'
+import { Expand, Fold, Refresh, FullScreen, Aim, UserFilled, ArrowDown, Moon, Sunny } from '@element-plus/icons-vue'
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const ui = useUIStore();
 const { isAuthenticated } = storeToRefs(auth);
+const { isDark } = storeToRefs(ui);
 const authed = isAuthenticated;
 
 const currentRouteName = computed(() => {

@@ -135,7 +135,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" :width="isMobile ? 120 : 350" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 120 : 420" fixed="right">
           <template #default="{ row }">
             <div v-if="!isMobile" class="table-actions" @click.stop>
               <el-button size="small" @click="toDashboard(row)">详情</el-button>
@@ -145,7 +145,7 @@
                 plain
                 :disabled="row.health_status === 'healthy'"
                 :loading="rowLoading[row.uuid]"
-                @click="startCluster(row.uuid)"
+                @click="startCluster(row)"
               >启动</el-button>
               <el-button
                 size="small"
@@ -153,8 +153,17 @@
                 plain
                 :disabled="row.health_status !== 'healthy'"
                 :loading="rowLoading[row.uuid]"
-                @click="stopCluster(row.uuid)"
+                @click.stop="stopCluster(row)"
               >停止</el-button>
+              <div class="switch-action" @click.stop>
+                <span class="switch-label">采集日志</span>
+                <el-switch
+                  v-model="clusterStore.collectionStates[row.uuid]"
+                  :loading="rowLoading[row.uuid]"
+                  @change="(val: boolean) => handleCollectionChange(val, row)"
+                  active-color="#13ce66"
+                />
+              </div>
               <el-popconfirm title="确定要注销此集群吗？" @confirm="unregister(row.uuid)">
                 <template #reference>
                   <el-button size="small" type="danger" plain>注销</el-button>
@@ -178,6 +187,7 @@
                       command="stop" 
                       :disabled="row.health_status !== 'healthy'"
                     >停止</el-dropdown-item>
+                    <el-dropdown-item command="collect">采集日志</el-dropdown-item>
                     <el-dropdown-item command="unregister" divided class="text-danger">注销</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -187,6 +197,28 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 操作日志弹窗 -->
+    <el-dialog
+      v-model="showLogs"
+      :title="logTitle"
+      width="60%"
+      destroy-on-close
+      class="log-dialog"
+    >
+      <div class="log-terminal">
+        <div v-for="(line, idx) in executionLogs" :key="idx" class="log-line">
+          <span class="log-timestamp">[{{ new Date().toLocaleTimeString() }}]</span>
+          <span class="log-content">{{ line }}</span>
+        </div>
+        <div v-if="executionLogs.length === 0" class="log-empty">正在获取执行日志...</div>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button type="primary" @click="showLogs = false">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -194,16 +226,24 @@
 import { reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ClusterService } from '../api/cluster.service'
+import { LogService } from '../api/log.service'
+import { useClusterStore } from '../stores/cluster'
 import { Plus, More } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
+const clusterStore = useClusterStore()
 const clusters = ref<any[]>([])
 const showRegister = ref(false)
 const loading = ref(false)
 const registering = ref(false)
 const err = ref('')
 const rowLoading = ref<Record<string, boolean>>({})
+
+// 日志相关状态
+const showLogs = ref(false)
+const logTitle = ref('')
+const executionLogs = ref<string[]>([])
 
 const isMobile = ref(window.innerWidth < 768)
 const updateWidth = () => {
@@ -297,10 +337,31 @@ async function load() {
       health_status: x.health_status || x.health || 'unknown',
       healthText: healthTextOf(x.health_status || x.health)
     }))
+    
+    // 初始化采集状态（可选：根据后端状态接口初始化）
+    await syncCollectionStatus()
   } catch (e: any) {
     ElMessage.error(e.friendlyMessage || formatError(e, '加载列表失败'))
   } finally {
     loading.value = false
+  }
+}
+
+/** 同步采集状态 */
+async function syncCollectionStatus() {
+  try {
+    const status = await LogService.getCollectorStatus()
+    // 假设 status 包含正在采集的集群 UUID 列表或其他标识
+    // 这里根据后端实际返回结构进行映射，目前先根据 clusters 列表初始化
+    const newStates: Record<string, boolean> = {}
+    clusters.value.forEach(c => {
+      if (clusterStore.collectionStates[c.uuid] === undefined) {
+        newStates[c.uuid] = false
+      }
+    })
+    clusterStore.syncStates(newStates)
+  } catch (e) {
+    console.error('获取采集状态失败', e)
   }
 }
 
@@ -346,41 +407,100 @@ async function unregister(id: string) {
   }
 }
 
-async function startCluster(id: string) {
+async function startCluster(row: any) {
+  const id = typeof row === 'string' ? row : row.uuid
+  const name = typeof row === 'string' ? id : row.name
+  
   rowLoading.value[id] = true
-  const msg = ElMessage({
-    message: '正在发送启动命令...',
-    type: 'info',
-    duration: 0
-  })
+  logTitle.value = `正在启动集群: ${name}`
+  executionLogs.value = []
+  showLogs.value = true
+  
   try {
-    await ClusterService.start(id)
-    msg.close()
-    ElMessage.success('启动命令已发送')
+    const res = await ClusterService.start(id)
+    executionLogs.value = res.logs || ['启动指令已成功发送，正在执行...']
+    ElMessage.success('启动成功')
     await load()
   } catch (e: any) {
-    msg.close()
+    executionLogs.value = e.response?.data?.logs || [e.message || '启动失败']
     ElMessage.error(e.friendlyMessage || formatError(e, '启动失败'))
   } finally {
     rowLoading.value[id] = false
   }
 }
 
-async function stopCluster(id: string) {
+async function stopCluster(row: any) {
+  const id = typeof row === 'string' ? row : row.uuid
+  const name = typeof row === 'string' ? id : row.name
+  
   rowLoading.value[id] = true
-  const msg = ElMessage({
-    message: '正在发送停止命令...',
-    type: 'info',
-    duration: 0
-  })
+  logTitle.value = `正在停止集群: ${name}`
+  executionLogs.value = []
+  showLogs.value = true
+  
   try {
-    await ClusterService.stop(id)
-    msg.close()
-    ElMessage.success('停止命令已发送')
+    const res = await ClusterService.stop(id)
+    executionLogs.value = res.logs || ['停止指令已成功发送，正在执行...']
+    ElMessage.success('停止成功')
     await load()
   } catch (e: any) {
-    msg.close()
+    executionLogs.value = e.response?.data?.logs || [e.message || '停止失败']
     ElMessage.error(e.friendlyMessage || formatError(e, '关闭失败'))
+  } finally {
+    rowLoading.value[id] = false
+  }
+}
+
+async function handleCollectionChange(val: boolean, row: any) {
+  if (val) {
+    await collectLogs(row)
+  } else {
+    await stopLogs(row)
+  }
+}
+
+async function collectLogs(row: any) {
+  const id = row.uuid
+  const name = row.name
+  
+  rowLoading.value[id] = true
+  logTitle.value = `正在启动采集: ${name}`
+  executionLogs.value = []
+  showLogs.value = true
+  
+  try {
+    const res = await LogService.startHadoopCollection(id)
+    executionLogs.value = res.logs || ['日志采集任务已启动...']
+    ElMessage.success('日志采集任务已启动')
+    clusterStore.setCollectionState(id, true)
+  } catch (e: any) {
+    executionLogs.value = e.response?.data?.logs || [e.message || '启动采集失败']
+    ElMessage.error(formatError(e, '启动日志采集失败'))
+    clusterStore.setCollectionState(id, false) // 失败则切回关闭状态
+  } finally {
+    rowLoading.value[id] = false
+  }
+}
+
+async function stopLogs(row: any) {
+  const id = row.uuid
+  rowLoading.value[id] = true
+  logTitle.value = `正在停止采集: ${row.name}`
+  executionLogs.value = []
+  showLogs.value = true
+
+  try {
+    const res = await LogService.stopAllCollections()
+    executionLogs.value = res.logs || ['已发送停止全部采集指令...']
+    ElMessage.warning('所有采集任务已停止')
+    // 停止全部采集，更新所有集群状态
+    const newStates: Record<string, boolean> = {}
+    clusters.value.forEach(c => { newStates[c.uuid] = false })
+    clusterStore.syncStates(newStates)
+  } catch (e: any) {
+    executionLogs.value = e.response?.data?.logs || [e.message || '停止失败']
+    ElMessage.error(formatError(e, '停止采集失败'))
+    clusterStore.setCollectionState(id, true) // 失败则切回开启状态
   } finally {
     rowLoading.value[id] = false
   }
@@ -397,10 +517,13 @@ function handleAction(command: string, row: any) {
       toDashboard(row);
       break;
     case 'start':
-      startCluster(row.uuid);
+      startCluster(row);
       break;
     case 'stop':
-      stopCluster(row.uuid);
+      stopCluster(row);
+      break;
+    case 'collect':
+      collectLogs(row);
       break;
     case 'unregister':
       ElMessageBox.confirm('确定要注销此集群吗？', '提示', {
@@ -441,12 +564,12 @@ onUnmounted(() => {
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--app-text-primary);
   margin: 0;
 }
 
 .page-subtitle {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 14px;
   margin: 4px 0 0 0;
 }
@@ -473,8 +596,8 @@ onUnmounted(() => {
 .section-subtitle {
   margin: 0 0 16px 0;
   font-size: 15px;
-  color: #1e293b;
-  border-left: 4px solid #0ea5e9;
+  color: var(--app-text-primary);
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 10px;
 }
 
@@ -485,21 +608,21 @@ onUnmounted(() => {
 .node-config-row {
   margin-bottom: 16px;
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border-color);
   border-radius: 6px;
-  background-color: #f8fafc;
+  background-color: var(--app-content-bg);
   transition: background-color 0.3s;
 }
 
 .node-config-row:hover {
-  background-color: #f1f5f9;
+  background-color: var(--app-bg);
 }
 
 .node-index {
   font-weight: 600;
   margin-bottom: 12px;
   font-size: 14px;
-  color: #475569;
+  color: var(--app-text-secondary);
 }
 
 .form-actions {
@@ -514,7 +637,7 @@ onUnmounted(() => {
 
 .table-card {
   border-radius: 8px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--app-border-color);
 }
 
 .cluster-table {
@@ -524,6 +647,26 @@ onUnmounted(() => {
 .table-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.switch-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background-color: var(--app-bg);
+  border-radius: 4px;
+  height: 32px;
+  border: 1px solid var(--app-border-color);
+}
+
+.switch-label {
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  white-space: nowrap;
 }
 
 .full-width {
@@ -531,16 +674,16 @@ onUnmounted(() => {
 }
 
 :deep(.table-header) {
-  background-color: #f8fafc !important;
-  color: #475569;
+  background-color: var(--app-content-bg) !important;
+  color: var(--app-text-secondary);
   font-weight: 600;
 }
 
 .dropdown-header {
   font-weight: bold;
-  color: #333;
+  color: var(--app-text-primary);
   padding: 8px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--app-border-color);
   pointer-events: none;
 }
 

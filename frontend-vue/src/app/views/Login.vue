@@ -129,9 +129,8 @@ async function onSubmit() {
   max-width: 400px;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--app-border-color);
+  background: var(--app-card-bg);
 }
 
 :deep(.el-card__body) {
@@ -146,13 +145,13 @@ async function onSubmit() {
 .login-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--app-text-primary);
   margin: 12px 0 4px;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: var(--app-text-secondary);
 }
 
 :deep(.el-form-item) {
@@ -169,7 +168,7 @@ async function onSubmit() {
 .register-link {
   text-align: center;
   font-size: 14px;
-  color: #64748b;
+  color: var(--app-text-secondary);
   margin-top: 8px;
 }
 
