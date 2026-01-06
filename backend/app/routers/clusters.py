@@ -9,6 +9,7 @@ from ..services.ssh_probe import check_ssh_connectivity, get_hdfs_cluster_id
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import uuid as uuidlib
+from ..config import now_bj
 
 router = APIRouter()
 
@@ -156,8 +157,8 @@ async def create_cluster(
                 rm_psw=req.rm_psw,
                 description=req.description,
                 config_info={}, 
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=now_bj(),
+                updated_at=now_bj(),
             )
             db.add(c)
             await db.flush() # 获取 c.id
@@ -173,8 +174,8 @@ async def create_cluster(
                     ssh_user=n_req.ssh_user,
                     ssh_password=n_req.ssh_password,
                     status="unknown",
-                    created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
+                    created_at=now_bj(),
+                    updated_at=now_bj(),
                 )
                 db.add(node)
 

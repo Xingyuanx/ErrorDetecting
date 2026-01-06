@@ -3,13 +3,14 @@ import time
 import uuid
 import datetime
 from typing import Dict, List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
 from .log_reader import log_reader
 from .ssh_utils import ssh_manager
 from .db import SessionLocal
 from .models.hadoop_logs import HadoopLog
 from sqlalchemy import text
 import asyncio
+from .config import BJ_TZ, DATABASE_URL, APP_TIMEZONE
 
 class LogCollector:
     """Real-time log collector for Hadoop cluster"""
@@ -19,15 +20,19 @@ class LogCollector:
         self.is_running: bool = False
         self.collection_interval: int = 5  # 默认采集间隔，单位：秒
         self._loops: Dict[str, asyncio.AbstractEventLoop] = {}
+        self._engines: Dict[str, AsyncEngine] = {}
+        self._session_locals: Dict[str, async_sessionmaker[AsyncSession]] = {}
+        self._intervals: Dict[str, int] = {}
+        self._cluster_name_cache: Dict[str, str] = {}
         self._targets: Dict[str, str] = {}
         self._line_counts: Dict[str, int] = {}
+        self.max_bytes_per_pull: int = 256 * 1024
     
     def start_collection(self, node_name: str, log_type: str, ip: Optional[str] = None, interval: Optional[int] = None) -> bool:
         """Start real-time log collection for a specific node and log type"""
-        if interval:
-            self.collection_interval = interval
-        
         collector_id = f"{node_name}_{log_type}"
+        if interval is not None:
+            self._intervals[collector_id] = max(1, int(interval))
         
         if collector_id in self.collectors and self.collectors[collector_id].is_alive():
             print(f"Collector {collector_id} is already running")
@@ -56,6 +61,7 @@ class LogCollector:
             # Threads are daemon, so they will exit when main process exits
             # We just remove it from our tracking
             del self.collectors[collector_id]
+            self._intervals.pop(collector_id, None)
             print(f"Stopped collector {collector_id}")
         else:
             print(f"Collector {collector_id} is not running")
@@ -80,10 +86,10 @@ class LogCollector:
             if timestamp_end > 0:
                 timestamp_str = line[1:timestamp_end]
                 try:
-                    timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f").replace(tzinfo=datetime.timezone.utc)
+                    timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f").replace(tzinfo=BJ_TZ)
                 except ValueError:
                     # If parsing fails, use current time
-                    timestamp = datetime.datetime.now(datetime.timezone.utc)
+                    timestamp = datetime.datetime.now(BJ_TZ)
         
         # Extract log level
         log_levels = ["ERROR", "WARN", "INFO", "DEBUG", "TRACE"]
@@ -93,7 +99,7 @@ class LogCollector:
                 break
         
         return {
-            "timestamp": timestamp or datetime.datetime.now(datetime.timezone.utc),
+            "timestamp": timestamp or datetime.datetime.now(BJ_TZ),
             "log_level": log_level,
             "message": message,
             "host": node_name,
@@ -101,19 +107,24 @@ class LogCollector:
             "raw_log": line
         }
     
-    async def _save_log_to_db(self, log_data: Dict):
+    async def _save_log_to_db(self, log_data: Dict, collector_id: str | None = None):
         """Save log data to database"""
         try:
-            async with SessionLocal() as session:
+            session_local = self._session_locals.get(collector_id) if collector_id else None
+            async with (session_local() if session_local else SessionLocal()) as session:
                 # 获取集群名称
-                cluster_res = await session.execute(text("""
-                    SELECT c.name 
-                    FROM clusters c 
-                    JOIN nodes n ON c.id = n.cluster_id 
-                    WHERE n.hostname = :hn LIMIT 1
-                """), {"hn": log_data["host"]})
-                cluster_row = cluster_res.first()
-                cluster_name = cluster_row[0] if cluster_row else "default_cluster"
+                host = log_data["host"]
+                cluster_name = self._cluster_name_cache.get(host)
+                if not cluster_name:
+                    cluster_res = await session.execute(text("""
+                        SELECT c.name
+                        FROM clusters c
+                        JOIN nodes n ON c.id = n.cluster_id
+                        WHERE n.hostname = :hn LIMIT 1
+                    """), {"hn": host})
+                    cluster_row = cluster_res.first()
+                    cluster_name = cluster_row[0] if cluster_row else "default_cluster"
+                    self._cluster_name_cache[host] = cluster_name
 
                 # Create HadoopLog instance
                 hadoop_log = HadoopLog(
@@ -130,27 +141,34 @@ class LogCollector:
         except Exception as e:
             print(f"Error saving log to database: {e}")
     
-    async def _save_logs_to_db_batch(self, logs: List[Dict]):
+    async def _save_logs_to_db_batch(self, logs: List[Dict], collector_id: str | None = None):
         """Save a batch of logs to database in one transaction"""
         try:
-            async with SessionLocal() as session:
-                for log_data in logs:
+            session_local = self._session_locals.get(collector_id) if collector_id else None
+            async with (session_local() if session_local else SessionLocal()) as session:
+                host = logs[0]["host"] if logs else None
+                cluster_name = self._cluster_name_cache.get(host) if host else None
+                if host and not cluster_name:
                     cluster_res = await session.execute(text("""
-                        SELECT c.name 
-                        FROM clusters c 
-                        JOIN nodes n ON c.id = n.cluster_id 
+                        SELECT c.name
+                        FROM clusters c
+                        JOIN nodes n ON c.id = n.cluster_id
                         WHERE n.hostname = :hn LIMIT 1
-                    """), {"hn": log_data["host"]})
+                    """), {"hn": host})
                     cluster_row = cluster_res.first()
                     cluster_name = cluster_row[0] if cluster_row else "default_cluster"
-                    hadoop_log = HadoopLog(
+                    self._cluster_name_cache[host] = cluster_name
+
+                objs: list[HadoopLog] = []
+                for log_data in logs:
+                    objs.append(HadoopLog(
                         log_time=log_data["timestamp"],
                         node_host=log_data["host"],
                         title=log_data["service"],
                         info=log_data["message"],
-                        cluster_name=cluster_name
-                    )
-                    session.add(hadoop_log)
+                        cluster_name=cluster_name or "default_cluster",
+                    ))
+                session.add_all(objs)
                 await session.commit()
         except Exception as e:
             print(f"Error batch saving logs: {e}")
@@ -163,16 +181,26 @@ class LogCollector:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self._loops[collector_id] = loop
+        engine = create_async_engine(
+            DATABASE_URL,
+            echo=False,
+            pool_pre_ping=True,
+            connect_args={"server_settings": {"timezone": APP_TIMEZONE}},
+            pool_size=1,
+            max_overflow=0,
+        )
+        self._engines[collector_id] = engine
+        self._session_locals[collector_id] = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-        last_file_size = 0
-        last_line_count = self._line_counts.get(collector_id, 0)
+        last_remote_size = 0
         retry_count = 0
         max_retries = 3
         
         while collector_id in self.collectors:
             try:
                 # Wait for next collection interval
-                time.sleep(self.collection_interval)
+                interval = self._intervals.get(collector_id, self.collection_interval)
+                time.sleep(interval)
                 
                 # Resolve target file once and reuse
                 target = self._targets.get(collector_id)
@@ -207,39 +235,40 @@ class LogCollector:
                     retry_count += 1
                     continue
                 
-                # Read current log content
                 ssh_client = ssh_manager.get_connection(node_name, ip=ip)
-                current_log_content = ""
-                out2, err2 = ssh_client.execute_command(f"cat {target} 2>/dev/null")
-                if not err2:
-                    current_log_content = out2
-                current_file_size = len(current_log_content)
-                
-                # Check if log file has new content
-                if current_file_size > last_file_size:
-                    # Extract new content
-                    new_content = current_log_content[last_file_size:]
-                    
-                    # Save new content to database
-                    self._save_log_chunk(node_name, log_type, new_content)
-                    
-                    # Update last file size
-                    last_file_size = current_file_size
-                    
-                    print(f"Collected {len(new_content.splitlines())} new lines from {node_name}_{log_type}")
-                    
+
+                size_out, size_err = ssh_client.execute_command(f"stat -c %s {target} 2>/dev/null")
+                if size_err:
+                    retry_count += 1
+                    continue
+                try:
+                    remote_size = int((size_out or "").strip())
+                except Exception:
+                    retry_count += 1
+                    continue
+
+                if remote_size < last_remote_size:
+                    last_remote_size = 0
+
+                if remote_size > last_remote_size:
+                    delta = remote_size - last_remote_size
+                    if delta > self.max_bytes_per_pull:
+                        start_pos = remote_size - self.max_bytes_per_pull + 1
+                        last_remote_size = remote_size - self.max_bytes_per_pull
+                    else:
+                        start_pos = last_remote_size + 1
+
+                    out2, err2 = ssh_client.execute_command(f"tail -c +{start_pos} {target} 2>/dev/null")
+                    if err2:
+                        out2, err2 = ssh_client.execute_command(f"dd if={target} bs=1 skip={max(0, start_pos - 1)} 2>/dev/null")
+                    if not err2 and out2 and out2.strip():
+                        self._save_log_chunk(node_name, log_type, out2)
+                        print(f"Collected new logs from {node_name}_{log_type} bytes={len(out2)}")
+
+                    last_remote_size = remote_size
+
                 # Reset retry count on successful collection
                 retry_count = 0
-                
-                # Also track by line count to cover same-length encodings
-                lines = current_log_content.splitlines()
-                if len(lines) > last_line_count:
-                    tail = "\n".join(lines[last_line_count:])
-                    if tail.strip():
-                        self._save_log_chunk(node_name, log_type, tail)
-                        print(f"Collected {len(lines) - last_line_count} new lines (by count) from {node_name}_{log_type}")
-                    last_line_count = len(lines)
-                    self._line_counts[collector_id] = last_line_count
                 
             except Exception as e:
                 print(f"Error collecting logs from {node_name}_{log_type}: {e}")
@@ -254,6 +283,10 @@ class LogCollector:
         
         try:
             loop = self._loops.pop(collector_id, None)
+            engine = self._engines.pop(collector_id, None)
+            self._session_locals.pop(collector_id, None)
+            if engine and loop:
+                loop.run_until_complete(engine.dispose())
             if loop and loop.is_running():
                 loop.stop()
             if loop:
@@ -277,7 +310,7 @@ class LogCollector:
         collector_id = f"{node_name}_{log_type}"
         loop = self._loops.get(collector_id)
         if loop:
-            loop.run_until_complete(self._save_logs_to_db_batch(log_batch))
+            loop.run_until_complete(self._save_logs_to_db_batch(log_batch, collector_id=collector_id))
         else:
             asyncio.run(self._save_logs_to_db_batch(log_batch))
     
@@ -291,6 +324,8 @@ class LogCollector:
     def set_collection_interval(self, interval: int):
         """Set the collection interval"""
         self.collection_interval = max(1, interval)  # Ensure interval is at least 1 second
+        for k in list(self._intervals.keys()):
+            self._intervals[k] = self.collection_interval
         print(f"Set collection interval to {self.collection_interval} seconds")
     
     def set_log_dir(self, log_dir: str):

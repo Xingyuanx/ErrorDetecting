@@ -15,6 +15,9 @@ import time
 from ..models.node_metrics import NodeMetric
 from ..models.cluster_metrics import ClusterMetric
 from datetime import timedelta
+from ..config import now_bj
+from ..config import BJ_TZ
+from zoneinfo import ZoneInfo
 from ..schemas import (
     LogRequest,
     LogResponse,
@@ -64,9 +67,10 @@ def _parse_time(s: str | None) -> datetime | None:
     if not s:
         return None
     try:
-        if s.endswith("Z"):
-            s = s[:-1] + "+00:00"
-        return datetime.fromisoformat(s)
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=BJ_TZ)
+        return dt.astimezone(BJ_TZ)
     except Exception:
         return None
 
@@ -410,7 +414,7 @@ async def sync_metrics(cluster_uuid: str, user=Depends(get_current_user), db: As
         cid, cname = row
         nodes_res = await db.execute(select(Node.id, Node.hostname, Node.ip_address).where(Node.cluster_id == cid))
         rows = nodes_res.all()
-        now = datetime.now(timezone.utc)
+        now = now_bj()
         details = []
         for nid, hn, ip in rows:
             ssh_client = ssh_manager.get_connection(hn, ip=str(ip))

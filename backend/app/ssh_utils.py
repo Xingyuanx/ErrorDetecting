@@ -65,6 +65,12 @@ class SSHClient:
         
         stdin, stdout, stderr = self.client.exec_command(command)
         return stdout.read().decode(), stderr.read().decode()
+
+    def execute_command_with_status(self, command: str) -> tuple:
+        self._ensure_connected()
+        stdin, stdout, stderr = self.client.exec_command(command)
+        exit_code = stdout.channel.recv_exit_status()
+        return exit_code, stdout.read().decode(), stderr.read().decode()
     
     def execute_command_with_timeout(self, command: str, timeout: int = 30) -> tuple:
         """Execute command with timeout"""
@@ -72,6 +78,12 @@ class SSHClient:
         
         stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
         return stdout.read().decode(), stderr.read().decode()
+
+    def execute_command_with_timeout_and_status(self, command: str, timeout: int = 30) -> tuple:
+        self._ensure_connected()
+        stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
+        exit_code = stdout.channel.recv_exit_status()
+        return exit_code, stdout.read().decode(), stderr.read().decode()
     
     def read_file(self, file_path: str) -> str:
         """Read file content from remote server"""

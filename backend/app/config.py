@@ -2,8 +2,17 @@ import os
 import json
 from dotenv import load_dotenv
 from typing import Dict, Tuple
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 load_dotenv()
+
+# Timezone Configuration
+APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Asia/Shanghai")
+BJ_TZ = ZoneInfo(APP_TIMEZONE)
+
+def now_bj() -> datetime:
+    return datetime.now(BJ_TZ)
 
 # Database Configuration
 _db_url = os.getenv("DATABASE_URL")

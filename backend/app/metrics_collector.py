@@ -10,6 +10,7 @@ from .db import SessionLocal
 from .models.nodes import Node
 from .models.clusters import Cluster
 import asyncio
+from .config import BJ_TZ
 
 class MetricsCollector:
     def __init__(self):
@@ -88,7 +89,7 @@ class MetricsCollector:
 
     async def _save_metrics(self, node_id: int, hostname: str, cluster_id: int, cpu: float, mem: float):
         async with SessionLocal() as session:
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(BJ_TZ)
             await session.execute(text("UPDATE nodes SET cpu_usage=:cpu, memory_usage=:mem, last_heartbeat=:hb WHERE id=:nid"), {"cpu": cpu, "mem": mem, "hb": now, "nid": node_id})
             await session.commit()
             rows = await session.execute(select(func.avg(Node.cpu_usage), func.avg(Node.memory_usage)).where(Node.cluster_id == cluster_id))

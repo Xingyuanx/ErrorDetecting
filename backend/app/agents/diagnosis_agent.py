@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..services.llm import LLMClient
-from ..services.ops_tools import openai_tools_schema, tool_read_log, tool_start_cluster, tool_stop_cluster
+from ..services.ops_tools import openai_tools_schema, tool_read_log, tool_start_cluster, tool_stop_cluster, tool_read_cluster_log, tool_detect_cluster_faults, tool_run_cluster_command
+import json
 
 
 async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict[str, Any], auto: bool = True, max_steps: int = 3, model: Optional[str] = None) -> Dict[str, Any]:
@@ -44,10 +45,48 @@ async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict
         for tc in tool_calls:
             fn = (tc.get("function") or {})
             name = fn.get("name")
-            args = fn.get("arguments") or {}
+            raw_args = fn.get("arguments") or {}
+            if isinstance(raw_args, str):
+                try:
+                    args = json.loads(raw_args)
+                except Exception:
+                    args = {}
+            elif isinstance(raw_args, dict):
+                args = raw_args
+            else:
+                args = {}
             result: Dict[str, Any]
             if name == "read_log":
                 result = await tool_read_log(db, operator, args.get("node"), args.get("path"), int(args.get("lines", 200)), args.get("pattern"), args.get("sshUser"))
+            elif name == "read_cluster_log":
+                result = await tool_read_cluster_log(
+                    db=db,
+                    user_name=operator,
+                    cluster_uuid=args.get("cluster_uuid"),
+                    log_type=args.get("log_type"),
+                    node_hostname=args.get("node_hostname"),
+                    lines=int(args.get("lines", 100)),
+                )
+            elif name == "detect_cluster_faults":
+                result = await tool_detect_cluster_faults(
+                    db=db,
+                    user_name=operator,
+                    cluster_uuid=args.get("cluster_uuid"),
+                    components=args.get("components"),
+                    node_hostname=args.get("node_hostname"),
+                    lines=int(args.get("lines", 200)),
+                )
+            elif name == "run_cluster_command":
+                result = await tool_run_cluster_command(
+                    db=db,
+                    user_name=operator,
+                    cluster_uuid=args.get("cluster_uuid"),
+                    command_key=args.get("command_key"),
+                    target=args.get("target"),
+                    node_hostname=args.get("node_hostname"),
+                    timeout=int(args.get("timeout", 30)),
+                    limit_nodes=int(args.get("limit_nodes", 20)),
+                )
             elif name == "start_cluster":
                 result = await tool_start_cluster(db, operator, args.get("cluster_uuid"))
             elif name == "stop_cluster":
@@ -57,4 +96,3 @@ async def run_diagnose_and_repair(db: AsyncSession, operator: str, context: Dict
             actions.append({"name": name, "args": args, "result": result})
             messages.append({"role": "tool", "content": str(result), "name": name})
     return {"rootCause": root_cause, "actions": actions, "residualRisk": residual_risk}
-

@@ -7,6 +7,7 @@ from ..models.nodes import Node
 from ..models.clusters import Cluster
 from pydantic import BaseModel
 from datetime import datetime, timezone
+from ..config import now_bj
 
 router = APIRouter()
 
@@ -32,7 +33,7 @@ def _fmt_percent(v: float | None) -> str:
 def _fmt_updated(ts: datetime | None) -> str:
     if not ts:
         return "-"
-    now = datetime.now(timezone.utc)
+    now = now_bj()
     diff = int((now - ts).total_seconds())
     if diff < 60:
         return "刚刚"
@@ -115,6 +116,5 @@ async def node_detail(name: str, user=Depends(get_current_user), db: AsyncSessio
         raise
     except Exception:
         raise HTTPException(status_code=500, detail="server_error")
-
 
 
