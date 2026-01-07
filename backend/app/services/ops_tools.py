@@ -18,7 +18,6 @@ from ..models.nodes import Node
 from ..models.clusters import Cluster
 from ..models.hadoop_exec_logs import HadoopExecLog
 from ..ssh_utils import SSHClient, ssh_manager
-from .runner import run_remote_command
 from ..log_reader import log_reader
 from ..config import now_bj
 
@@ -88,13 +87,26 @@ async def tool_read_log(db: AsyncSession, user_name: str, node: str, path: str, 
     n = await _find_accessible_node(db, user_name, node)
     if not n:
         return {"error": "node_not_found"}
+    if not getattr(n, "ssh_password", None):
+        return {"error": "ssh_password_not_configured"}
     path_q = shlex.quote(path)
     cmd = f"tail -n {lines} {path_q}"
     if pattern:
         pat_q = shlex.quote(pattern)
         cmd = f"{cmd} | grep -E {pat_q}"
     start = _now()
-    code, out, err = await run_remote_command(str(getattr(n, "ip_address", "")), ssh_user or "", cmd, timeout=timeout)
+    bash_cmd = f"bash -lc {shlex.quote(cmd)}"
+
+    def _run():
+        client = ssh_manager.get_connection(
+            str(getattr(n, "hostname", node)),
+            ip=str(getattr(n, "ip_address", "")),
+            username=(ssh_user or getattr(n, "ssh_user", None) or "hadoop"),
+            password=str(getattr(n, "ssh_password", "")),
+        )
+        return client.execute_command_with_timeout_and_status(bash_cmd, timeout=timeout)
+
+    code, out, err = await asyncio.to_thread(_run)
     end = _now()
     exec_id = f"tool_{start.timestamp():.0f}"
     await _write_exec_log(db, exec_id, "read_log", ("success" if code == 0 else "failed"), start, end, code, user_name, out, err)
