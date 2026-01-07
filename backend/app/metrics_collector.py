@@ -3,12 +3,11 @@ import time
 import datetime
 import time as _time
 from typing import Dict, List, Optional, Tuple
-from sqlalchemy import text, select, func
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from .ssh_utils import ssh_manager
 from .db import SessionLocal
 from .models.nodes import Node
-from .models.clusters import Cluster
 import asyncio
 from .config import BJ_TZ
 
@@ -91,12 +90,6 @@ class MetricsCollector:
         async with SessionLocal() as session:
             now = datetime.datetime.now(BJ_TZ)
             await session.execute(text("UPDATE nodes SET cpu_usage=:cpu, memory_usage=:mem, last_heartbeat=:hb WHERE id=:nid"), {"cpu": cpu, "mem": mem, "hb": now, "nid": node_id})
-            await session.commit()
-            rows = await session.execute(select(func.avg(Node.cpu_usage), func.avg(Node.memory_usage)).where(Node.cluster_id == cluster_id))
-            avg_row = rows.first()
-            ca = float(avg_row[0] or 0.0)
-            ma = float(avg_row[1] or 0.0)
-            await session.execute(text("UPDATE clusters SET cpu_avg=:ca, memory_avg=:ma WHERE id=:cid"), {"ca": round(ca, 2), "ma": round(ma, 2), "cid": cluster_id})
             await session.commit()
 
     def _collect_node_metrics(self, node_id: int, hostname: str, ip: str, cluster_id: int):
