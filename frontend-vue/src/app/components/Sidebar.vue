@@ -3,6 +3,7 @@
     :default-active="route.path"
     class="sidebar-menu"
     :collapse="ui.sidebarHidden"
+    :collapse-transition="false"
     router
   >
     <div class="logo-container" :class="{ 'is-collapse': ui.sidebarHidden }">
@@ -53,7 +54,16 @@ import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth";
 import { useUIStore } from "../stores/ui";
 import { Roles } from "../constants/roles";
-import { Monitor, Search, Grid, Document, Operation, Lock, User, Clock } from '@element-plus/icons-vue'
+import {
+  Monitor,
+  Search,
+  Grid,
+  Document,
+  Operation,
+  Lock,
+  User,
+  Clock,
+} from "@element-plus/icons-vue";
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -67,9 +77,33 @@ function can(roles: string[]) {
 
 <style scoped>
 .sidebar-menu {
-  border-right: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.2);
   height: 100%;
-  background-color: var(--app-header-bg);
+  width: 100% !important;
+  background-color: var(--app-sidebar-bg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* 隐藏收起时的文字，防止闪烁 */
+:deep(.el-menu--collapse) .el-sub-menu__title span,
+:deep(.el-menu--collapse) .el-menu-item span,
+:deep(.el-menu--collapse) .el-sub-menu__icon-arrow {
+  display: none;
+}
+
+/* 确保所有层级的菜单背景统一 */
+.sidebar-menu,
+:deep(.el-menu),
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  background-color: var(--app-sidebar-bg) !important;
+}
+
+:global(html.dark) .sidebar-menu {
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: none;
 }
 
 .logo-container {
@@ -78,10 +112,11 @@ function can(roles: string[]) {
   align-items: center;
   padding: 0 20px;
   gap: 12px;
-  background-color: var(--app-header-bg);
-  border-bottom: 1px solid var(--app-border-color);
-  transition: all 0.3s;
+  background-color: var(--app-sidebar-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .logo-container.is-collapse {
@@ -90,7 +125,7 @@ function can(roles: string[]) {
 }
 
 .logo-text {
-  color: var(--app-text-primary);
+  color: var(--app-sidebar-text-active);
   font-size: 18px;
   font-weight: 600;
   white-space: nowrap;
@@ -99,6 +134,7 @@ function can(roles: string[]) {
 :deep(.el-menu-item.is-active) {
   background-color: var(--el-color-primary) !important;
   color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
 :deep(.el-menu-item.is-active .el-icon) {
@@ -107,29 +143,30 @@ function can(roles: string[]) {
 
 :deep(.el-menu-item),
 :deep(.el-sub-menu__title) {
-  color: var(--app-text-primary);
+  color: var(--app-sidebar-text);
 }
 
 :deep(.el-menu-item .el-icon),
 :deep(.el-sub-menu__title .el-icon) {
-  color: var(--app-text-primary);
+  color: var(--app-sidebar-text);
 }
 
 :deep(.el-menu-item:hover),
 :deep(.el-sub-menu__title:hover) {
-  color: var(--el-color-primary) !important;
+  background-color: var(--app-sidebar-item-hover) !important;
+  color: var(--app-sidebar-text-active) !important;
 }
 
 :deep(.el-menu-item:hover .el-icon),
 :deep(.el-sub-menu__title:hover .el-icon) {
-  color: var(--el-color-primary) !important;
+  color: var(--app-sidebar-text-active) !important;
 }
 
 :deep(.el-sub-menu__icon-arrow) {
-  color: var(--app-text-primary);
+  color: var(--app-sidebar-text);
 }
 
 :deep(.el-sub-menu:hover .el-sub-menu__icon-arrow) {
-  color: var(--el-color-primary) !important;
+  color: var(--app-sidebar-text-active) !important;
 }
 </style>

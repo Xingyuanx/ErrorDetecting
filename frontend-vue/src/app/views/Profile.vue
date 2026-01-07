@@ -5,7 +5,6 @@
         <h2 class="page-title">个人主页</h2>
         <p class="page-subtitle">查看与管理个人基础信息</p>
       </div>
-      <el-button disabled>编辑资料</el-button>
     </div>
 
     <el-card v-loading="loading" shadow="never" class="info-card">

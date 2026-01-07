@@ -77,6 +77,10 @@ $border-color-light: #f1f5f9;// 浅色边框
   --app-content-bg: #{$content-bg-color};
   --app-card-bg: #{$card-bg-color};
   --app-header-bg: #{$card-bg-color};
+  --app-sidebar-bg: #1e293b;       // 侧边栏背景 (深蓝灰)
+  --app-sidebar-text: #94a3b8;     // 侧边栏文字
+  --app-sidebar-text-active: #ffffff; // 侧边栏激活文字
+  --app-sidebar-item-hover: #334155; // 侧边栏悬浮背景
   --app-text-primary: #{$text-primary};
   --app-text-secondary: #{$text-secondary};
   --app-border-color: #{$border-color};
@@ -129,10 +133,14 @@ body {
 // 暗黑模式下保持原有样式不变 (由 element-plus/theme-chalk/dark/css-vars.css 控制)
 // 我们这里只需要确保自定义的 --app 变量在暗黑模式下能正确覆盖
 html.dark {
-  --app-bg: #0f172a;
-  --app-content-bg: #1e293b;
+  --app-bg: #0f172a;           // 主背景 (深蓝)
+  --app-content-bg: #1e293b;   // 内容背景 (略亮)
   --app-card-bg: #1e293b;
   --app-header-bg: #0f172a;
+  --app-sidebar-bg: #020617;   // 侧边栏背景 (极深)
+  --app-sidebar-text: #64748b;
+  --app-sidebar-text-active: #38bdf8;
+  --app-sidebar-item-hover: #0f172a;
   --app-text-primary: #f1f5f9;
   --app-text-secondary: #94a3b8;
   --app-border-color: #334155;
