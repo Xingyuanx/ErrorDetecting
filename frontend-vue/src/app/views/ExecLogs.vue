@@ -6,7 +6,6 @@
         <p class="page-subtitle">查看与管理修复执行记录，支持完整后端同步</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" @click="handleCreate">新增记录</el-button>
       </div>
     </div>
 
@@ -17,70 +16,28 @@
         </div>
       </template>
       <ExecLogsTable
-        :records="records"
+        :records="displayRecords"
         :selected-id="selected"
         @select="select"
-        @edit="handleEdit"
         @delete="del"
       />
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="records.length"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
-
-    <el-dialog
-      v-model="dialogVisible"
-      :title="openCreate ? '新增记录' : '编辑记录'"
-      :width="isMobile ? '95%' : '600px'"
-      @closed="cancelForm"
-    >
-      <el-form :model="form" label-width="100px" label-position="right">
-        <el-form-item label="集群名称" required>
-          <el-input v-model="form.clusterName" placeholder="请输入集群名称" />
-        </el-form-item>
-        <el-form-item label="用户">
-          <el-input v-model="form.username" placeholder="请输入用户" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" placeholder="请输入描述" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status" placeholder="请选择状态" class="w-full">
-            <el-option label="Running" value="running" />
-            <el-option label="Success" value="success" />
-            <el-option label="Failed" value="failed" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="开始时间" required>
-          <el-date-picker
-            v-model="form.start"
-            type="datetime"
-            placeholder="请选择开始时间"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            class="w-full"
-          />
-        </el-form-item>
-        <el-form-item label="结束时间">
-          <el-date-picker
-            v-model="form.end"
-            type="datetime"
-            placeholder="请选择结束时间"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            class="w-full"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="saving" @click="save">保存</el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onUnmounted } from 'vue'
+import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import { LogService } from '../api/log.service'
 import { useAuthStore } from '../stores/auth'
 import ExecLogsTable from '../components/ExecLogsTable.vue'
@@ -94,28 +51,29 @@ const updateWidth = () => { isMobile.value = window.innerWidth < 768 }
 const auth = useAuthStore()
 const records = reactive<RecordItem[]>([])
 const selected = ref<number|null>(null)
-const openCreate = ref(false)
-const openEditForm = ref(false)
-const dialogVisible = ref(false)
-const saving = ref(false)
 const loading = ref(false)
-const form = reactive<RecordItem>({ id:0, clusterName:'', username:'', description:'', faultId:'', cmdType:'shell', status:'running', start:'', end:'', code:null })
+
+// 分页相关状态
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+// 计算当前页显示的记录
+const displayRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return records.slice(start, end)
+})
+
+function handleSizeChange(val: number) {
+  pageSize.value = val
+  currentPage.value = 1
+}
+
+function handleCurrentChange(val: number) {
+  currentPage.value = val
+}
 
 function select(r: RecordItem){ selected.value = r.id }
-
-function handleCreate() {
-  openCreate.value = true
-  openEditForm.value = false
-  dialogVisible.value = true
-}
-
-function handleEdit(r: RecordItem) {
-  selected.value = r.id
-  openCreate.value = false
-  openEditForm.value = true
-  Object.assign(form, r)
-  dialogVisible.value = true
-}
 
 async function del(id:number){
   try{
@@ -128,49 +86,6 @@ async function del(id:number){
     ElMessage.success('删除成功')
   }catch(e:any){ 
     ElMessage.error('删除失败：' + (e.friendlyMessage || e.message || '网络错误'))
-  }
-}
-
-function cancelForm(){ 
-  openCreate.value=false; 
-  openEditForm.value=false; 
-  Object.assign(form, { id:0, clusterName:'', username:'', description:'', faultId:'', cmdType:'shell', status:'running', start:'', end:'', code:null }) 
-}
-
-async function save(){
-  if (!form.clusterName || !form.start) { 
-    ElMessage.warning('请完整填写必填信息')
-    return 
-  }
-  
-  const payload = { 
-    from_user_id: auth.user?.id || 0,
-    cluster_name: form.clusterName,
-    description: form.description,
-    fault_id: form.faultId, 
-    command_type: form.cmdType, 
-    execution_status: form.status, 
-    start_time: form.start.replace(' ', 'T'), 
-    end_time: form.end ? form.end.replace(' ', 'T') : null, 
-    exit_code: form.code 
-  }
-  
-  saving.value = true
-  try{
-    if (openCreate.value) {
-      await LogService.createExecLog(payload)
-      ElMessage.success('新增成功')
-    } else if (openEditForm.value) {
-      if (selected.value === null) return
-      await LogService.updateExecLog(selected.value, payload)
-      ElMessage.success('更新成功')
-    }
-    await load()
-    dialogVisible.value = false
-  }catch(e:any){ 
-    ElMessage.error('保存失败：' + (e.friendlyMessage || e.message || '网络错误'))
-  } finally {
-    saving.value = false
   }
 }
 
@@ -253,5 +168,10 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

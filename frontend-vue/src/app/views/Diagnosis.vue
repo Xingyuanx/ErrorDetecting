@@ -922,8 +922,8 @@ function formatError(e: any, def: string) {
   right: 20px;
   bottom: 180px; /* 位于输入框上方 */
   z-index: 10;
-  box-shadow: var(--el-box-shadow-light);
-  transition: transform 0.3s;
+  box-shadow: var(--el-box-shadow);
+  transition: transform var(--el-transition-duration), opacity var(--el-transition-duration);
 }
 
 .scroll-bottom-btn:hover {

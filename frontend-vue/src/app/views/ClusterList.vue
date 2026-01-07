@@ -155,15 +155,15 @@
                 :loading="rowLoading[row.uuid]"
                 @click.stop="stopCluster(row)"
               >停止</el-button>
-              <div class="switch-action" @click.stop>
-                <span class="switch-label">采集日志</span>
-                <el-switch
-                  v-model="clusterStore.collectionStates[row.uuid]"
-                  :loading="rowLoading[row.uuid]"
-                  @change="(val: boolean) => handleCollectionChange(val, row)"
-                  active-color="#13ce66"
-                />
-              </div>
+              <el-button
+                size="small"
+                :type="clusterStore.collectionStates[row.uuid] ? 'danger' : 'success'"
+                plain
+                :loading="rowLoading[row.uuid]"
+                @click.stop="clusterStore.collectionStates[row.uuid] ? stopLogs(row) : collectLogs(row)"
+              >
+                {{ clusterStore.collectionStates[row.uuid] ? '停止采集' : '采集日志' }}
+              </el-button>
               <el-popconfirm title="确定要注销此集群吗？" @confirm="unregister(row.uuid)">
                 <template #reference>
                   <el-button size="small" type="danger" plain>注销</el-button>
@@ -451,14 +451,6 @@ async function stopCluster(row: any) {
   }
 }
 
-async function handleCollectionChange(val: boolean, row: any) {
-  if (val) {
-    await collectLogs(row)
-  } else {
-    await stopLogs(row)
-  }
-}
-
 async function collectLogs(row: any) {
   const id = row.uuid
   const name = row.name
@@ -523,7 +515,11 @@ function handleAction(command: string, row: any) {
       stopCluster(row);
       break;
     case 'collect':
-      collectLogs(row);
+      if (clusterStore.collectionStates[row.uuid]) {
+        stopLogs(row);
+      } else {
+        collectLogs(row);
+      }
       break;
     case 'unregister':
       ElMessageBox.confirm('确定要注销此集群吗？', '提示', {
@@ -650,23 +646,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
   justify-content: flex-start;
   align-items: center;
-}
-
-.switch-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  background-color: var(--app-bg);
-  border-radius: 4px;
-  height: 32px;
-  border: 1px solid var(--app-border-color);
-}
-
-.switch-label {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-  white-space: nowrap;
 }
 
 .full-width {

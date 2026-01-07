@@ -14,45 +14,21 @@
       
       <el-form :model="q" label-position="top" size="default">
         <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :md="8" :lg="4">
-            <el-form-item label="日志级别">
-              <el-select v-model="q.level" placeholder="全部级别" clearable class="w-full">
-                <el-option label="DEBUG" value="debug" />
-                <el-option label="INFO" value="info" />
-                <el-option label="WARN" value="warn" />
-                <el-option label="ERROR" value="error" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-col :xs="24" :sm="12" :md="8" :lg="6">
             <el-form-item label="来源集群">
               <el-select v-model="q.cluster" placeholder="全部集群" clearable class="w-full">
                 <el-option v-for="c in clustersOpts" :key="c" :label="c" :value="c" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-col :xs="24" :sm="12" :md="8" :lg="6">
             <el-form-item label="来源节点">
               <el-select v-model="q.node" placeholder="全部节点" clearable class="w-full">
                 <el-option v-for="n in nodesOpts" :key="n" :label="n" :value="n" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="8" :lg="4">
-            <el-form-item label="操作类型">
-              <el-select v-model="q.op" placeholder="全部类型" clearable class="w-full">
-                <el-option v-for="o in opsOpts" :key="o" :label="o" :value="o" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8" :lg="4">
-            <el-form-item label="来源">
-              <el-select v-model="q.source" placeholder="全部来源" clearable class="w-full">
-                <el-option v-for="s in sourcesOpts" :key="s" :label="s" :value="s" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-col :xs="24" :sm="12" :md="8" :lg="6">
             <el-form-item label="时间范围">
               <el-select v-model="q.timeRange" placeholder="全部时间" clearable class="w-full">
                 <el-option label="最近1小时" value="1h" />
@@ -77,23 +53,14 @@
         style="width: 100%"
         header-cell-class-name="table-header"
       >
-        <el-table-column label="时间" width="120">
+        <el-table-column label="时间" width="180">
           <template #default="{ row }">
-            {{ row.time.split('T')[1]?.slice(0, 8) || row.time }}
-          </template>
-        </el-table-column>
-        <el-table-column label="级别" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getLevelTag(row.level)" size="small" effect="dark">
-              {{ row.level.toUpperCase() }}
-            </el-tag>
+            {{ row.time }}
           </template>
         </el-table-column>
         <el-table-column prop="cluster" label="集群" width="150" show-overflow-tooltip />
         <el-table-column prop="node" label="节点" width="150" show-overflow-tooltip />
-        <el-table-column prop="op" label="操作" width="120" />
-        <el-table-column prop="source" label="来源" width="150" show-overflow-tooltip />
-        <el-table-column prop="message" label="消息" min-width="300" show-overflow-tooltip />
+        <el-table-column prop="info" label="详细内容" min-width="300" show-overflow-tooltip />
       </el-table>
 
       <div class="pagination-container">
@@ -117,27 +84,15 @@ import { LogService } from '../api/log.service'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
-const data = ref<{ id:number; time:string; level:string; cluster:string; node:string; op:string; source:string; message:string }[]>([])
+const data = ref<{ id:number|string; time:string; cluster:string; node:string; info:string }[]>([])
 const page = ref(1)
 const size = ref(20)
 const total = ref(0)
 const loading = ref(false)
 const err = ref('')
-const q = reactive({ level:'', cluster:'', node:'', op:'', source:'', timeRange:'' })
+const q = reactive({ cluster:'', node:'', timeRange:'' })
 const clustersOpts = ref<string[]>([])
 const nodesOpts = ref<string[]>([])
-const opsOpts = ref<string[]>([])
-const sourcesOpts = ref<string[]>([])
-
-function getLevelTag(level: string) {
-  const map: Record<string, string> = {
-    'debug': 'info',
-    'info': 'success',
-    'warn': 'warning',
-    'error': 'danger'
-  }
-  return map[level.toLowerCase()] || 'info'
-}
 
 function rangeFromNow(r:string){
   const now = Date.now()
@@ -150,31 +105,23 @@ async function load(){
   err.value = ''
   try{
     const params: any = { page: page.value, size: size.value }
-    if (q.level) params.level = q.level
     if (q.cluster) params.cluster = q.cluster
     if (q.node) params.node = q.node
-    if (q.op) params.op = q.op
-    if (q.source) params.source = q.source
     if (q.timeRange) params.time_from = rangeFromNow(q.timeRange)
     
     const { items, total: t } = await LogService.list(params)
     const normalized = items.map((d:any)=>({
-      id: d.log_id || d.id,
-      time: d.log_time || d.timestamp || '',
-      level: d.level || 'info',
-      cluster: d.cluster_name || d.cluster || '',
-      node: d.node_host || d.node || d.host || '',
-      op: d.op || '',
-      source: d.title || d.source || d.service || '',
-      message: d.info || d.message || ''
+      id: d.id,
+      time: d.time || '',
+      cluster: d.cluster || '',
+      node: d.node || '',
+      info: d.info || ''
     }))
     data.value = normalized
     total.value = t
     
     if (!clustersOpts.value.length) clustersOpts.value = Array.from(new Set(items.map((d:any)=>d.cluster).filter(Boolean)))
     if (!nodesOpts.value.length) nodesOpts.value = Array.from(new Set(items.map((d:any)=>d.node).filter(Boolean)))
-    if (!opsOpts.value.length) opsOpts.value = Array.from(new Set(items.map((d:any)=>d.op).filter(Boolean)))
-    if (!sourcesOpts.value.length) sourcesOpts.value = Array.from(new Set(normalized.map((d:any)=>d.source).filter(Boolean)))
   }catch(e:any){ 
     err.value = e.friendlyMessage || e?.response?.data?.detail || '加载失败' 
   } finally{ 
@@ -183,7 +130,7 @@ async function load(){
 }
 
 function clear() { 
-  q.level=''; q.cluster=''; q.node=''; q.op=''; q.source=''; q.timeRange=''; 
+  q.cluster=''; q.node=''; q.timeRange=''; 
   page.value=1 
 }
 
@@ -198,14 +145,10 @@ const handleCurrentChange = (val: number) => {
   load()
 }
 
-const pageData = computed(() => {
-  const s = q.source.trim().toLowerCase()
-  let list = data.value
-  if (s) list = list.filter(d => String(d.source || '').toLowerCase().includes(s))
-  return list
-})
+const pageData = computed(() => data.value)
 
-watch(() => ({...q}), () => { 
+// 监听筛选条件变化
+watch(() => ({...q}), () => {
   page.value = 1
   load()
 }, { deep: true })
@@ -214,11 +157,8 @@ onMounted(()=>{ load() })
 
 const summary = computed(() => {
   const parts = [] as string[]
-  if (q.level) parts.push(`级别=${q.level}`)
   if (q.cluster) parts.push(`集群=${q.cluster}`)
   if (q.node) parts.push(`节点=${q.node}`)
-  if (q.op) parts.push(`类型=${q.op}`)
-  if (q.source) parts.push(`来源=${q.source}`)
   if (q.timeRange) parts.push(`时间=${q.timeRange}`)
   return parts.length? parts.join('，') : '无'
 })

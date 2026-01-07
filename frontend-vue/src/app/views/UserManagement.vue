@@ -7,7 +7,7 @@
 
     <el-card class="table-card" shadow="never">
       <el-table
-        :data="users"
+        :data="displayUsers"
         stripe
         style="width: 100%"
         header-cell-class-name="table-header"
@@ -59,6 +59,18 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="users.length"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <el-dialog
@@ -109,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onUnmounted } from 'vue'
+import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { UserService } from '../api/user.service'
 import { ElMessage } from 'element-plus'
@@ -123,6 +135,26 @@ const open = ref(false)
 const saving = ref(false)
 const changingRoleUser = ref('')
 const form = reactive({ username:'', fullName:'', email:'', password:'', confirmPassword:'', role:'operator', status:'enabled' })
+
+// 分页相关状态
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+// 计算当前页显示的用户
+const displayUsers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return users.slice(start, end)
+})
+
+function handleSizeChange(val: number) {
+  pageSize.value = val
+  currentPage.value = 1
+}
+
+function handleCurrentChange(val: number) {
+  currentPage.value = val
+}
 
 function statusName(s:string){ 
   if(s==='enabled') return '启用'
@@ -286,5 +318,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

@@ -13,8 +13,9 @@
         </el-icon>
       </el-button>
       <el-breadcrumb separator="/" class="u-hidden-mobile">
-        <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-        <el-breadcrumb-item v-if="currentRouteName">{{ currentRouteName }}</el-breadcrumb-item>
+        <el-breadcrumb-item v-for="(item, index) in breadcrumbs" :key="index" :to="item.path">
+          {{ item.label }}
+        </el-breadcrumb-item>
       </el-breadcrumb>
     </div>
 
@@ -26,7 +27,7 @@
       </el-tooltip>
 
       <el-tooltip :content="isDark ? '切换到浅色模式' : '切换到暗黑模式'" placement="bottom">
-        <el-button link @click="ui.toggleTheme()">
+        <el-button link @click="toggleThemeWithAnimation" class="theme-toggle-btn">
           <el-icon :size="20">
             <Moon v-if="!isDark" />
             <Sunny v-else />
@@ -99,8 +100,15 @@ const { isAuthenticated } = storeToRefs(auth);
 const { isDark } = storeToRefs(ui);
 const authed = isAuthenticated;
 
-const currentRouteName = computed(() => {
-  return route.name ? String(route.name).toUpperCase() : '';
+const breadcrumbs = computed(() => {
+  if (route.meta && route.meta.breadcrumb) {
+    return route.meta.breadcrumb as Array<{ label: string, path: string }>;
+  }
+  const name = route.name ? String(route.name).toUpperCase() : '';
+  return [
+    { label: '首页', path: '/' },
+    name ? { label: name, path: route.path } : null
+  ].filter((i): i is { label: string, path: string } => i !== null);
 });
 
 const hideSidebar = computed(() => !!(route.meta && (route.meta as any).hideSidebar));
@@ -112,6 +120,46 @@ const updateWidth = () => {
 
 function toggleSidebar() {
   ui.toggleSidebar();
+}
+
+function toggleThemeWithAnimation(event: MouseEvent) {
+  const isAppearanceTransition = (document as any).startViewTransition &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!isAppearanceTransition) {
+    ui.toggleTheme();
+    return;
+  }
+
+  const x = event.clientX;
+  const y = event.clientY;
+  const endRadius = Math.hypot(
+    Math.max(x, innerWidth - x),
+    Math.max(y, innerHeight - y)
+  );
+
+  const transition = (document as any).startViewTransition(async () => {
+    ui.toggleTheme();
+  });
+
+  transition.ready.then(() => {
+    const clipPath = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${endRadius}px at ${x}px ${y}px)`,
+    ];
+    document.documentElement.animate(
+      {
+        clipPath: isDark.value ? [...clipPath].reverse() : clipPath,
+      },
+      {
+        duration: 450,
+        easing: 'ease-in-out',
+        pseudoElement: isDark.value
+          ? '::view-transition-old(root)'
+          : '::view-transition-new(root)',
+      }
+    );
+  });
 }
 
 function refreshPage() {
@@ -214,9 +262,43 @@ function handleCommand(command: string) {
   color: #334155;
 }
 
+:deep(.dark) .username {
+  color: #cbd5e1;
+}
+
+html.dark .username {
+  color: #cbd5e1;
+}
+
 .toggle-btn {
   padding: 8px;
   height: auto;
+}
+
+.theme-toggle-btn {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--el-fill-color-light);
+  transform: rotate(15deg) scale(1.1);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle-btn :deep(.el-icon) {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn:hover :deep(.el-icon) {
+  color: var(--el-color-primary);
 }
 
 @media (max-width: 768px) {

@@ -82,6 +82,50 @@ $border-color-light: #f1f5f9;// 浅色边框
   --app-border-color: #{$border-color};
 }
 
+// 确保 body 和主要容器的基础样式
+body {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  background-color: var(--el-bg-color);
+}
+
+// 针对所有 element-plus 容器和卡片添加平滑过渡 (仅用于非 View Transition 场景)
+.el-card, 
+.el-header, 
+.el-aside, 
+.el-main, 
+.el-footer,
+.el-button,
+.el-input__wrapper {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+/**
+ * View Transitions API 相关样式
+ * 实现圆圈扩散效果的核心 CSS
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-old(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-new(root) {
+  z-index: 1;
+}
+
 // 暗黑模式下保持原有样式不变 (由 element-plus/theme-chalk/dark/css-vars.css 控制)
 // 我们这里只需要确保自定义的 --app 变量在暗黑模式下能正确覆盖
 html.dark {

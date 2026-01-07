@@ -19,8 +19,33 @@ export const MetricService = {
     }
   },
 
-  /** 立即采样 CPU/内存 指标 */
+  /** 立即采样 CPU/内存 指标 (旧接口，保留兼容) */
   async sampleMetrics(clusterUuid: string): Promise<any> {
-    return api.post(`/v1/metrics/${clusterUuid}/`)
+    return api.post(`/v1/metrics/${clusterUuid}/`, null, {
+      timeout: 180000 
+    })
+  },
+
+  /** 启动集群后台采集器 */
+  async startCollector(clusterUuid: string, interval: number = 5): Promise<any> {
+    return api.post(`/v1/metrics/collectors/start-by-cluster/${clusterUuid}`, null, {
+      params: { interval }
+    })
+  },
+
+  /** 获取采集器状态 */
+  async getCollectorStatus(clusterUuid?: string): Promise<{ 
+    is_running: boolean, 
+    active_collectors_count: number, 
+    interval: number, 
+    collectors: Record<string, string>, 
+    errors: Record<string, string> 
+  }> {
+    return api.get(`/v1/metrics/collectors/status`, { params: { cluster: clusterUuid } })
+  },
+
+  /** 停止集群后台采集器 */
+  async stopCollector(clusterUuid: string): Promise<any> {
+    return api.post(`/v1/metrics/collectors/stop-by-cluster/${clusterUuid}`)
   }
 }

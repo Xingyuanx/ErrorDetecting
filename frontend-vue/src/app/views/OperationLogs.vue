@@ -7,7 +7,6 @@
       </div>
       <div class="header-actions">
         <el-button @click="refresh" :loading="loading">刷新</el-button>
-        <el-button type="primary" disabled title="功能待实现">导出操作日志</el-button>
       </div>
     </div>
 

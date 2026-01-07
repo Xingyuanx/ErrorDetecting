@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target,
           changeOrigin: true,
+          timeout: 200000, // 代理请求超时设置为 200s (略大于业务超时 180s)
+          proxyTimeout: 200000, // 代理响应超时设置为 200s
         },
       },
     },
