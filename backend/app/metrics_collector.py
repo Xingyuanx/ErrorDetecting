@@ -87,7 +87,10 @@ class MetricsCollector:
         return cpu_pct, mem_pct
 
     async def _save_metrics(self, node_id: int, hostname: str, cluster_id: int, cpu: float, mem: float):
-        async with SessionLocal() as session:
+        # 这里的 SessionLocal 绑定的 engine 可能在主线程 loop 中初始化
+        # 在 asyncio.run() 开启的新 loop 中使用它会报 Loop 冲突
+        from .db import engine
+        async with AsyncSession(engine) as session:
             now = datetime.datetime.now(BJ_TZ)
             await session.execute(text("UPDATE nodes SET cpu_usage=:cpu, memory_usage=:mem, last_heartbeat=:hb WHERE id=:nid"), {"cpu": cpu, "mem": mem, "hb": now, "nid": node_id})
             await session.commit()

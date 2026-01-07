@@ -28,6 +28,7 @@ if not _db_url:
         _db_url = "postgresql+asyncpg://postgres:password@localhost:5432/hadoop_fault_db"
 
 DATABASE_URL = _db_url
+SYNC_DATABASE_URL = _db_url.replace("postgresql+asyncpg://", "postgresql://")
 
 # JWT Configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret")
