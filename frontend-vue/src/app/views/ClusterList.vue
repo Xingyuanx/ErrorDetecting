@@ -230,6 +230,7 @@ import { LogService } from '../api/log.service'
 import { useClusterStore } from '../stores/cluster'
 import { Plus, More } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatError } from '../lib/errors'
 
 const router = useRouter()
 const clusterStore = useClusterStore()
@@ -306,26 +307,6 @@ function getHealthTag(h: string) {
   return map[h] || 'info'
 }
 
-function formatError(e: any, defaultMsg: string = '操作失败'): string {
-  if (e?.response) {
-    const s = e.response.status
-    const d = e.response.data
-    let detail = ''
-    if (d?.detail) {
-      if (typeof d.detail === 'string') detail = d.detail
-      else if (Array.isArray(d.detail?.errors)) {
-        detail = d.detail.errors.map((x: any) => {
-          let msg = x?.message || '未知错误'
-          if (x?.field) msg = `[${x.field}] ${msg}`
-          return msg
-        }).join(', ')
-      }
-    }
-    return detail || `请求异常 (${s})`
-  }
-  return e?.message || defaultMsg
-}
-
 async function load() {
   loading.value = true
   try {
@@ -341,7 +322,7 @@ async function load() {
     // 初始化采集状态（可选：根据后端状态接口初始化）
     await syncCollectionStatus()
   } catch (e: any) {
-    ElMessage.error(e.friendlyMessage || formatError(e, '加载列表失败'))
+    ElMessage.error(e.friendlyMessage || formatError(e, '加载列表失败', { mode: 'clusterList' }))
   } finally {
     loading.value = false
   }
@@ -391,7 +372,7 @@ async function onRegister() {
     cancelRegister()
     await load()
   } catch (e: any) {
-    err.value = e.friendlyMessage || formatError(e, '提交失败')
+    err.value = e.friendlyMessage || formatError(e, '提交失败', { mode: 'clusterList' })
   } finally {
     registering.value = false
   }
@@ -403,7 +384,7 @@ async function unregister(id: string) {
     ElMessage.success('集群已注销')
     await load()
   } catch (e: any) {
-    ElMessage.error(e.friendlyMessage || formatError(e, '注销失败'))
+    ElMessage.error(e.friendlyMessage || formatError(e, '注销失败', { mode: 'clusterList' }))
   }
 }
 
@@ -423,7 +404,7 @@ async function startCluster(row: any) {
     await load()
   } catch (e: any) {
     executionLogs.value = e.response?.data?.logs || [e.message || '启动失败']
-    ElMessage.error(e.friendlyMessage || formatError(e, '启动失败'))
+    ElMessage.error(e.friendlyMessage || formatError(e, '启动失败', { mode: 'clusterList' }))
   } finally {
     rowLoading.value[id] = false
   }
@@ -445,7 +426,7 @@ async function stopCluster(row: any) {
     await load()
   } catch (e: any) {
     executionLogs.value = e.response?.data?.logs || [e.message || '停止失败']
-    ElMessage.error(e.friendlyMessage || formatError(e, '关闭失败'))
+    ElMessage.error(e.friendlyMessage || formatError(e, '关闭失败', { mode: 'clusterList' }))
   } finally {
     rowLoading.value[id] = false
   }
@@ -467,7 +448,7 @@ async function collectLogs(row: any) {
     clusterStore.setCollectionState(id, true)
   } catch (e: any) {
     executionLogs.value = e.response?.data?.logs || [e.message || '启动采集失败']
-    ElMessage.error(formatError(e, '启动日志采集失败'))
+    ElMessage.error(formatError(e, '启动日志采集失败', { mode: 'clusterList' }))
     clusterStore.setCollectionState(id, false) // 失败则切回关闭状态
   } finally {
     rowLoading.value[id] = false
@@ -491,7 +472,7 @@ async function stopLogs(row: any) {
     clusterStore.syncStates(newStates)
   } catch (e: any) {
     executionLogs.value = e.response?.data?.logs || [e.message || '停止失败']
-    ElMessage.error(formatError(e, '停止采集失败'))
+    ElMessage.error(formatError(e, '停止采集失败', { mode: 'clusterList' }))
     clusterStore.setCollectionState(id, true) // 失败则切回开启状态
   } finally {
     rowLoading.value[id] = false
