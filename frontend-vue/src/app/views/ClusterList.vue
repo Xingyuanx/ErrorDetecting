@@ -23,24 +23,24 @@
         <el-form :model="registerForm" label-position="top" size="default">
           <h4 class="section-subtitle">1. 集群基本信息</h4>
           <el-row :gutter="20">
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="集群名称" required>
                 <el-input v-model="registerForm.name" placeholder="集群名称" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="集群类型">
                 <el-select v-model="registerForm.type" class="full-width">
                   <el-option label="Hadoop" value="hadoop" />
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="节点总数">
                 <el-input-number v-model="registerForm.node_count" :min="1" class="full-width" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="健康状态">
                 <el-select v-model="registerForm.health_status" class="full-width">
                   <el-option label="健康" value="healthy" />
@@ -53,22 +53,22 @@
           </el-row>
 
           <el-row :gutter="20">
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="NameNode IP">
                 <el-input v-model="registerForm.namenode_ip" placeholder="NameNode IP" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="NameNode 密码">
                 <el-input v-model="registerForm.namenode_psw" type="password" show-password placeholder="NameNode 密码" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="RM IP">
                 <el-input v-model="registerForm.rm_ip" placeholder="ResourceManager IP" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="RM 密码">
                 <el-input v-model="registerForm.rm_psw" type="password" show-password placeholder="ResourceManager 密码" />
               </el-form-item>
@@ -83,22 +83,22 @@
           <div v-for="(node, idx) in nodes" :key="idx" class="node-config-row">
             <div class="node-index">节点 {{ idx + 1 }}</div>
             <el-row :gutter="10">
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="主机名" required>
                   <el-input v-model="node.hostname" placeholder="hostname" />
                 </el-form-item>
               </el-col>
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="IP 地址" required>
                   <el-input v-model="node.ip_address" placeholder="ip_address" />
                 </el-form-item>
               </el-col>
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="SSH 用户" required>
                   <el-input v-model="node.ssh_user" placeholder="ssh_user" />
                 </el-form-item>
               </el-col>
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="SSH 密码" required>
                   <el-input v-model="node.ssh_password" type="password" show-password placeholder="ssh_password" />
                 </el-form-item>
@@ -202,7 +202,7 @@
     <el-dialog
       v-model="showLogs"
       :title="logTitle"
-      width="60%"
+      :width="isMobile ? '95%' : '60%'"
       destroy-on-close
       class="log-dialog"
     >
@@ -622,9 +622,21 @@ onUnmounted(() => {
 }
 
 .form-actions {
-  margin-top: 20px;
   display: flex;
   gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-border-color);
+}
+
+@media (max-width: 768px) {
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
 }
 
 .form-alert {
@@ -650,12 +662,6 @@ onUnmounted(() => {
 
 .full-width {
   width: 100%;
-}
-
-:deep(.table-header) {
-  background-color: var(--app-content-bg) !important;
-  color: var(--app-text-secondary);
-  font-weight: 600;
 }
 
 .dropdown-header {

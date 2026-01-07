@@ -1,113 +1,148 @@
 <template>
-  <div class="diagnosis-container">
-    <div class="page-header">
-      <div class="header-content">
-        <h2 class="page-title">故障诊断</h2>
-        <p class="page-subtitle">基于多智能体协作的自动化故障分析与辅助修复</p>
+  <div class="diagnosis-container" ref="layoutContainer">
+    <!-- 展开侧边栏的浮动按钮 -->
+    <transition name="el-fade-in">
+      <div 
+        v-if="isLeftCollapsed" 
+        class="expand-trigger" 
+        :class="{ 'is-mobile': isMobile }"
+        @click="toggleLeftPanel"
+      >
+        <el-icon><ArrowRight v-if="!isMobile" /><ArrowDown v-else /></el-icon>
       </div>
-    </div>
+    </transition>
 
-    <!-- 集群与节点选择 -->
-    <el-card class="selection-card" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="card-title">集群与节点选择</span>
-        </div>
-      </template>
-      <el-scrollbar>
-        <div class="cluster-groups-wrapper">
-          <div v-for="g in filteredGroups" :key="g.id" class="cluster-group">
-            <el-button
-              :type="g.open ? 'primary' : ''"
-              @click="toggleGroup(g)"
-              class="cluster-toggle"
+    <div class="diagnosis-layout" :class="{ 'is-resizing': isResizing }">
+      <!-- 左侧面板：包含选择器和日志预览 -->
+      <div 
+        class="panel-left" 
+        :class="{ 'is-collapsed': isLeftCollapsed }"
+        :style="isMobile ? { height: leftPanelWidth + '%' } : { width: leftPanelWidth + '%' }"
+        ref="leftPanelContainer"
+      >
+        <div v-if="!isLeftCollapsed" class="left-content-wrapper" :class="{ 'is-resizing-inner': isInnerResizing }">
+          <!-- 内部展开按钮 -->
+          <transition name="el-fade-in">
+            <div 
+              v-if="isInnerLeftCollapsed" 
+              class="inner-expand-trigger" 
+              :class="{ 'is-mobile': isMobile }"
+              @click="toggleInnerLeftPanel"
             >
-              <el-icon class="icon-mr">
-                <ArrowDown v-if="g.open" />
-                <ArrowRight v-else />
-              </el-icon>
-              {{ g.name }}
-            </el-button>
-            <div v-if="g.open" class="node-list">
-              <el-button
-                v-for="n in nodesForGroup(g)"
-                :key="n.name"
-                size="small"
-                :type="selectedNode === n.name ? 'primary' : ''"
-                :plain="selectedNode !== n.name"
-                class="node-item"
-                @click="selectNode(n.name)"
-              >
-                <span class="status-dot icon-mr" :class="statusDot(n)"></span>
-                {{ n.name }}
-              </el-button>
+              <el-icon><ArrowRight v-if="!isMobile" /><ArrowDown v-else /></el-icon>
             </div>
-          </div>
-        </div>
-      </el-scrollbar>
-      <div class="selection-tip">请选择集群或节点以显示相关日志</div>
-    </el-card>
+          </transition>
 
-    <el-row :gutter="16" class="main-content">
-      <!-- 日志预览 -->
-      <el-col :xs="24" :lg="12" class="mb-4-mobile">
-        <el-card class="log-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">日志预览</span>
-              <el-tag v-if="selectedNode" size="small" type="info">当前节点: {{ selectedNode }}</el-tag>
-            </div>
-          </template>
+          <!-- 集群与节点选择 -->
+          <el-card 
+            v-if="!isInnerLeftCollapsed"
+            class="selection-card-vertical" 
+            shadow="never"
+            :style="isMobile ? { height: innerLeftWidth + '%' } : { width: innerLeftWidth + '%' }"
+          >
+            <template #header>
+              <div class="card-header">
+                <span class="card-title">集群与节点</span>
+              </div>
+            </template>
+            <el-scrollbar>
+              <div class="cluster-groups-vertical">
+                <div v-for="g in filteredGroups" :key="g.id" class="cluster-group-v">
+                  <div class="group-header" @click="toggleGroup(g)">
+                    <el-icon class="icon-mr">
+                      <ArrowDown v-if="g.open" />
+                      <ArrowRight v-else />
+                    </el-icon>
+                    <span class="group-name">{{ g.name }}</span>
+                  </div>
+                  <div v-if="g.open" class="node-list-v">
+                    <div
+                      v-for="n in nodesForGroup(g)"
+                      :key="n.name"
+                      class="node-item-v"
+                      :class="{ 'is-active': selectedNode === n.name }"
+                      @click="selectNode(n.name)"
+                    >
+                      <span class="status-dot icon-mr" :class="statusDot(n)"></span>
+                      <span class="node-name">{{ n.name }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </el-scrollbar>
+          </el-card>
 
-          <div v-if="!selectedNode" class="empty-preview">
-            请选择集群或节点，预览日志内容
+          <!-- 内部拉伸条 -->
+          <div v-if="!isInnerLeftCollapsed" class="resizer-bar inner-resizer" @mousedown="startInnerResizing">
+            <div class="resizer-handle"></div>
           </div>
-          <div v-else class="log-preview-container">
-            <div class="filter-bar">
-              <el-select v-model="filters.level" placeholder="日志级别" size="small" clearable style="width: 100px;">
-                <el-option label="INFO" value="info" />
-                <el-option label="WARN" value="warning" />
-                <el-option label="ERROR" value="error" />
-              </el-select>
-              <el-select v-model="filters.timeRange" placeholder="时间范围" size="small" clearable style="width: 120px;">
-                <el-option label="最近1小时" value="1h" />
-                <el-option label="最近6小时" value="6h" />
-                <el-option label="最近24小时" value="24h" />
-                <el-option label="最近7天" value="7d" />
-              </el-select>
-            </div>
+
+          <!-- 日志预览 -->
+          <el-card 
+            class="log-card-main" 
+            shadow="never"
+            :style="isMobile ? { height: (isInnerLeftCollapsed ? 100 : (100 - innerLeftWidth)) + '%' } : { width: (isInnerLeftCollapsed ? 100 : (100 - innerLeftWidth)) + '%' }"
+          >
+            <template #header>
+              <div class="card-header">
+                <span class="card-title">日志预览</span>
+                <el-tag v-if="selectedNode" size="small" type="info">{{ selectedNode }}</el-tag>
+              </div>
+            </template>
             
-            <el-table :data="previewLogs" size="small" stripe height="100%" class="log-table" header-cell-class-name="table-header">
-              <el-table-column prop="time" label="时间" width="100">
-                <template #default="{ row }">
-                  {{ row.time.split("T")[1] || row.time }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="level" label="级别" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="getLevelType(row.level)" size="small" effect="dark">
-                    {{ row.level.toUpperCase() }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="source" label="来源" width="120" show-overflow-tooltip class-name="u-hidden-mobile" />
-              <el-table-column prop="message" label="消息" min-width="200" show-overflow-tooltip />
-            </el-table>
-          </div>
-        </el-card>
-      </el-col>
+            <div v-if="!selectedNode" class="empty-preview">
+              请选择节点预览日志
+            </div>
+            <div v-else class="log-preview-container">
+              <div class="filter-bar">
+                <el-select v-model="filters.level" placeholder="级别" size="small" clearable style="width: 80px;">
+                  <el-option label="INFO" value="info" />
+                  <el-option label="WARN" value="warning" />
+                  <el-option label="ERROR" value="error" />
+                </el-select>
+                <el-select v-model="filters.timeRange" placeholder="时间" size="small" clearable style="width: 90px;">
+                  <el-option label="1h" value="1h" />
+                  <el-option label="6h" value="6h" />
+                  <el-option label="24h" value="24h" />
+                </el-select>
+              </div>
+              
+              <el-table :data="previewLogs" size="small" stripe height="100%" class="log-table">
+                <el-table-column prop="time" label="时间" width="85">
+                  <template #default="{ row }">
+                    {{ row.time.split("T")[1]?.slice(0, 8) || row.time }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="level" label="级别" width="70">
+                  <template #default="{ row }">
+                    <el-tag :type="getLevelType(row.level)" size="small" effect="dark">
+                      {{ row.level.charAt(0).toUpperCase() }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="message" label="消息" min-width="150" show-overflow-tooltip />
+              </el-table>
+            </div>
+          </el-card>
+        </div>
+      </div>
 
-      <!-- 智能助手 -->
-      <el-col :xs="24" :lg="12">
-        <el-card class="chat-card" shadow="never">
+      <!-- 分栏拉伸条 -->
+      <div class="resizer-bar" @mousedown="startResizing">
+        <div class="resizer-handle"></div>
+      </div>
+
+      <!-- 右侧面板：诊断助手 -->
+      <div 
+        class="panel-right" 
+        :style="isMobile ? { height: (100 - leftPanelWidth) + '%' } : { width: (100 - leftPanelWidth) + '%' }"
+      >
+        <el-card class="chat-card-full" shadow="never">
           <template #header>
             <div class="card-header">
               <span class="card-title">诊断助手</span>
               <div class="agent-selectors">
-                <el-select v-model="agent" size="small" style="width: 110px;">
-                  <el-option label="诊断智能体" value="诊断智能体" />
-                </el-select>
-                <el-select v-model="model" size="small" style="width: 180px;">
+                <el-select v-model="model" size="small" style="width: 160px;">
                   <el-option label="DeepSeek-V3" value="deepseek-ai/DeepSeek-V3" />
                   <el-option label="DeepSeek-R1" value="Pro/deepseek-ai/DeepSeek-R1" />
                 </el-select>
@@ -123,9 +158,7 @@
                 class="chat-item"
                 :class="m.role === 'user' ? 'chat-item-user' : 'chat-item-assistant'"
               >
-                <div class="chat-role">
-                  {{ roleLabel(m.role) }}
-                </div>
+                <div class="chat-role">{{ roleLabel(m.role) }}</div>
                 <div class="chat-content">
                   <div v-if="m.reasoning" class="reasoning-container">
                     <el-collapse>
@@ -139,61 +172,37 @@
               </div>
             </div>
 
-            <!-- 快速置底按钮 -->
             <transition name="el-fade-in">
-              <el-button
-                v-if="showScrollBottom"
-                class="scroll-bottom-btn"
-                type="primary"
-                circle
-                @click="scrollToBottom(true)"
-              >
+              <el-button v-if="showScrollBottom" class="scroll-bottom-btn" type="primary" circle @click="scrollToBottom(true)">
                 <el-icon><ArrowDown /></el-icon>
               </el-button>
             </transition>
-
-            <div v-if="err" class="chat-error">
-              <el-alert :title="err" type="error" show-icon @close="err = ''" />
-            </div>
 
             <div class="chat-input-area">
               <el-input
                 v-model="inputMsg"
                 type="textarea"
                 :rows="3"
-                placeholder="支持Markdown输入... Enter 发送，Shift + Enter 换行"
+                placeholder="支持Markdown输入... Enter 发送"
                 :disabled="sending"
                 @keydown.enter.exact.prevent="send()"
               />
               <div class="input-actions">
                 <div class="option-checks">
-                  <el-checkbox v-model="useWebSearch" label="联网搜索" size="small" />
-                  <el-checkbox v-model="useClusterOps" label="集群操作" size="small" />
+                  <el-checkbox v-model="useWebSearch" label="搜索" size="small" />
+                  <el-checkbox v-model="useClusterOps" label="操作" size="small" />
                 </div>
                 <div class="button-group">
-                  <el-button v-if="!sending" type="primary" @click="send()" :disabled="!inputMsg.trim()">
-                    发送
-                  </el-button>
-                  <el-button v-else type="danger" plain @click="stopGeneration()">
-                    停止
-                  </el-button>
-                  <el-button type="warning" plain @click="diagnose()" :disabled="sending">
-                    深度诊断
-                  </el-button>
-                  <el-button type="info" plain @click="generateReport()" :disabled="sending">
-                    状态报告
-                  </el-button>
+                  <el-button v-if="!sending" type="primary" @click="send()" :disabled="!inputMsg.trim()">发送</el-button>
+                  <el-button v-else type="danger" plain @click="stopGeneration()">停止</el-button>
+                  <el-button type="warning" plain @click="diagnose()" :disabled="sending">深度诊断</el-button>
                 </div>
-              </div>
-              <div v-if="sending" class="sending-progress">
-                <div class="progress-label">正在生成回复...</div>
-                <el-progress :percentage="60" :indeterminate="true" :show-text="false" />
               </div>
             </div>
           </div>
         </el-card>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -204,8 +213,135 @@ import { NodeService } from "../api/node.service";
 import { LogService } from "../api/log.service";
 import { DiagnosisService } from "../api/diagnosis.service";
 import { useAuthStore } from "../stores/auth";
-import { ArrowDown, ArrowRight } from "@element-plus/icons-vue";
+import { ArrowDown, ArrowRight, Rank } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
+
+// 布局控制
+const leftPanelWidth = ref(40); // 左侧百分比
+const lastPanelWidth = ref(40); // 记录折叠前的宽度
+const isLeftCollapsed = ref(false);
+const isInnerLeftCollapsed = ref(false);
+const lastInnerLeftWidth = ref(30);
+const innerLeftWidth = ref(30); // 左侧内部：集群选择占左侧面板的百分比
+const isResizing = ref(false);
+const isInnerResizing = ref(false);
+const layoutContainer = ref<HTMLElement | null>(null);
+const leftPanelContainer = ref<HTMLElement | null>(null);
+const isMobile = ref(window.innerWidth <= 1024);
+
+function updateMobileState() {
+  isMobile.value = window.innerWidth <= 1024;
+}
+
+function startResizing(e: MouseEvent) {
+  isResizing.value = true;
+  document.addEventListener("mousemove", handleResizing);
+  document.addEventListener("mouseup", stopResizing);
+  
+  document.body.style.cursor = isMobile.value ? "row-resize" : "col-resize";
+  document.body.style.userSelect = "none";
+}
+
+function handleResizing(e: MouseEvent) {
+  if (!isResizing.value || !layoutContainer.value) return;
+  const containerRect = layoutContainer.value.getBoundingClientRect();
+
+  if (isMobile.value) {
+    const newHeight = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+    if (newHeight < 5) {
+      leftPanelWidth.value = 0;
+      isLeftCollapsed.value = true;
+    } else if (newHeight < 80) {
+      leftPanelWidth.value = newHeight;
+      isLeftCollapsed.value = false;
+      lastPanelWidth.value = newHeight;
+    }
+  } else {
+    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+    if (newWidth < 5) {
+      leftPanelWidth.value = 0;
+      isLeftCollapsed.value = true;
+    } else if (newWidth < 80) {
+      leftPanelWidth.value = newWidth;
+      isLeftCollapsed.value = false;
+      lastPanelWidth.value = newWidth;
+    }
+  }
+}
+
+function toggleLeftPanel() {
+  if (isLeftCollapsed.value) {
+    leftPanelWidth.value = lastPanelWidth.value > 10 ? lastPanelWidth.value : 40;
+    isLeftCollapsed.value = false;
+  } else {
+    lastPanelWidth.value = leftPanelWidth.value;
+    leftPanelWidth.value = 0;
+    isLeftCollapsed.value = true;
+  }
+}
+
+function toggleInnerLeftPanel() {
+  if (isInnerLeftCollapsed.value) {
+    innerLeftWidth.value = lastInnerLeftWidth.value > 10 ? lastInnerLeftWidth.value : 30;
+    isInnerLeftCollapsed.value = false;
+  } else {
+    lastInnerLeftWidth.value = innerLeftWidth.value;
+    innerLeftWidth.value = 0;
+    isInnerLeftCollapsed.value = true;
+  }
+}
+
+function stopResizing() {
+  isResizing.value = false;
+  document.removeEventListener("mousemove", handleResizing);
+  document.removeEventListener("mouseup", stopResizing);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+}
+
+function startInnerResizing(e: MouseEvent) {
+  isInnerResizing.value = true;
+  document.addEventListener("mousemove", handleInnerResizing);
+  document.addEventListener("mouseup", stopInnerResizing);
+  
+  document.body.style.cursor = isMobile.value ? "row-resize" : "col-resize";
+  document.body.style.userSelect = "none";
+}
+
+function handleInnerResizing(e: MouseEvent) {
+  if (!isInnerResizing.value || !leftPanelContainer.value) return;
+  const containerRect = leftPanelContainer.value.getBoundingClientRect();
+
+  if (isMobile.value) {
+    const newHeight = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+    if (newHeight < 5) {
+      innerLeftWidth.value = 0;
+      isInnerLeftCollapsed.value = true;
+    } else if (newHeight > 5 && newHeight < 90) {
+      innerLeftWidth.value = newHeight;
+      isInnerLeftCollapsed.value = false;
+      lastInnerLeftWidth.value = newHeight;
+    }
+  } else {
+    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+    if (newWidth < 5) {
+      innerLeftWidth.value = 0;
+      isInnerLeftCollapsed.value = true;
+    } else if (newWidth > 5 && newWidth < 90) {
+      innerLeftWidth.value = newWidth;
+      isInnerLeftCollapsed.value = false;
+      lastInnerLeftWidth.value = newWidth;
+    }
+  }
+}
+
+function stopInnerResizing() {
+  isInnerResizing.value = false;
+  document.removeEventListener("mousemove", handleInnerResizing);
+  document.removeEventListener("mouseup", stopInnerResizing);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+}
 
 const kw = ref("");
 const agent = ref("诊断智能体");
@@ -659,6 +795,7 @@ watch(chatHistory, (newVal) => {
 });
 
 onMounted(async () => {
+  window.addEventListener("resize", updateMobileState);
   await loadClusters();
   await loadHistory();
   startRefresh();
@@ -667,6 +804,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener("resize", updateMobileState);
   stopRefresh();
   if (chatHistory.value) {
     chatHistory.value.removeEventListener("scroll", handleScroll);
@@ -710,133 +848,191 @@ function formatError(e: any, def: string) {
 
 <style scoped>
 .diagnosis-container {
+  height: calc(100vh - 110px);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  min-height: calc(100vh - 120px);
 }
 
-/* 桌面端特有样式：固定高度，内部滚动 */
-@media (min-width: 1025px) {
-  .diagnosis-container {
-    height: calc(100vh - 110px); /* 稍微调高一点，增加展示空间 */
-    min-height: unset;
-    overflow: hidden;
-    padding-bottom: 4px;
-  }
-
-  .selection-card {
-    flex-shrink: 0;
-    margin-bottom: 0;
-  }
-
-  :deep(.selection-card .el-card__body) {
-    padding: 8px 16px;
-  }
-
-  .main-content {
-    flex: 1;
-    min-height: 0;
-    margin-bottom: 0 !important;
-  }
-
-  .main-content :deep(.el-col) {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* 调整卡片 body，确保内容区撑满 */
-  .log-card, .chat-card {
-    height: 100%;
-    overflow: hidden;
-  }
+.diagnosis-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
 }
 
-@media (max-width: 768px) {
-  .diagnosis-container {
-    height: auto;
-    min-height: unset;
-  }
-  .mb-4-mobile {
-    margin-bottom: 16px;
-  }
-  .log-card, .chat-card {
-    height: 500px !important;
-  }
-}
-
-.page-header {
+.expand-trigger {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 48px;
+  background: var(--el-color-primary);
+  color: white;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+
+.expand-trigger:hover {
+  width: 32px;
+  background: var(--el-color-primary-light-3);
+}
+
+.expand-trigger.is-mobile {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 24px;
+  border-radius: 0 0 4px 4px;
+}
+
+.expand-trigger.is-mobile:hover {
+  height: 32px;
+  width: 48px;
+}
+
+.inner-expand-trigger {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 40px;
+  background: var(--el-color-primary-light-3);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  z-index: 90;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.inner-expand-trigger:hover {
+  width: 26px;
+  background: var(--el-color-primary-light-5);
+}
+
+.inner-expand-trigger.is-mobile {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 20px;
+  border-radius: 0 0 4px 4px;
+}
+
+.inner-expand-trigger.is-mobile:hover {
+  height: 26px;
+  width: 40px;
+}
+
+.diagnosis-layout.is-resizing {
+  cursor: col-resize;
+}
+
+/* 面板通用样式 */
+.panel-left, .panel-right {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.panel-left.is-collapsed {
+  border: none;
+}
+
+.diagnosis-layout.is-resizing .panel-left,
+.diagnosis-layout.is-resizing .panel-right {
+  transition: none;
+}
+
+.left-content-wrapper {
+  display: flex;
+  height: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.left-content-wrapper.is-resizing-inner {
+  user-select: none;
+}
+
+/* 垂直选择器样式 */
+.selection-card-vertical {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cluster-groups-vertical {
+  padding: 8px;
+}
+
+.cluster-group-v {
   margin-bottom: 8px;
 }
 
-.page-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--app-text-primary);
-  margin: 0;
-}
-
-.page-subtitle {
-  color: var(--app-text-secondary);
-  font-size: 14px;
-  margin: 4px 0 0 0;
-}
-
-.header-badge {
-  font-weight: 500;
-}
-
-.selection-card {
-  border-radius: 8px;
-}
-
-.card-header {
+.group-header {
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-
-.card-title {
-  font-weight: 600;
-}
-
-.cluster-groups-wrapper {
-  display: flex;
-  gap: 16px;
-  padding-bottom: 8px;
-}
-
-.cluster-group {
-  flex-shrink: 0;
-}
-
-.cluster-toggle {
+  font-size: 13px;
   font-weight: 500;
+  color: var(--app-text-primary);
+  transition: background 0.2s;
 }
 
-.icon-mr {
-  margin-right: 8px;
+.group-header:hover {
+  background: var(--el-color-primary-light-9);
 }
 
-.node-list {
-  margin-top: 8px;
+.node-list-v {
+  margin-top: 4px;
+  padding-left: 12px;
+}
+
+.node-item-v {
+  padding: 6px 10px;
+  margin: 2px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  transition: all 0.2s;
 }
 
-.node-item {
-  justify-content: flex-start;
-  margin: 0 !important;
+.node-item-v:hover {
+  background: var(--app-content-bg);
+}
+
+.node-item-v.is-active {
+  background: var(--el-color-primary-light-8);
+  color: var(--el-color-primary);
+  font-weight: 600;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   display: inline-block;
 }
@@ -845,22 +1041,51 @@ function formatError(e: any, def: string) {
 .status-dot-warning { background-color: var(--el-color-warning); }
 .status-dot-error   { background-color: var(--el-color-danger); }
 
-.selection-tip {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-  margin-top: 8px;
-}
-
-.main-content {
+/* 日志预览主区域 */
+.log-card-main {
   flex: 1;
-  min-height: 0;
-}
-
-.log-card, .chat-card {
-  height: 100%;
   display: flex;
   flex-direction: column;
   border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 拉伸条样式 */
+.resizer-bar {
+  width: 8px;
+  cursor: col-resize;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.resizer-bar:hover {
+  background: var(--el-color-primary-light-8);
+}
+
+.resizer-handle {
+  width: 2px;
+  height: 40px;
+  background: var(--app-border-color);
+  border-radius: 1px;
+}
+
+.inner-resizer {
+  margin: 0 4px;
+}
+
+/* 右侧聊天区域 */
+.chat-card-full {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--app-border-color);
 }
 
 :deep(.el-card__body) {
@@ -869,6 +1094,81 @@ function formatError(e: any, def: string) {
   display: flex;
   flex-direction: column;
   padding: 16px;
+}
+
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-history {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+
+.scroll-bottom-btn {
+  position: absolute;
+  right: 20px;
+  bottom: 160px;
+  z-index: 100;
+}
+
+.chat-item {
+  margin-bottom: 20px;
+}
+
+.chat-role {
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  margin-bottom: 4px;
+}
+
+.chat-item-user .chat-role { text-align: right; }
+
+.chat-content {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-border-color);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.message-text {
+  white-space: pre-wrap;
+}
+
+.chat-item-user .chat-content {
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary-light-8);
+}
+
+.chat-input-area {
+  flex-shrink: 0;
+  border-top: 1px solid var(--app-border-color);
+  padding-top: 16px;
+}
+
+.input-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
 }
 
 .empty-preview {
@@ -890,203 +1190,44 @@ function formatError(e: any, def: string) {
 .filter-bar {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
-}
-
-.log-table {
-  flex: 1;
-}
-
-.agent-selectors {
-  display: flex;
-  gap: 8px;
-}
-
-.chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative; /* 为置底按钮提供定位参考 */
-}
-
-.chat-history {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 16px;
-  padding-right: 4px;
-}
-
-.scroll-bottom-btn {
-  position: absolute;
-  right: 20px;
-  bottom: 180px; /* 位于输入框上方 */
-  z-index: 10;
-  box-shadow: var(--el-box-shadow);
-  transition: transform var(--el-transition-duration), opacity var(--el-transition-duration);
-}
-
-.scroll-bottom-btn:hover {
-  transform: translateY(-2px);
-}
-
-.scroll-bottom-btn:active {
-  transform: translateY(0);
-}
-
-/* 移动端适配：调整按钮位置 */
-@media (max-width: 768px) {
-  .scroll-bottom-btn {
-    right: 15px;
-    bottom: 200px;
-  }
-}
-
-.chat-item {
-  margin-bottom: 20px;
-}
-
-.chat-role {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-  margin-bottom: 4px;
-}
-
-.chat-item-user .chat-role {
-  text-align: right;
-}
-
-.chat-content {
-  padding: 12px;
-  border-radius: 8px;
-  background-color: var(--app-card-bg);
-  border: 1px solid var(--app-border-color);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.chat-item-user .chat-content {
-  background-color: var(--el-color-primary-light-9);
-  border-color: var(--el-color-primary-light-7);
-}
-
-.reasoning-container {
   margin-bottom: 8px;
 }
 
-.reasoning-text {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-  background-color: var(--app-content-bg);
-  padding: 8px;
-  border-radius: 4px;
-  white-space: pre-wrap;
-  margin: 0;
-}
-
-.message-text {
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.chat-error {
-  margin-bottom: 12px;
-}
-
-.chat-input-area {
-  flex-shrink: 0;
-}
-
-.input-actions {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
 }
 
-.option-checks {
-  display: flex;
-  gap: 16px;
-}
-
-.button-group {
-  display: flex;
-  gap: 8px;
-}
-
-.sending-progress {
-  margin-top: 12px;
-}
-
-.progress-label {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-  margin-bottom: 4px;
-}
-
-:deep(.table-header) {
-  background-color: var(--app-content-bg) !important;
-  color: var(--app-text-secondary);
+.card-title {
   font-weight: 600;
+  font-size: 14px;
 }
 
-@media (max-width: 768px) {
-  .card-header {
+.icon-mr { margin-right: 6px; }
+
+@media (max-width: 1024px) {
+  .diagnosis-layout {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
   }
-
-  .agent-selectors {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .agent-selectors :deep(.el-select) {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .input-actions {
+  .left-content-wrapper {
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
   }
-
-  .option-checks {
+  .panel-left, .panel-right {
+    width: 100% !important;
+    /* 高度由 inline style 动态控制 */
+  }
+  .resizer-bar {
     width: 100%;
-    justify-content: flex-start;
+    height: 8px;
+    cursor: row-resize;
   }
-
-  .button-group {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .resizer-handle {
+    width: 40px;
+    height: 2px;
   }
-
-  .button-group .el-button {
-    flex: 1;
-    margin: 0 !important;
-    min-width: 80px;
+  .inner-resizer {
+    margin: 4px 0;
   }
-
-  .mb-4-mobile {
-    margin-bottom: 16px;
-  }
-}
-
-/* 滚动条美化 */
-.chat-history::-webkit-scrollbar {
-  width: 6px;
-}
-.chat-history::-webkit-scrollbar-thumb {
-  background-color: var(--app-border-color);
-  border-radius: 3px;
-}
-.chat-history::-webkit-scrollbar-track {
-  background-color: transparent;
 }
 </style>

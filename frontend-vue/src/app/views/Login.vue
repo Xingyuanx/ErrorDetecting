@@ -1,5 +1,13 @@
 <template>
   <div class="login-container">
+    <div class="theme-toggle-wrapper">
+      <el-button link @click="toggleThemeWithAnimation" class="theme-toggle-btn">
+        <el-icon :size="24">
+          <Moon v-if="!isDark" />
+          <Sunny v-else />
+        </el-icon>
+      </el-button>
+    </div>
     <el-card class="login-card">
       <div class="login-header">
         <el-icon :size="48" color="#0ea5e9"><Monitor /></el-icon>
@@ -62,17 +70,61 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth";
+import { useUIStore } from "../stores/ui";
 import { AuthService } from "../api/auth.service";
 import { ElMessage } from "element-plus";
 import type { FormInstance, FormRules } from "element-plus";
-import { Monitor, User, Lock } from '@element-plus/icons-vue'
+import { Monitor, User, Lock, Moon, Sunny } from '@element-plus/icons-vue'
 
 const router = useRouter();
 const auth = useAuthStore();
+const ui = useUIStore();
+const { isDark } = storeToRefs(ui);
 const loginFormRef = ref<FormInstance>();
 const loading = ref(false);
 const health = ref<"ok" | "fail" | "checking">("checking");
+
+function toggleThemeWithAnimation(event: MouseEvent) {
+  const isAppearanceTransition = (document as any).startViewTransition &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!isAppearanceTransition) {
+    ui.toggleTheme();
+    return;
+  }
+
+  const x = event.clientX;
+  const y = event.clientY;
+  const endRadius = Math.hypot(
+    Math.max(x, innerWidth - x),
+    Math.max(y, innerHeight - y)
+  );
+
+  const transition = (document as any).startViewTransition(async () => {
+    ui.toggleTheme();
+  });
+
+  transition.ready.then(() => {
+    const clipPath = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${endRadius}px at ${x}px ${y}px)`,
+    ];
+    document.documentElement.animate(
+      {
+        clipPath: isDark.value ? [...clipPath].reverse() : clipPath,
+      },
+      {
+        duration: 450,
+        easing: 'ease-in-out',
+        pseudoElement: isDark.value
+          ? '::view-transition-old(root)'
+          : '::view-transition-new(root)',
+      }
+    );
+  });
+}
 
 const loginForm = reactive({
   username: "",
@@ -122,6 +174,14 @@ async function onSubmit() {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
+}
+
+.theme-toggle-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
 }
 
 .login-card {

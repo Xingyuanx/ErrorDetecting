@@ -136,4 +136,14 @@ html.dark {
   --app-text-primary: #f1f5f9;
   --app-text-secondary: #94a3b8;
   --app-border-color: #334155;
+  --el-table-header-bg-color: var(--app-content-bg);
+  --el-table-bg-color: var(--app-bg);
+  --el-table-tr-bg-color: var(--app-bg);
+}
+
+// 全局表格头部样式
+.table-header {
+  background-color: var(--app-content-bg) !important;
+  color: var(--app-text-secondary);
+  font-weight: 600;
 }

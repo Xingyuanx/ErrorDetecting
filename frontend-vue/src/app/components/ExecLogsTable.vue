@@ -56,9 +56,4 @@ function handleCurrentChange(val: RecordItem | null) {
 </script>
 
 <style scoped>
-:deep(.table-header) {
-  background-color: #f8fafc !important;
-  color: #475569;
-  font-weight: 600;
-}
 </style>
