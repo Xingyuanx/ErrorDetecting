@@ -139,6 +139,19 @@
               </div>
             </div>
 
+            <!-- 快速置底按钮 -->
+            <transition name="el-fade-in">
+              <el-button
+                v-if="showScrollBottom"
+                class="scroll-bottom-btn"
+                type="primary"
+                circle
+                @click="scrollToBottom(true)"
+              >
+                <el-icon><ArrowDown /></el-icon>
+              </el-button>
+            </transition>
+
             <div v-if="err" class="chat-error">
               <el-alert :title="err" type="error" show-icon @close="err = ''" />
             </div>
@@ -428,9 +441,27 @@ const visibleMessages = computed(() =>
 );
 
 const chatHistory = ref<HTMLElement | null>(null);
+const showScrollBottom = ref(false);
+
+function handleScroll() {
+  if (!chatHistory.value) return;
+  const { scrollTop, scrollHeight, clientHeight } = chatHistory.value;
+  showScrollBottom.value = scrollHeight - scrollTop - clientHeight > 200;
+}
+
+function scrollToBottom(smooth = true) {
+  nextTick(() => {
+    if (chatHistory.value) {
+      chatHistory.value.scrollTo({
+        top: chatHistory.value.scrollHeight,
+        behavior: smooth ? "smooth" : "auto",
+      });
+    }
+  });
+}
+
 function scrollToLatest() {
-  const el = chatHistory.value;
-  if (el) el.scrollTop = el.scrollHeight;
+  scrollToBottom(true);
 }
 
 const inputMsg = ref("");
@@ -621,14 +652,25 @@ async function generateReport() {
   await send();
 }
 
+watch(chatHistory, (newVal) => {
+  if (newVal) {
+    newVal.addEventListener("scroll", handleScroll);
+  }
+});
+
 onMounted(async () => {
   await loadClusters();
   await loadHistory();
   startRefresh();
+  // 如果已经有对话，初始化时置底
+  scrollToBottom(false);
 });
 
 onUnmounted(() => {
   stopRefresh();
+  if (chatHistory.value) {
+    chatHistory.value.removeEventListener("scroll", handleScroll);
+  }
 });
 
 watch(selectedNode, () => {
@@ -865,6 +907,7 @@ function formatError(e: any, def: string) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative; /* 为置底按钮提供定位参考 */
 }
 
 .chat-history {
@@ -872,6 +915,31 @@ function formatError(e: any, def: string) {
   overflow-y: auto;
   margin-bottom: 16px;
   padding-right: 4px;
+}
+
+.scroll-bottom-btn {
+  position: absolute;
+  right: 20px;
+  bottom: 180px; /* 位于输入框上方 */
+  z-index: 10;
+  box-shadow: var(--el-box-shadow-light);
+  transition: transform 0.3s;
+}
+
+.scroll-bottom-btn:hover {
+  transform: translateY(-2px);
+}
+
+.scroll-bottom-btn:active {
+  transform: translateY(0);
+}
+
+/* 移动端适配：调整按钮位置 */
+@media (max-width: 768px) {
+  .scroll-bottom-btn {
+    right: 15px;
+    bottom: 200px;
+  }
 }
 
 .chat-item {
