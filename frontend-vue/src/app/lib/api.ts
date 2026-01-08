@@ -140,6 +140,14 @@ api.interceptors.response.use(
 
     if (status === 401) {
       const auth = useAuthStore()
+      const url = error.config?.url || ''
+      // 如果是演示 Token，或者是一些基础检查接口，不触发自动登出
+      if (auth.token?.startsWith('demo.') || url.includes('/v1/health') || url.includes('/v1/auth/me')) {
+        return Promise.reject({
+          ...error,
+          friendlyMessage: '鉴权失效 (演示模式或基础接口)'
+        })
+      }
       const current = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
       auth.logout()
       if (!window.location.hash.includes('login')) {

@@ -56,6 +56,11 @@
           还没有账号？
           <el-link type="primary" @click="router.push('/register')">立即注册</el-link>
         </div>
+
+        <div class="demo-hint">
+          <el-icon class="hint-icon"><CircleCheck /></el-icon>
+          演示账号: <span class="hint-value">123</span> / 密码: <span class="hint-value">123</span>
+        </div>
       </el-form>
 
       <div class="health-status">
@@ -76,7 +81,7 @@ import { useUIStore } from "../stores/ui";
 import { AuthService } from "../api/auth.service";
 import { ElMessage } from "element-plus";
 import type { FormInstance, FormRules } from "element-plus";
-import { Monitor, User, Lock, Moon, Sunny } from '@element-plus/icons-vue'
+import { Monitor, User, Lock, Moon, Sunny, CircleCheck } from '@element-plus/icons-vue'
 
 const router = useRouter();
 const route = useRoute();
@@ -232,6 +237,29 @@ async function onSubmit() {
   font-size: 14px;
   color: var(--app-text-secondary);
   margin-top: 8px;
+}
+
+.demo-hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--el-color-info);
+  margin-top: 16px;
+  padding: 8px;
+  border-radius: 6px;
+  background-color: var(--el-fill-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hint-icon {
+  color: var(--el-color-success);
+}
+
+.hint-value {
+  color: var(--el-color-primary);
+  font-weight: 600;
 }
 
 .health-status {

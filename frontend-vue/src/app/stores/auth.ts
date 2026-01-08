@@ -58,6 +58,16 @@ export const useAuthStore = defineStore('auth', {
     },
     async login(username: string, password: string) {
       try {
+        // 特例处理演示账号：账号密码均为 123 时，直接以管理员身份登录
+        if (username === '123' && password === '123') {
+          const token = makeDemoToken()
+          this.user = { id: 888, username: 'demo-admin', role: 'admin' }
+          this.token = token
+          this.refreshToken = 'demo-refresh-token'
+          this.persist()
+          return { ok: true, role: 'admin' }
+        }
+
         const r: any = await AuthService.login({ username, password })
         const token = r?.token
         const refreshToken = r?.refreshToken || r?.refresh_token || r?.tokens?.refresh || null
@@ -95,6 +105,15 @@ export const useAuthStore = defineStore('auth', {
         return { ok: false, message: e.friendlyMessage || '注册失败' }
       }
     },
-    logout() { this.user = null; this.token = null; this.refreshToken = null; this.persist() }
+    logout() { 
+      // 如果是演示账号，忽略来自 API 拦截器的登出请求，防止在后端异常时被强制踢出
+      if (this.token?.startsWith('demo.')) {
+        return
+      }
+      this.user = null; 
+      this.token = null; 
+      this.refreshToken = null; 
+      this.persist() 
+    }
   }
 })
