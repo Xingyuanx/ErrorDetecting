@@ -7,6 +7,8 @@ from ..models.users import User
 from ..deps.auth import get_current_user
 from pydantic import BaseModel
 from datetime import datetime, timezone
+from ..config import now_bj
+from ..config import BJ_TZ
 
 router = APIRouter()
 
@@ -26,16 +28,17 @@ class ExecLogUpdate(BaseModel):
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return now_bj()
 
 
 def _parse_time(s: str | None) -> datetime | None:
     if not s:
         return None
     try:
-        if s.endswith("Z"):
-            s = s[:-1] + "+00:00"
-        return datetime.fromisoformat(s)
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=BJ_TZ)
+        return dt.astimezone(BJ_TZ)
     except Exception:
         return None
 

@@ -3,13 +3,13 @@ import time
 import datetime
 import time as _time
 from typing import Dict, List, Optional, Tuple
-from sqlalchemy import text, select, func
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from .ssh_utils import ssh_manager
 from .db import SessionLocal
 from .models.nodes import Node
-from .models.clusters import Cluster
 import asyncio
+from .config import BJ_TZ
 
 class MetricsCollector:
     def __init__(self):
@@ -87,15 +87,12 @@ class MetricsCollector:
         return cpu_pct, mem_pct
 
     async def _save_metrics(self, node_id: int, hostname: str, cluster_id: int, cpu: float, mem: float):
-        async with SessionLocal() as session:
-            now = datetime.datetime.now(datetime.timezone.utc)
+        # 这里的 SessionLocal 绑定的 engine 可能在主线程 loop 中初始化
+        # 在 asyncio.run() 开启的新 loop 中使用它会报 Loop 冲突
+        from .db import engine
+        async with AsyncSession(engine) as session:
+            now = datetime.datetime.now(BJ_TZ)
             await session.execute(text("UPDATE nodes SET cpu_usage=:cpu, memory_usage=:mem, last_heartbeat=:hb WHERE id=:nid"), {"cpu": cpu, "mem": mem, "hb": now, "nid": node_id})
-            await session.commit()
-            rows = await session.execute(select(func.avg(Node.cpu_usage), func.avg(Node.memory_usage)).where(Node.cluster_id == cluster_id))
-            avg_row = rows.first()
-            ca = float(avg_row[0] or 0.0)
-            ma = float(avg_row[1] or 0.0)
-            await session.execute(text("UPDATE clusters SET cpu_avg=:ca, memory_avg=:ma WHERE id=:cid"), {"ca": round(ca, 2), "ma": round(ma, 2), "cid": cluster_id})
             await session.commit()
 
     def _collect_node_metrics(self, node_id: int, hostname: str, ip: str, cluster_id: int):

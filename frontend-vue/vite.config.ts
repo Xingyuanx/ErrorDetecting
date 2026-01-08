@@ -9,9 +9,22 @@ export default defineConfig(({ mode }) => {
   const hmrHost = "localhost";
   const hmrPort = 5173;
   const allowedHostsEnv = (env.VITE_ALLOWED_HOSTS || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const isProd = mode === "production";
   return {
     plugins: [vue()],
     cacheDir: ".vite",
+    esbuild: isProd ? { drop: ["console", "debugger"] } : undefined,
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vue: ["vue", "vue-router", "pinia"],
+            elementPlus: ["element-plus"],
+            vendor: ["axios", "@vueuse/core", "marked", "vue-i18n"],
+          },
+        },
+      },
+    },
     server: {
       host: devHost,
       strictPort: true,
@@ -24,6 +37,8 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target,
           changeOrigin: true,
+          timeout: 200000, // 代理请求超时设置为 200s (略大于业务超时 180s)
+          proxyTimeout: 200000, // 代理响应超时设置为 200s
         },
       },
     },

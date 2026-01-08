@@ -1,13 +1,14 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { Roles, AllRoles } from '../constants/roles'
+import { trackEvent } from '../lib/telemetry'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/diagnosis' },
   { path: '/login', name: 'login', component: () => import('../views/Login.vue'), meta: { requiresAuth: false, hideSidebar: true } },
   { path: '/register', name: 'register', component: () => import('../views/Register.vue'), meta: { requiresAuth: false, hideSidebar: true } },
-  { path: '/cluster-list', name: 'cluster-list', component: () => import('../views/ClusterList.vue'), meta: { requiresAuth: true, roles: AllRoles } },
-  { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true, roles: AllRoles } },
+  { path: '/cluster-list', name: 'cluster-list', component: () => import('../views/ClusterList.vue'), meta: { requiresAuth: true, roles: AllRoles, breadcrumb: [{ label: '首页', path: '/' }, { label: 'CLUSTER-LIST', path: '/cluster-list' }] } },
+  { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true, roles: AllRoles, breadcrumb: [{ label: '首页', path: '/' }, { label: 'CLUSTER-LIST', path: '/cluster-list' }, { label: 'DASHBOARD', path: '/dashboard' }] } },
   { path: '/logs', name: 'logs', component: () => import('../views/Logs.vue'), meta: { requiresAuth: true, roles: AllRoles } },
   { path: '/diagnosis', name: 'diagnosis', component: () => import('../views/Diagnosis.vue'), meta: { requiresAuth: true, roles: [Roles.admin, Roles.operator] } },
   { path: '/hadoop-exec-logs', name: 'hadoop-exec-logs', component: () => import('../views/ExecLogs.vue'), meta: { requiresAuth: true, roles: AllRoles } },
@@ -22,10 +23,14 @@ const router = createRouter({ history: createWebHashHistory(), routes })
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!to.meta || to.meta.requiresAuth === false) return true
-  if (!auth.isAuthenticated) return { name: 'login' }
+  if (!auth.isAuthenticated) return { name: 'login', query: { redirect: to.fullPath } }
   const roles = to.meta.roles as string[] | undefined
   if (roles && !roles.includes(auth.role || '')) return { name: auth.defaultPage }
   return true
+})
+
+router.afterEach((to, from) => {
+  trackEvent('route_change', { to: to.fullPath, from: from.fullPath })
 })
 
 export default router

@@ -4,16 +4,20 @@
       <el-container v-if="!hideSidebar" class="main-container">
         <!-- 移动端遮罩层 -->
         <transition name="fade">
-          <div 
-            v-if="isMobile && !ui.sidebarHidden" 
-            class="mobile-mask" 
+          <div
+            v-if="isMobile && !ui.sidebarHidden"
+            class="mobile-mask"
             @click="ui.hideSidebar()"
           ></div>
         </transition>
-        <el-aside 
-          :width="ui.sidebarHidden ? '64px' : '220px'" 
+        <el-aside
+          width="auto"
           class="aside-menu"
-          :class="{ 'is-mobile-hidden': isMobile && ui.sidebarHidden, 'is-mobile-show': isMobile && !ui.sidebarHidden }"
+          :class="{
+            'is-collapsed': ui.sidebarHidden,
+            'is-mobile-hidden': isMobile && ui.sidebarHidden,
+            'is-mobile-show': isMobile && !ui.sidebarHidden,
+          }"
         >
           <Sidebar />
         </el-aside>
@@ -37,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElConfigProvider } from 'element-plus'
+import { ElConfigProvider } from "element-plus";
 import HeaderNav from "./components/HeaderNav.vue";
 import Sidebar from "./components/Sidebar.vue";
 import LockScreen from "./components/LockScreen.vue";
@@ -49,11 +53,14 @@ const ui = useUIStore();
 const route = useRoute();
 
 // 路由切换时，如果是移动端则自动收起侧边栏
-watch(() => route.path, () => {
-  if (isMobile.value && !ui.sidebarHidden) {
-    ui.hideSidebar();
+watch(
+  () => route.path,
+  () => {
+    if (isMobile.value && !ui.sidebarHidden) {
+      ui.hideSidebar();
+    }
   }
-});
+);
 
 const hideSidebar = computed(
   () => !!(route.meta && (route.meta as any).hideSidebar)
@@ -68,25 +75,29 @@ const updateWidth = () => {
 };
 
 onMounted(() => {
-  window.addEventListener('resize', updateWidth);
+  window.addEventListener("resize", updateWidth);
   updateWidth();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWidth);
+  window.removeEventListener("resize", updateWidth);
 });
 </script>
 
 <style>
-:root {
-  --el-color-primary: #0ea5e9;
-}
-
+html,
 body {
   margin: 0;
   padding: 0;
+  height: 100%;
   font-family: var(--el-font-family);
-  background-color: #f0f9ff;
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#app {
+  height: 100%;
 }
 
 .layout-wrapper {
@@ -100,10 +111,21 @@ body {
 }
 
 .aside-menu {
-  background-color: #001529;
-  transition: width 0.3s, transform 0.3s, left 0.3s;
+  width: 220px;
+  background-color: var(--app-header-bg);
+  border-right: 1px solid var(--app-border-color);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: hidden;
   z-index: 1001;
+  will-change: width, transform;
+  display: flex;
+  flex-direction: column;
+}
+
+.aside-menu.is-collapsed {
+  width: 64px;
 }
 
 @media (max-width: 768px) {
@@ -117,7 +139,7 @@ body {
   }
   .aside-menu.is-mobile-show {
     transform: translateX(0);
-    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   }
 
   .mobile-mask {
@@ -155,13 +177,13 @@ body {
 }
 
 .header-nav {
-  background-color: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--app-header-bg);
+  border-bottom: 1px solid var(--app-border-color);
   padding: 0;
 }
 
 .main-content {
-  background-color: #f8fafc;
+  background-color: var(--app-content-bg);
   padding: 20px;
 }
 
@@ -169,7 +191,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%);
+  background-color: var(--app-bg);
   position: relative;
   overflow: hidden;
 }
@@ -181,7 +203,11 @@ body {
   right: -5%;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.05) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(14, 165, 233, 0.05) 0%,
+    transparent 70%
+  );
   border-radius: 50%;
   z-index: 0;
 }
@@ -193,7 +219,11 @@ body {
   left: -5%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(14, 165, 233, 0.08) 0%,
+    transparent 70%
+  );
   border-radius: 50%;
   z-index: 0;
 }

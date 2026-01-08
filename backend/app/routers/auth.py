@@ -9,6 +9,7 @@ from ..config import JWT_SECRET, JWT_EXPIRE_MINUTES
 import jwt
 from datetime import datetime, timedelta, timezone
 import re
+from ..config import now_bj
 
 router = APIRouter()
 
@@ -88,7 +89,7 @@ async def _get_role_permissions(db: AsyncSession, role_keys: list[str]) -> list[
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     demo = {"admin": "admin123", "ops": "ops123", "obs": "obs123"}
     if req.username in demo and req.password == demo[req.username]:
-        exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
+        exp = now_bj() + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": req.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
         
         # 为 demo 账号获取角色和权限
@@ -127,7 +128,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         roles = await _get_user_roles(db, user.id)
         permissions = await _get_role_permissions(db, roles)
         
-        exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
+        exp = now_bj() + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": user.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
         return {
             "ok": True, 
@@ -185,8 +186,8 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
             full_name=req.fullName,
             is_active=True,
             last_login=None,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=now_bj(),
+            updated_at=now_bj(),
         )
         db.add(user)
         await db.flush()
@@ -194,7 +195,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         await _map_user_role(db, req.username, "observer")
         permissions = await _get_role_permissions(db, ["observer"])
         
-        exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
+        exp = now_bj() + timedelta(minutes=JWT_EXPIRE_MINUTES)
         token = jwt.encode({"sub": user.username, "exp": exp}, JWT_SECRET, algorithm="HS256")
         return {
             "ok": True, 

@@ -24,9 +24,8 @@
         {{ row.end || '-' }}
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="150" fixed="right">
+    <el-table-column label="操作" width="100" fixed="right">
       <template #default="{ row }">
-        <el-button size="small" @click.stop="$emit('edit', row)">编辑</el-button>
         <el-popconfirm title="确定要删除这条记录吗？" @confirm="$emit('delete', row.id)">
           <template #reference>
             <el-button size="small" type="danger" plain @click.stop>删除</el-button>
@@ -40,7 +39,7 @@
 <script setup lang="ts">
 type RecordItem = { id:number; clusterName:string; username:string; description:string; faultId:string; cmdType:string; status:'running'|'success'|'failed'; start:string; end:string|''; code:number|null }
 const props = defineProps<{ records: RecordItem[]; selectedId: number | null }>()
-const emit = defineEmits(['select', 'edit', 'delete'])
+const emit = defineEmits(['select', 'delete'])
 
 function statusType(s: 'running' | 'success' | 'failed') {
   const map: Record<string, string> = {
@@ -57,9 +56,4 @@ function handleCurrentChange(val: RecordItem | null) {
 </script>
 
 <style scoped>
-:deep(.table-header) {
-  background-color: #f8fafc !important;
-  color: #475569;
-  font-weight: 600;
-}
 </style>

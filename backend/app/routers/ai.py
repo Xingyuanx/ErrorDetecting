@@ -13,7 +13,7 @@ from ..models.hadoop_logs import HadoopLog
 from ..models.chat import ChatSession, ChatMessage
 from ..agents.diagnosis_agent import run_diagnose_and_repair
 from ..services.llm import LLMClient
-from ..services.ops_tools import openai_tools_schema, tool_web_search
+from ..services.ops_tools import openai_tools_schema, tool_web_search, tool_start_cluster, tool_stop_cluster, tool_read_log, tool_read_cluster_log, tool_detect_cluster_faults, tool_run_cluster_command
 
 
 router = APIRouter()
@@ -91,11 +91,10 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
             db.add(session)
 
         system_prompt = (
-            "You are a helpful Hadoop diagnostic assistant. "
-            "Please provide clear, structured, and well-formatted responses using Markdown. "
-            "Use headers (##, ###) for sections, bullet points for lists, and code blocks for logs or commands. "
-            "Ensure proper line breaks between paragraphs and sections to enhance readability. "
-            "If you are providing a diagnosis, use a 'Diagnosis' and 'Recommendation' structure."
+            "你是 Hadoop 运维诊断助手。输出中文，优先给出根因、影响范围、证据与建议。"
+            "当用户询问“故障/异常/报错/不可用/打不开/任务失败”等问题时，优先调用 detect_cluster_faults；"
+            "必要时再用 read_cluster_log 补充读取对应组件日志。"
+            "当用户询问进程/端口/资源/版本等日常运维信息时，优先调用 run_cluster_command（例如 jps/df/free/hdfs_report/yarn_node_list）。"
         )
         if req.context:
             if req.context.get("agent"):
@@ -117,14 +116,14 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
 
         llm = LLMClient()
         target_model = req.context.get("model") if req.context else None
-        web_search_enabled = bool(req.context and req.context.get("webSearch"))
-        chat_tools = None
-        if web_search_enabled:
-            tools = openai_tools_schema()
-            chat_tools = [t for t in tools if t["function"]["name"] == "web_search"]
         
-        if req.stream and not web_search_enabled:
-            return await handle_streaming_chat(llm, messages, internal_id, db, tools=None, model=target_model)
+        # 默认加载所有可用运维工具
+        chat_tools = openai_tools_schema()
+        
+        if req.stream:
+            # 流式暂不支持工具调用后的二次生成（为了简化），如果检测到可能需要工具，先走非流式
+            # 或者这里可以根据需求调整，目前先保持非流式处理工具逻辑
+            pass
 
         resp = await llm.chat(messages, tools=chat_tools, stream=False, model=target_model)
         choices = resp.get("choices") or []
@@ -145,8 +144,44 @@ async def ai_chat(req: ChatReq, user=Depends(get_current_user), db: AsyncSession
                     args = {}
                 
                 tool_result = {"error": "unknown_tool"}
+                uname = _get_username(user)
                 if name == "web_search":
                     tool_result = await tool_web_search(args.get("query"), args.get("max_results", 5))
+                elif name == "start_cluster":
+                    tool_result = await tool_start_cluster(db, uname, args.get("cluster_uuid"))
+                elif name == "stop_cluster":
+                    tool_result = await tool_stop_cluster(db, uname, args.get("cluster_uuid"))
+                elif name == "read_log":
+                    tool_result = await tool_read_log(db, uname, args.get("node"), args.get("path"), int(args.get("lines", 200)), args.get("pattern"), args.get("sshUser"))
+                elif name == "read_cluster_log":
+                    tool_result = await tool_read_cluster_log(
+                        db, 
+                        uname, 
+                        args.get("cluster_uuid"), 
+                        args.get("log_type"), 
+                        args.get("node_hostname"), 
+                        int(args.get("lines", 100))
+                    )
+                elif name == "detect_cluster_faults":
+                    tool_result = await tool_detect_cluster_faults(
+                        db,
+                        uname,
+                        args.get("cluster_uuid"),
+                        args.get("components"),
+                        args.get("node_hostname"),
+                        int(args.get("lines", 200)),
+                    )
+                elif name == "run_cluster_command":
+                    tool_result = await tool_run_cluster_command(
+                        db,
+                        uname,
+                        args.get("cluster_uuid"),
+                        args.get("command_key"),
+                        args.get("target"),
+                        args.get("node_hostname"),
+                        int(args.get("timeout", 30)),
+                        int(args.get("limit_nodes", 20)),
+                    )
                 
                 messages.append({
                     "role": "tool",

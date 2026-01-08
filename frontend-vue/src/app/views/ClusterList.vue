@@ -23,24 +23,24 @@
         <el-form :model="registerForm" label-position="top" size="default">
           <h4 class="section-subtitle">1. 集群基本信息</h4>
           <el-row :gutter="20">
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="集群名称" required>
                 <el-input v-model="registerForm.name" placeholder="集群名称" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="集群类型">
                 <el-select v-model="registerForm.type" class="full-width">
                   <el-option label="Hadoop" value="hadoop" />
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="节点总数">
                 <el-input-number v-model="registerForm.node_count" :min="1" class="full-width" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="健康状态">
                 <el-select v-model="registerForm.health_status" class="full-width">
                   <el-option label="健康" value="healthy" />
@@ -53,22 +53,22 @@
           </el-row>
 
           <el-row :gutter="20">
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="NameNode IP">
                 <el-input v-model="registerForm.namenode_ip" placeholder="NameNode IP" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="NameNode 密码">
                 <el-input v-model="registerForm.namenode_psw" type="password" show-password placeholder="NameNode 密码" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="RM IP">
                 <el-input v-model="registerForm.rm_ip" placeholder="ResourceManager IP" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :xs="24" :sm="12" :md="6">
               <el-form-item label="RM 密码">
                 <el-input v-model="registerForm.rm_psw" type="password" show-password placeholder="ResourceManager 密码" />
               </el-form-item>
@@ -83,22 +83,22 @@
           <div v-for="(node, idx) in nodes" :key="idx" class="node-config-row">
             <div class="node-index">节点 {{ idx + 1 }}</div>
             <el-row :gutter="10">
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="主机名" required>
                   <el-input v-model="node.hostname" placeholder="hostname" />
                 </el-form-item>
               </el-col>
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="IP 地址" required>
                   <el-input v-model="node.ip_address" placeholder="ip_address" />
                 </el-form-item>
               </el-col>
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="SSH 用户" required>
                   <el-input v-model="node.ssh_user" placeholder="ssh_user" />
                 </el-form-item>
               </el-col>
-              <el-col :span="6">
+              <el-col :xs="24" :sm="12" :md="6">
                 <el-form-item label="SSH 密码" required>
                   <el-input v-model="node.ssh_password" type="password" show-password placeholder="ssh_password" />
                 </el-form-item>
@@ -135,7 +135,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" :width="isMobile ? 120 : 350" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 120 : 420" fixed="right">
           <template #default="{ row }">
             <div v-if="!isMobile" class="table-actions" @click.stop>
               <el-button size="small" @click="toDashboard(row)">详情</el-button>
@@ -145,7 +145,7 @@
                 plain
                 :disabled="row.health_status === 'healthy'"
                 :loading="rowLoading[row.uuid]"
-                @click="startCluster(row.uuid)"
+                @click="startCluster(row)"
               >启动</el-button>
               <el-button
                 size="small"
@@ -153,8 +153,17 @@
                 plain
                 :disabled="row.health_status !== 'healthy'"
                 :loading="rowLoading[row.uuid]"
-                @click="stopCluster(row.uuid)"
+                @click.stop="stopCluster(row)"
               >停止</el-button>
+              <el-button
+                size="small"
+                :type="clusterStore.collectionStates[row.uuid] ? 'danger' : 'success'"
+                plain
+                :loading="rowLoading[row.uuid]"
+                @click.stop="clusterStore.collectionStates[row.uuid] ? stopLogs(row) : collectLogs(row)"
+              >
+                {{ clusterStore.collectionStates[row.uuid] ? '停止采集' : '采集日志' }}
+              </el-button>
               <el-popconfirm title="确定要注销此集群吗？" @confirm="unregister(row.uuid)">
                 <template #reference>
                   <el-button size="small" type="danger" plain>注销</el-button>
@@ -178,6 +187,7 @@
                       command="stop" 
                       :disabled="row.health_status !== 'healthy'"
                     >停止</el-dropdown-item>
+                    <el-dropdown-item command="collect">采集日志</el-dropdown-item>
                     <el-dropdown-item command="unregister" divided class="text-danger">注销</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -187,6 +197,28 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 操作日志弹窗 -->
+    <el-dialog
+      v-model="showLogs"
+      :title="logTitle"
+      :width="isMobile ? '95%' : '60%'"
+      destroy-on-close
+      class="log-dialog"
+    >
+      <div class="log-terminal">
+        <div v-for="(line, idx) in executionLogs" :key="idx" class="log-line">
+          <span class="log-timestamp">[{{ new Date().toLocaleTimeString() }}]</span>
+          <span class="log-content">{{ line }}</span>
+        </div>
+        <div v-if="executionLogs.length === 0" class="log-empty">正在获取执行日志...</div>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button type="primary" @click="showLogs = false">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -194,16 +226,25 @@
 import { reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ClusterService } from '../api/cluster.service'
+import { LogService } from '../api/log.service'
+import { useClusterStore } from '../stores/cluster'
 import { Plus, More } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatError } from '../lib/errors'
 
 const router = useRouter()
+const clusterStore = useClusterStore()
 const clusters = ref<any[]>([])
 const showRegister = ref(false)
 const loading = ref(false)
 const registering = ref(false)
 const err = ref('')
 const rowLoading = ref<Record<string, boolean>>({})
+
+// 日志相关状态
+const showLogs = ref(false)
+const logTitle = ref('')
+const executionLogs = ref<string[]>([])
 
 const isMobile = ref(window.innerWidth < 768)
 const updateWidth = () => {
@@ -266,26 +307,6 @@ function getHealthTag(h: string) {
   return map[h] || 'info'
 }
 
-function formatError(e: any, defaultMsg: string = '操作失败'): string {
-  if (e?.response) {
-    const s = e.response.status
-    const d = e.response.data
-    let detail = ''
-    if (d?.detail) {
-      if (typeof d.detail === 'string') detail = d.detail
-      else if (Array.isArray(d.detail?.errors)) {
-        detail = d.detail.errors.map((x: any) => {
-          let msg = x?.message || '未知错误'
-          if (x?.field) msg = `[${x.field}] ${msg}`
-          return msg
-        }).join(', ')
-      }
-    }
-    return detail || `请求异常 (${s})`
-  }
-  return e?.message || defaultMsg
-}
-
 async function load() {
   loading.value = true
   try {
@@ -297,10 +318,31 @@ async function load() {
       health_status: x.health_status || x.health || 'unknown',
       healthText: healthTextOf(x.health_status || x.health)
     }))
+    
+    // 初始化采集状态（可选：根据后端状态接口初始化）
+    await syncCollectionStatus()
   } catch (e: any) {
-    ElMessage.error(e.friendlyMessage || formatError(e, '加载列表失败'))
+    ElMessage.error(e.friendlyMessage || formatError(e, '加载列表失败', { mode: 'clusterList' }))
   } finally {
     loading.value = false
+  }
+}
+
+/** 同步采集状态 */
+async function syncCollectionStatus() {
+  try {
+    const status = await LogService.getCollectorStatus()
+    // 假设 status 包含正在采集的集群 UUID 列表或其他标识
+    // 这里根据后端实际返回结构进行映射，目前先根据 clusters 列表初始化
+    const newStates: Record<string, boolean> = {}
+    clusters.value.forEach(c => {
+      if (clusterStore.collectionStates[c.uuid] === undefined) {
+        newStates[c.uuid] = false
+      }
+    })
+    clusterStore.syncStates(newStates)
+  } catch (e) {
+    console.error('获取采集状态失败', e)
   }
 }
 
@@ -330,7 +372,7 @@ async function onRegister() {
     cancelRegister()
     await load()
   } catch (e: any) {
-    err.value = e.friendlyMessage || formatError(e, '提交失败')
+    err.value = e.friendlyMessage || formatError(e, '提交失败', { mode: 'clusterList' })
   } finally {
     registering.value = false
   }
@@ -342,45 +384,96 @@ async function unregister(id: string) {
     ElMessage.success('集群已注销')
     await load()
   } catch (e: any) {
-    ElMessage.error(e.friendlyMessage || formatError(e, '注销失败'))
+    ElMessage.error(e.friendlyMessage || formatError(e, '注销失败', { mode: 'clusterList' }))
   }
 }
 
-async function startCluster(id: string) {
+async function startCluster(row: any) {
+  const id = typeof row === 'string' ? row : row.uuid
+  const name = typeof row === 'string' ? id : row.name
+  
   rowLoading.value[id] = true
-  const msg = ElMessage({
-    message: '正在发送启动命令...',
-    type: 'info',
-    duration: 0
-  })
+  logTitle.value = `正在启动集群: ${name}`
+  executionLogs.value = []
+  showLogs.value = true
+  
   try {
-    await ClusterService.start(id)
-    msg.close()
-    ElMessage.success('启动命令已发送')
+    const res = await ClusterService.start(id)
+    executionLogs.value = res.logs || ['启动指令已成功发送，正在执行...']
+    ElMessage.success('启动成功')
     await load()
   } catch (e: any) {
-    msg.close()
-    ElMessage.error(e.friendlyMessage || formatError(e, '启动失败'))
+    executionLogs.value = e.response?.data?.logs || [e.message || '启动失败']
+    ElMessage.error(e.friendlyMessage || formatError(e, '启动失败', { mode: 'clusterList' }))
   } finally {
     rowLoading.value[id] = false
   }
 }
 
-async function stopCluster(id: string) {
+async function stopCluster(row: any) {
+  const id = typeof row === 'string' ? row : row.uuid
+  const name = typeof row === 'string' ? id : row.name
+  
   rowLoading.value[id] = true
-  const msg = ElMessage({
-    message: '正在发送停止命令...',
-    type: 'info',
-    duration: 0
-  })
+  logTitle.value = `正在停止集群: ${name}`
+  executionLogs.value = []
+  showLogs.value = true
+  
   try {
-    await ClusterService.stop(id)
-    msg.close()
-    ElMessage.success('停止命令已发送')
+    const res = await ClusterService.stop(id)
+    executionLogs.value = res.logs || ['停止指令已成功发送，正在执行...']
+    ElMessage.success('停止成功')
     await load()
   } catch (e: any) {
-    msg.close()
-    ElMessage.error(e.friendlyMessage || formatError(e, '关闭失败'))
+    executionLogs.value = e.response?.data?.logs || [e.message || '停止失败']
+    ElMessage.error(e.friendlyMessage || formatError(e, '关闭失败', { mode: 'clusterList' }))
+  } finally {
+    rowLoading.value[id] = false
+  }
+}
+
+async function collectLogs(row: any) {
+  const id = row.uuid
+  const name = row.name
+  
+  rowLoading.value[id] = true
+  logTitle.value = `正在启动采集: ${name}`
+  executionLogs.value = []
+  showLogs.value = true
+  
+  try {
+    const res = await LogService.startHadoopCollection(id)
+    executionLogs.value = res.logs || ['日志采集任务已启动...']
+    ElMessage.success('日志采集任务已启动')
+    clusterStore.setCollectionState(id, true)
+  } catch (e: any) {
+    executionLogs.value = e.response?.data?.logs || [e.message || '启动采集失败']
+    ElMessage.error(formatError(e, '启动日志采集失败', { mode: 'clusterList' }))
+    clusterStore.setCollectionState(id, false) // 失败则切回关闭状态
+  } finally {
+    rowLoading.value[id] = false
+  }
+}
+
+async function stopLogs(row: any) {
+  const id = row.uuid
+  rowLoading.value[id] = true
+  logTitle.value = `正在停止采集: ${row.name}`
+  executionLogs.value = []
+  showLogs.value = true
+
+  try {
+    const res = await LogService.stopAllCollections()
+    executionLogs.value = res.logs || ['已发送停止全部采集指令...']
+    ElMessage.warning('所有采集任务已停止')
+    // 停止全部采集，更新所有集群状态
+    const newStates: Record<string, boolean> = {}
+    clusters.value.forEach(c => { newStates[c.uuid] = false })
+    clusterStore.syncStates(newStates)
+  } catch (e: any) {
+    executionLogs.value = e.response?.data?.logs || [e.message || '停止失败']
+    ElMessage.error(formatError(e, '停止采集失败', { mode: 'clusterList' }))
+    clusterStore.setCollectionState(id, true) // 失败则切回开启状态
   } finally {
     rowLoading.value[id] = false
   }
@@ -397,10 +490,17 @@ function handleAction(command: string, row: any) {
       toDashboard(row);
       break;
     case 'start':
-      startCluster(row.uuid);
+      startCluster(row);
       break;
     case 'stop':
-      stopCluster(row.uuid);
+      stopCluster(row);
+      break;
+    case 'collect':
+      if (clusterStore.collectionStates[row.uuid]) {
+        stopLogs(row);
+      } else {
+        collectLogs(row);
+      }
       break;
     case 'unregister':
       ElMessageBox.confirm('确定要注销此集群吗？', '提示', {
@@ -441,12 +541,12 @@ onUnmounted(() => {
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--app-text-primary);
   margin: 0;
 }
 
 .page-subtitle {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 14px;
   margin: 4px 0 0 0;
 }
@@ -473,8 +573,8 @@ onUnmounted(() => {
 .section-subtitle {
   margin: 0 0 16px 0;
   font-size: 15px;
-  color: #1e293b;
-  border-left: 4px solid #0ea5e9;
+  color: var(--app-text-primary);
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 10px;
 }
 
@@ -485,27 +585,39 @@ onUnmounted(() => {
 .node-config-row {
   margin-bottom: 16px;
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border-color);
   border-radius: 6px;
-  background-color: #f8fafc;
+  background-color: var(--app-content-bg);
   transition: background-color 0.3s;
 }
 
 .node-config-row:hover {
-  background-color: #f1f5f9;
+  background-color: var(--app-bg);
 }
 
 .node-index {
   font-weight: 600;
   margin-bottom: 12px;
   font-size: 14px;
-  color: #475569;
+  color: var(--app-text-secondary);
 }
 
 .form-actions {
-  margin-top: 20px;
   display: flex;
   gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-border-color);
+}
+
+@media (max-width: 768px) {
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
 }
 
 .form-alert {
@@ -514,7 +626,7 @@ onUnmounted(() => {
 
 .table-card {
   border-radius: 8px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--app-border-color);
 }
 
 .cluster-table {
@@ -524,23 +636,20 @@ onUnmounted(() => {
 .table-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .full-width {
   width: 100%;
 }
 
-:deep(.table-header) {
-  background-color: #f8fafc !important;
-  color: #475569;
-  font-weight: 600;
-}
-
 .dropdown-header {
   font-weight: bold;
-  color: #333;
+  color: var(--app-text-primary);
   padding: 8px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--app-border-color);
   pointer-events: none;
 }
 

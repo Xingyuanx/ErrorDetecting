@@ -1,9 +1,11 @@
 import httpx
 import asyncio
 import json
+import os
+import pytest
 
-async def test_register():
-    url = "http://localhost:8000/api/v1/user/register"
+async def _run_register_checks(base_url: str):
+    url = f"{base_url.rstrip('/')}/api/v1/user/register"
     
     # 1. 测试字段缺失 (422)
     print("\n1. Testing missing field...")
@@ -45,5 +47,12 @@ async def test_register():
         print(f"Status: {r.status_code}")
         print(f"Response: {r.text}")
 
+def test_register_fix_e2e():
+    base_url = os.getenv("E2E_BASE_URL", "").strip()
+    if not base_url:
+        pytest.skip("需要设置 E2E_BASE_URL 并启动后端服务")
+    asyncio.run(_run_register_checks(base_url))
+
 if __name__ == "__main__":
-    asyncio.run(test_register())
+    url = os.getenv("E2E_BASE_URL", "http://localhost:8000").strip()
+    asyncio.run(_run_register_checks(url))

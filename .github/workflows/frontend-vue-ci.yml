@@ -1,0 +1,49 @@
+name: frontend-vue-ci
+
+on:
+  push:
+    paths:
+      - "frontend-vue/**"
+      - ".github/workflows/frontend-vue-ci.yml"
+  pull_request:
+    paths:
+      - "frontend-vue/**"
+      - ".github/workflows/frontend-vue-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-vue
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: frontend-vue/pnpm-lock.yaml
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm run lint
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Test
+        run: pnpm run test
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: E2E
+        run: pnpm run e2e:ui
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-vue-playwright-report
+          path: |
+            frontend-vue/playwright-report
+            frontend-vue/test-results
+      - name: Build
+        run: pnpm run build

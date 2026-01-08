@@ -34,5 +34,23 @@ export const LogService = {
   /** 删除执行日志 */
   async removeExecLog(id: number): Promise<any> {
     return api.delete(`/v1/exec-logs/${id}`)
+  },
+
+  /** 启动 Hadoop 集群日志采集 */
+  async startHadoopCollection(clusterUuid: string, interval: number = 3): Promise<any> {
+    return api.post(`/v1/hadoop/collectors/start-by-cluster/${encodeURIComponent(clusterUuid)}/`, null, {
+      params: { interval },
+      timeout: 60000
+    })
+  },
+
+  /** 停止所有日志采集 */
+  async stopAllCollections(): Promise<any> {
+    return api.post('/v1/hadoop/collectors/stop/all/')
+  },
+
+  /** 查看采集线程状态 */
+  async getCollectorStatus(): Promise<any> {
+    return api.get('/v1/hadoop/collectors/status/')
   }
 }

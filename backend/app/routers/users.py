@@ -8,6 +8,7 @@ from ..deps.auth import get_current_user
 from passlib.hash import bcrypt
 from datetime import datetime, timezone
 import re
+from ..config import now_bj
 
 router = APIRouter()
 
@@ -140,7 +141,7 @@ async def create_user(req: CreateUserRequest, user=Depends(get_current_user), db
 
         temp_password = "TempPass#123"
         password_hash = bcrypt.hash(temp_password)
-        now = datetime.now(timezone.utc)
+        now = now_bj()
         user_obj = User(
             username=req.username,
             email=req.email,

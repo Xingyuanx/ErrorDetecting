@@ -6,8 +6,10 @@ from ..models.hadoop_logs import HadoopLog
 from ..models.clusters import Cluster
 from ..deps.auth import get_current_user
 from pydantic import BaseModel
-from datetime import datetime, timezone
+from datetime import datetime
 import json
+from ..config import now_bj
+from ..config import BJ_TZ
 
 router = APIRouter()
 
@@ -17,7 +19,7 @@ def _get_username(u) -> str:
 
 
 def _now():
-    return datetime.now(timezone.utc)
+    return now_bj()
 
 
 def _map_level(level: str) -> str:
@@ -70,6 +72,10 @@ async def list_faults(
         if time_from:
             try:
                 tf = datetime.fromisoformat(time_from.replace("Z", "+00:00"))
+                if tf.tzinfo is None:
+                    tf = tf.replace(tzinfo=BJ_TZ)
+                else:
+                    tf = tf.astimezone(BJ_TZ)
                 stmt = stmt.where(HadoopLog.log_time >= tf)
                 count_stmt = count_stmt.where(HadoopLog.log_time >= tf)
             except Exception:
@@ -124,7 +130,11 @@ async def create_fault(req: FaultCreate, user=Depends(get_current_user), db: Asy
         ts = _now()
         if req.created:
             try:
-                ts = datetime.fromisoformat(req.created.replace("Z", "+00:00"))
+                dt = datetime.fromisoformat(req.created.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    ts = dt.replace(tzinfo=BJ_TZ)
+                else:
+                    ts = dt.astimezone(BJ_TZ)
             except Exception:
                 pass
 

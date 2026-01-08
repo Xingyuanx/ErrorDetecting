@@ -1,0 +1,157 @@
+/**
+ * Element Plus 浅色模式自定义配色方案
+ * 基于 SCSS 变量系统，符合 Element Plus 命名规范
+ */
+
+@use "sass:color";
+
+// 1. 基础色值定义 (SCSS 变量)
+$primary-color: #0ea5e9;    // 天蓝色 (Sky Blue)
+$success-color: #10b981;    // 翡翠绿 (Emerald)
+$warning-color: #f59e0b;    // 琥珀色 (Amber)
+$danger-color: #ef4444;     // 玫瑰红 (Rose)
+$info-color: #64748b;       // 石板灰 (Slate)
+
+// 2. 中性色定义
+$bg-color: #f0f9ff;         // 极浅蓝背景
+$content-bg-color: #f8fafc; // 内容区背景
+$card-bg-color: #ffffff;    // 卡片背景
+$text-primary: #1e293b;     // 主要文字 (深石板灰)
+$text-regular: #475569;     // 常规文字
+$text-secondary: #64748b;   // 次要文字
+$text-placeholder: #94a3b8; // 占位符
+$border-color: #e2e8f0;     // 基础边框
+$border-color-light: #f1f5f9;// 浅色边框
+
+// 3. 辅助函数：生成 Element Plus 颜色变体
+@function get-light-color($color, $level) {
+  @return color.mix(#ffffff, $color, $level * 10%);
+}
+
+@function get-dark-color($color, $level) {
+  @return color.mix(#000000, $color, $level * 10%);
+}
+
+// 4. 应用配色到 CSS 变量系统
+:root {
+  // 品牌色及其衍生
+  --el-color-primary: #{$primary-color};
+  @for $i from 1 through 9 {
+    @if $i == 3 or $i == 5 or $i == 7 or $i == 8 or $i == 9 {
+      --el-color-primary-light-#{$i}: #{get-light-color($primary-color, $i)};
+    }
+  }
+  --el-color-primary-dark-2: #{get-dark-color($primary-color, 2)};
+
+  // 状态色及其衍生
+  $types: (
+    "success": $success-color,
+    "warning": $warning-color,
+    "danger": $danger-color,
+    "info": $info-color,
+  );
+  @each $type, $color in $types {
+    --el-color-#{$type}: #{$color};
+    @for $i from 1 through 9 {
+      @if $i == 3 or $i == 5 or $i == 7 or $i == 8 or $i == 9 {
+        --el-color-#{$type}-light-#{$i}: #{get-light-color($color, $i)};
+      }
+    }
+    --el-color-#{$type}-dark-2: #{get-dark-color($color, 2)};
+  }
+
+  // 中性色与背景
+  --el-bg-color: #{$bg-color};
+  --el-bg-color-page: #{$bg-color};
+  --el-bg-color-overlay: #{$card-bg-color};
+  --el-text-color-primary: #{$text-primary};
+  --el-text-color-regular: #{$text-regular};
+  --el-text-color-secondary: #{$text-secondary};
+  --el-text-color-placeholder: #{$text-placeholder};
+  --el-border-color: #{$border-color};
+  --el-border-color-light: #{$border-color-light};
+  --el-fill-color-blank: #{$card-bg-color};
+
+  // 项目自定义语义化变量 (保持与原有代码兼容)
+  --app-bg: #{$bg-color};
+  --app-content-bg: #{$content-bg-color};
+  --app-card-bg: #{$card-bg-color};
+  --app-header-bg: #{$card-bg-color};
+  --app-sidebar-bg: #1e293b;       // 侧边栏背景 (深蓝灰)
+  --app-sidebar-text: #94a3b8;     // 侧边栏文字
+  --app-sidebar-text-active: #ffffff; // 侧边栏激活文字
+  --app-sidebar-item-hover: #334155; // 侧边栏悬浮背景
+  --app-text-primary: #{$text-primary};
+  --app-text-secondary: #{$text-secondary};
+  --app-border-color: #{$border-color};
+}
+
+// 确保 body 和主要容器的基础样式
+body {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  background-color: var(--el-bg-color);
+}
+
+// 针对所有 element-plus 容器和卡片添加平滑过渡 (仅用于非 View Transition 场景)
+.el-card, 
+.el-header, 
+.el-aside, 
+.el-main, 
+.el-footer,
+.el-button,
+.el-input__wrapper {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+/**
+ * View Transitions API 相关样式
+ * 实现圆圈扩散效果的核心 CSS
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-old(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-new(root) {
+  z-index: 1;
+}
+
+// 暗黑模式下保持原有样式不变 (由 element-plus/theme-chalk/dark/css-vars.css 控制)
+// 我们这里只需要确保自定义的 --app 变量在暗黑模式下能正确覆盖
+html.dark {
+  --app-bg: #0f172a;           // 主背景 (深蓝)
+  --app-content-bg: #1e293b;   // 内容背景 (略亮)
+  --app-card-bg: #1e293b;
+  --app-header-bg: #0f172a;
+  --app-sidebar-bg: #020617;   // 侧边栏背景 (极深)
+  --app-sidebar-text: #64748b;
+  --app-sidebar-text-active: #38bdf8;
+  --app-sidebar-item-hover: #0f172a;
+  --app-text-primary: #f1f5f9;
+  --app-text-secondary: #94a3b8;
+  --app-border-color: #334155;
+  --el-table-header-bg-color: var(--app-content-bg);
+  --el-table-bg-color: var(--app-bg);
+  --el-table-tr-bg-color: var(--app-bg);
+}
+
+// 全局表格头部样式
+.table-header {
+  background-color: var(--app-content-bg) !important;
+  color: var(--app-text-secondary);
+  font-weight: 600;
+}

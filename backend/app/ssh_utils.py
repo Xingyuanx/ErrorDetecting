@@ -65,6 +65,12 @@ class SSHClient:
         
         stdin, stdout, stderr = self.client.exec_command(command)
         return stdout.read().decode(), stderr.read().decode()
+
+    def execute_command_with_status(self, command: str) -> tuple:
+        self._ensure_connected()
+        stdin, stdout, stderr = self.client.exec_command(command)
+        exit_code = stdout.channel.recv_exit_status()
+        return exit_code, stdout.read().decode(), stderr.read().decode()
     
     def execute_command_with_timeout(self, command: str, timeout: int = 30) -> tuple:
         """Execute command with timeout"""
@@ -72,6 +78,12 @@ class SSHClient:
         
         stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
         return stdout.read().decode(), stderr.read().decode()
+
+    def execute_command_with_timeout_and_status(self, command: str, timeout: int = 30) -> tuple:
+        self._ensure_connected()
+        stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
+        exit_code = stdout.channel.recv_exit_status()
+        return exit_code, stdout.read().decode(), stderr.read().decode()
     
     def read_file(self, file_path: str) -> str:
         """Read file content from remote server"""
@@ -111,16 +123,37 @@ class SSHConnectionManager:
     
     def get_connection(self, node_name: str, ip: str = None, username: str = None, password: str = None) -> SSHClient:
         """Get or create SSH connection for a node"""
+        if node_name in self.connections:
+            client = self.connections[node_name]
+            if ip and getattr(client, "hostname", None) != ip:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+                del self.connections[node_name]
+            elif username and getattr(client, "username", None) != username:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+                del self.connections[node_name]
+            elif password and getattr(client, "password", None) != password:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+                del self.connections[node_name]
+
         if node_name not in self.connections:
             if not ip:
                 raise ValueError(f"IP address required for new connection to {node_name}")
-            
+
             _user = username or DEFAULT_SSH_USER
             _pass = password or DEFAULT_SSH_PASSWORD
-            
+
             client = SSHClient(ip, _user, _pass)
             self.connections[node_name] = client
-            
+
         return self.connections[node_name]
     
     def close_all(self) -> None:

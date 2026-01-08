@@ -15,6 +15,7 @@ from ..models.sys_exec_logs import SysExecLog
 from ..models.hadoop_exec_logs import HadoopExecLog
 from ..services.runner import run_remote_command
 from ..ssh_utils import SSHClient
+from ..config import now_bj
 
 
 router = APIRouter()
@@ -22,7 +23,7 @@ router = APIRouter()
 
 def _now() -> datetime:
     """返回当前 UTC 时间。"""
-    return datetime.now(timezone.utc)
+    return now_bj()
 
 
 def _get_username(u) -> str:
@@ -138,6 +139,12 @@ async def start_cluster(
 ):
     """启动集群：在 NameNode 执行 hsfsstart，在 ResourceManager 执行 yarnstart。"""
     try:
+        # UUID 格式校验
+        try:
+            uuidlib.UUID(cluster_uuid)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="invalid_uuid_format")
+
         uname = _get_username(user)
         user_id = getattr(user, "id", 1)
 
@@ -179,8 +186,14 @@ async def start_cluster(
 
         end_time = _now()
         
-        # 5. 更新集群状态
-        cluster.health_status = "healthy"
+        # 5. 更新集群状态 (仅当所有尝试都未抛出异常时)
+        # 改进：检查是否有失败日志
+        has_failed = any("failed" in log.lower() for log in logs)
+        if not has_failed:
+            cluster.health_status = "healthy"
+        else:
+            cluster.health_status = "error"
+            
         cluster.updated_at = end_time
         await db.flush()
 
@@ -204,6 +217,12 @@ async def stop_cluster(
 ):
     """停止集群：在 NameNode 执行 hsfsstop，在 ResourceManager 执行 yarnstop。"""
     try:
+        # UUID 格式校验
+        try:
+            uuidlib.UUID(cluster_uuid)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="invalid_uuid_format")
+
         uname = _get_username(user)
         user_id = getattr(user, "id", 1)
 
@@ -260,7 +279,6 @@ async def stop_cluster(
     except Exception as e:
         print(f"Error stopping cluster: {e}")
         raise HTTPException(status_code=500, detail="server_error")
-
 
 
 

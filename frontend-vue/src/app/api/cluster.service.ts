@@ -19,12 +19,12 @@ export const ClusterService = {
   },
 
   /** 启动集群 */
-  async start(id: string): Promise<any> {
-    return api.post(`/v1/ops/clusters/${encodeURIComponent(id)}/start`)
+  async start(id: string): Promise<{ status: string; logs: string[] }> {
+    return api.post(`/v1/ops/clusters/${encodeURIComponent(id)}/start`, {}, { timeout: 60000 })
   },
 
   /** 停止集群 */
-  async stop(id: string): Promise<any> {
-    return api.post(`/v1/ops/clusters/${encodeURIComponent(id)}/stop`)
+  async stop(id: string): Promise<{ status: string; logs: string[] }> {
+    return api.post(`/v1/ops/clusters/${encodeURIComponent(id)}/stop`, {}, { timeout: 60000 })
   }
 }

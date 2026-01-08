@@ -1,5 +1,13 @@
 <template>
   <div class="register-container">
+    <div class="theme-toggle-wrapper">
+      <el-button link @click="toggleThemeWithAnimation" class="theme-toggle-btn">
+        <el-icon :size="24">
+          <Moon v-if="!isDark" />
+          <Sunny v-else />
+        </el-icon>
+      </el-button>
+    </div>
     <el-card class="register-card">
       <div class="register-header">
         <el-icon :size="48" color="#0ea5e9"><User /></el-icon>
@@ -85,14 +93,58 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth";
-import { User, Lock, Message, CircleCheck, Edit } from "@element-plus/icons-vue";
+import { useUIStore } from "../stores/ui";
+import { User, Lock, Message, CircleCheck, Edit, Moon, Sunny } from "@element-plus/icons-vue";
 import { ElMessage, type FormInstance, type FormRules } from "element-plus";
 
 const router = useRouter();
 const auth = useAuthStore();
+const ui = useUIStore();
+const { isDark } = storeToRefs(ui);
 const registerFormRef = ref<FormInstance>();
 const loading = ref(false);
+
+function toggleThemeWithAnimation(event: MouseEvent) {
+  const isAppearanceTransition = (document as any).startViewTransition &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!isAppearanceTransition) {
+    ui.toggleTheme();
+    return;
+  }
+
+  const x = event.clientX;
+  const y = event.clientY;
+  const endRadius = Math.hypot(
+    Math.max(x, innerWidth - x),
+    Math.max(y, innerHeight - y)
+  );
+
+  const transition = (document as any).startViewTransition(async () => {
+    ui.toggleTheme();
+  });
+
+  transition.ready.then(() => {
+    const clipPath = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${endRadius}px at ${x}px ${y}px)`,
+    ];
+    document.documentElement.animate(
+      {
+        clipPath: isDark.value ? [...clipPath].reverse() : clipPath,
+      },
+      {
+        duration: 450,
+        easing: 'ease-in-out',
+        pseudoElement: isDark.value
+          ? '::view-transition-old(root)'
+          : '::view-transition-new(root)',
+      }
+    );
+  });
+}
 
 const registerForm = reactive({
   username: "",
@@ -168,11 +220,20 @@ async function onSubmit() {
 
 <style scoped>
 .register-container {
-  flex: 1;
+  min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 20px;
+  align-items: center;
+  padding: 40px 20px;
+  background-color: var(--app-bg);
+  position: relative;
+}
+
+.theme-toggle-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
 }
 
 .register-card {
@@ -180,9 +241,8 @@ async function onSubmit() {
   max-width: 450px;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--app-border-color);
+  background: var(--app-card-bg);
 }
 
 :deep(.el-card__body) {
@@ -197,13 +257,13 @@ async function onSubmit() {
 .register-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--app-text-primary);
   margin: 12px 0 4px;
 }
 
 .register-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: var(--app-text-secondary);
 }
 
 :deep(.el-form-item) {
@@ -212,7 +272,7 @@ async function onSubmit() {
 
 .form-tip {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--el-text-color-placeholder);
   margin-top: 4px;
   line-height: 1.4;
 }
@@ -233,6 +293,6 @@ async function onSubmit() {
   text-align: center;
   margin-top: 8px;
   font-size: 14px;
-  color: #64748b;
+  color: var(--app-text-secondary);
 }
 </style>
