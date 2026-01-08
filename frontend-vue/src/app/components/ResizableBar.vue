@@ -1,5 +1,5 @@
 <template>
-  <div class="resizer-bar" :class="barClass" @mousedown="start">
+  <div class="resizer-bar" :class="barClass" @pointerdown="start">
     <div class="resizer-handle"></div>
   </div>
 </template>
@@ -26,7 +26,7 @@ const emit = defineEmits<{
 
 let isDragging = false;
 
-function computePercent(e: MouseEvent) {
+function computePercent(e: PointerEvent) {
   const containerRect = props.container?.getBoundingClientRect();
   if (!containerRect) return null;
   if (props.isMobile) {
@@ -35,7 +35,7 @@ function computePercent(e: MouseEvent) {
   return ((e.clientX - containerRect.left) / containerRect.width) * 100;
 }
 
-function onMove(e: MouseEvent) {
+function onMove(e: PointerEvent) {
   if (!isDragging) return;
   const next = computePercent(e);
   if (next == null) return;
@@ -52,19 +52,23 @@ function stop() {
   if (!isDragging) return;
   isDragging = false;
   emit("dragging", false);
-  document.removeEventListener("mousemove", onMove);
-  document.removeEventListener("mouseup", stop);
+  document.removeEventListener("pointermove", onMove);
+  document.removeEventListener("pointerup", stop);
+  document.removeEventListener("pointercancel", stop);
   document.body.style.cursor = "";
   document.body.style.userSelect = "";
 }
 
-function start(e: MouseEvent) {
+function start(e: PointerEvent) {
   if (!props.container) return;
+  // 确保在触摸设备上能够捕获指针
+  (e.target as HTMLElement).setPointerCapture(e.pointerId);
   e.preventDefault();
   isDragging = true;
   emit("dragging", true);
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", stop);
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", stop);
+  document.addEventListener("pointercancel", stop);
   document.body.style.cursor = props.isMobile ? "row-resize" : "col-resize";
   document.body.style.userSelect = "none";
 }
@@ -83,6 +87,8 @@ onBeforeUnmount(() => stop());
   transition: background 0.2s;
   z-index: 10;
   flex-shrink: 0;
+  /* 禁止触摸默认行为（如滚动），确保 pointer 事件正常工作 */
+  touch-action: none;
 }
 
 .resizer-bar:hover {

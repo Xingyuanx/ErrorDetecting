@@ -36,7 +36,7 @@
       </el-tooltip>
 
       <el-tooltip :content="isFullscreen ? '退出全屏' : '全屏显示'" placement="bottom">
-        <el-button link @click="toggleFullscreen" class="u-hidden-mobile">
+        <el-button link @click="toggleFullscreen">
           <el-icon :size="20">
             <FullScreen v-if="!isFullscreen" />
             <Aim v-else />
