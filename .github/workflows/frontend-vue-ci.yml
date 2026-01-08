@@ -27,10 +27,23 @@ jobs:
         run: corepack enable
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm run lint
       - name: Typecheck
         run: pnpm run typecheck
       - name: Test
         run: pnpm run test
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: E2E
+        run: pnpm run e2e:ui
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-vue-playwright-report
+          path: |
+            frontend-vue/playwright-report
+            frontend-vue/test-results
       - name: Build
         run: pnpm run build
-

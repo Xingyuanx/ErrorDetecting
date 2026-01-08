@@ -4,16 +4,17 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
-import * as echarts from 'echarts'
-import { NodeService } from '../api/node.service'
 import { MetricService } from '../api/metric.service'
 import { useUIStore } from '../stores/ui'
+import { loadEcharts } from '../lib/echarts'
+import type { EChartsType } from 'echarts/core'
 
 const props = defineProps<{ cluster: string }>()
 const ui = useUIStore()
 const root = ref<HTMLElement|null>(null)
-let chart: echarts.ECharts | null = null
+let chart: EChartsType | null = null
 let ro: ResizeObserver | null = null
+let destroyed = false
 
 function render(used: number, idle: number) {
   if (!chart) return
@@ -70,17 +71,18 @@ async function load() {
   }
 }
 
-function initChart() {
-  if (!root.value) return
-  if (chart) {
-    chart.dispose()
-  }
-  chart = echarts.init(root.value, ui.isDark ? 'dark' : undefined)
-  load()
+async function initChart() {
+  const el = root.value
+  if (!el) return
+  const echarts = await loadEcharts()
+  if (destroyed || root.value !== el) return
+  if (chart) chart.dispose()
+  chart = echarts.init(el)
+  await load()
 }
 
 onMounted(() => {
-  initChart()
+  void initChart()
   const onResize = () => chart && chart.resize()
   window.addEventListener('resize', onResize)
   ro = new ResizeObserver(() => { chart && chart.resize() })
@@ -90,8 +92,8 @@ onMounted(() => {
 })
 
 watch(() => ui.isDark, () => {
-  initChart()
+  void initChart()
 })
 watch(() => props.cluster, () => load())
-onBeforeUnmount(() => { ro?.disconnect(); ro = null; chart?.dispose(); chart = null })
+onBeforeUnmount(() => { destroyed = true; ro?.disconnect(); ro = null; chart?.dispose(); chart = null })
 </script>

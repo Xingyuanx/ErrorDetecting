@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth";
 import { useUIStore } from "../stores/ui";
@@ -79,6 +79,7 @@ import type { FormInstance, FormRules } from "element-plus";
 import { Monitor, User, Lock, Moon, Sunny } from '@element-plus/icons-vue'
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 const ui = useUIStore();
 const { isDark } = storeToRefs(ui);
@@ -155,7 +156,8 @@ async function onSubmit() {
         const r = await auth.login(loginForm.username, loginForm.password);
         if (r.ok) {
           ElMessage.success("登录成功");
-          router.replace({ name: auth.defaultPage });
+          const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "";
+          router.replace(redirect || { name: auth.defaultPage });
         } else {
           ElMessage.error(r.message || "登录失败！");
         }

@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { Roles, AllRoles } from '../constants/roles'
+import { trackEvent } from '../lib/telemetry'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/diagnosis' },
@@ -22,10 +23,14 @@ const router = createRouter({ history: createWebHashHistory(), routes })
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!to.meta || to.meta.requiresAuth === false) return true
-  if (!auth.isAuthenticated) return { name: 'login' }
+  if (!auth.isAuthenticated) return { name: 'login', query: { redirect: to.fullPath } }
   const roles = to.meta.roles as string[] | undefined
   if (roles && !roles.includes(auth.role || '')) return { name: auth.defaultPage }
   return true
+})
+
+router.afterEach((to, from) => {
+  trackEvent('route_change', { to: to.fullPath, from: from.fullPath })
 })
 
 export default router

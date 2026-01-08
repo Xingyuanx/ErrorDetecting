@@ -19,5 +19,9 @@ export const AuthService = {
   /** 后端健康检查 */
   async health(): Promise<any> {
     return api.get('/v1/health')
+  },
+
+  async refresh(payload: any): Promise<any> {
+    return api.post('/v1/auth/refresh', payload)
   }
 }

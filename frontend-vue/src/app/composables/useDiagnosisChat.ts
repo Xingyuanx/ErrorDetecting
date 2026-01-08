@@ -106,7 +106,7 @@ export function useDiagnosisChat(options: {
       let buffer = "";
       let hasReceivedContent = false;
 
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
 
