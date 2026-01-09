@@ -17,12 +17,12 @@ declare module 'axios' {
 }
 
 const api: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 10000
 })
 
 const refreshApi = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 10000
 })
 
