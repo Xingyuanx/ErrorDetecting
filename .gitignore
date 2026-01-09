@@ -1,0 +1,10 @@
+# Ignore temporary Vue3 playground directory
+src/fronted/vue3/
+frontend-vue/node_modules/
+frontend-vue/dist/
+frontend-vue/.vite/
+frontend-vue/test-results/
+frontend-vue/playwright-report/
+.venv/
+__pycache__/
+*.pyc

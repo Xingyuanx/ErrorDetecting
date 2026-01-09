@@ -1,0 +1,25 @@
+@startuml
+title 部署拓扑
+
+node "On-Prem / Cloud" {
+  node "Hadoop Cluster" {
+    [NameNode]
+    [DataNodes...]
+  }
+
+  node "Logging Layer" {
+    [Flume Agents]
+  }
+
+  node "Application Layer" {
+    [FastAPI]
+    [LLM Connector]
+    [Nginx for Frontend]
+  }
+
+  node "Storage/Caching" {
+    [MySQL]
+    [Redis]
+  }
+}
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+title 日志诊断与自动修复流程
+
+actor User
+participant Frontend as FE
+participant FastAPI as API
+participant Flume
+database MySQL as DB
+queue Redis
+participant LLM
+
+Flume -> API : 推送结构化日志
+API -> DB : 写入 fault_record
+FE -> API : 查询 /api/logs/query
+API -> FE : 返回日志列表
+
+API -> LLM : call_llm_diagnose(logs)
+LLM --> API : 返回 FixCommand(JSON)
+API -> DB : 写入 exec_log
+API -> Redis : 缓存/发布修复任务
+API -> FE : WebSocket 推送诊断结果
+
+FE -> API : /api/repair/execute
+API -> "修复脚本" : 执行Shell/Hadoop命令
+"修复脚本" -> API : stdout/stderr
+API -> DB : 更新 exec_log
+API -> FE : 返回执行结果
+
+@enduml

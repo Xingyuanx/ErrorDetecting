@@ -1,0 +1,125 @@
+/* Sidebar Component Styles */
+/* 侧边栏组件样式 - 使用 BEM 命名规范 */
+
+.sidebar {
+    width: 16rem;
+    background-color: var(--color-white);
+    box-shadow: inset -1px 0 0 var(--color-gray-200);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar--collapsed {
+    display: none;
+}
+
+/* 侧边栏标题区域 */
+.sidebar__header {
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.sidebar__title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* 侧边栏导航区域 */
+.sidebar__nav {
+    padding: var(--spacing-4) 0;
+    flex: 1;
+}
+
+/* 侧边栏链接样式 */
+.sidebar__link {
+    display: block;
+    padding: var(--spacing-3) var(--spacing-6);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-gray-700);
+    transition: all var(--transition-fast);
+    border-left: 3px solid transparent;
+}
+
+.sidebar__link:hover {
+    background-color: var(--color-gray-50);
+    color: var(--color-primary);
+    border-left-color: var(--color-primary);
+}
+
+.sidebar__link--active {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--color-primary);
+    border-left-color: var(--color-primary);
+}
+
+/* 侧边栏图标 */
+.sidebar__icon {
+    margin-right: var(--spacing-3);
+    font-size: var(--font-size-sm);
+    width: 1rem;
+    text-align: center;
+}
+
+/* 侧边栏分组 */
+.sidebar__group {
+    margin-bottom: var(--spacing-6);
+}
+
+.sidebar__group-title {
+    padding: var(--spacing-2) var(--spacing-6);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* 侧边栏底部区域 */
+.sidebar__footer {
+    padding: var(--spacing-4);
+    border-top: 1px solid var(--color-gray-200);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -16rem; /* 默认收起在屏幕外 */
+        height: 100vh;
+        z-index: 50;
+        transition: left var(--transition-base);
+    }
+    
+    /* 兼容 responsive.js 使用的类名 */
+    .sidebar--open,
+    .sidebar--mobile-open {
+        left: 0;
+    }
+    
+    /* 与脚本统一的遮罩层类名（DOM: .sidebar-overlay） */
+    .sidebar__overlay,
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 40;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-base);
+    }
+    
+    .sidebar__overlay--visible,
+    .sidebar-overlay--show {
+        opacity: 1;
+        visibility: visible;
+    }
+}

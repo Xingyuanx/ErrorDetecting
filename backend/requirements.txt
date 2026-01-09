@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+asyncpg
+python-dotenv
+passlib[bcrypt]
+bcrypt==3.2.0
+PyJWT
+langchain
+langchain-openai
+httpx
+paramiko
+pydantic-settings
+requests
+beautifulsoup4
